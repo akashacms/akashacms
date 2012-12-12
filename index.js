@@ -1,5 +1,8 @@
 
 /**
+ *
+ * Copyright 2012 David Herron
+ * 
  * This file is part of AkashaCMS (http://akashacms.com/).
  *
  *   AkashaCMS is free software: you can redistribute it and/or modify
