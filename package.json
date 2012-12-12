@@ -17,7 +17,6 @@
   },
   "directories" : { "lib" : "./lib" },
   "dependencies": {
-    "antinode": ">=2.0.9",
     "async": ">=0.1.22",
     "ejs": ">=0.8.3",
     "filewalker": ">=0.1.1",
