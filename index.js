@@ -25,7 +25,6 @@ var url      = require('url');
 var renderer = require('./lib/renderer');
 var fs       = require('fs');
 var FS       = require('meta-fs');
-var oembed   = require('oembed');
 var gf       = require('./lib/gatherfiles');
 
 module.exports.partial = function(name, locals, callback) {
