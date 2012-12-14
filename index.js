@@ -48,6 +48,7 @@ module.exports.partialSync = function(name, locals) {
 module.exports.process = function(options) {
     options.dirs = [];
     renderer.setRootLayouts(options.root_layouts);
+    renderer.setRootPartials(options.root_partials);
     
     async.series([
         function(done) {
