@@ -91,6 +91,12 @@ var gather_files_and_directories = function(options, done) {
         });
 }
 
+var make_directory = function(options, entry) {
+    FS.mkdir_p(options.root_out +"/"+ entry.path, function(msg) {
+        fs.utimesSync(options.root_out +"/"+ entry.path, entry.stat.atime, entry.stat.mtime);
+    });
+}
+
 /**
  * For the directories in the input list, make matching directories in the output directory tree.
  **/
@@ -108,7 +114,7 @@ var make_directories = function(options, done) {
                         done('NON-DIRECTORY '+ options.root_out +"/"+ entry.path +' ALREADY EXISTS');
                     }
                 } else {
-                    FS.mkdir_p(options.root_out +"/"+ entry.path, function(msg) { });
+                    make_directory(options, entry);
                 }
             }
         }
@@ -157,6 +163,28 @@ var process2html = function(options, entry) {
     }
 }
 
+var copy_to_outdir = function(options, entry) {
+    // for anything not rendered, simply copy it
+    FS.copy(entry.fullpath, options.root_out +"/"+ entry.path, function(msg) {
+        fs.utimesSync(options.root_out +"/"+ entry.path, entry.stat.atime, entry.stat.mtime);
+    });
+}
+
+var render_less = function(options, entry) {
+    renderer.renderLess(entry.rootdir +'/'+ entry.path, function(err, rendered) {
+        if (err)
+            done(err);
+        else {
+            var ind = rendered.fname.indexOf('/');
+            var renderTo = options.root_out +"/"+ rendered.fname.substr(ind+1);
+            fs.writeFile(renderTo, rendered.css, 'utf8', function (err) {
+                if (err) throw err;
+                fs.utimesSync(renderTo, entry.stat.atime, entry.stat.mtime);
+            });
+        }
+    });
+}
+
 var process_and_render_files = function(options, done) {
     for (var i = 0; i < options.dirs.length; i++) {
         var dir = options.dirs[i];
@@ -173,19 +201,10 @@ var process_and_render_files = function(options, done) {
                 process2html(options, entry);
             } else if (entry.path.match(/\.css\.less$/)) {
                 // render .less files; rendered.fname will be xyzzy.css
-                renderer.renderLess(entry.rootdir +'/'+ entry.path, function(err, rendered) {
-                    if (err)
-                        done(err);
-                    else {
-                        var ind = rendered.fname.indexOf('/');
-                        fs.writeFile(options.root_out +"/"+ rendered.fname.substr(ind+1), rendered.css, 'utf8', function (err) {
-                            if (err) throw err;
-                        });
-                    }
-                });
+                render_less(options, entry);
             } else {
                 // for anything not rendered, simply copy it
-                FS.copy(entry.fullpath, options.root_out +"/"+ entry.path, function(msg) { });
+                copy_to_outdir(options, entry);
             }
         }
     }
