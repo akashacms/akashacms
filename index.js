@@ -125,11 +125,7 @@ var process2html = function(options, entry) {
     }
     // Start with a base object that will be passed into the template
     var renderopts = {
-        partial: function(template, data) {
-            return renderer.renderFile(template, data);
-        },
         // TODO - function to search for files in input
-        // TODO - function to search for templates ??
     };
     // Copy in any data or functions passed to us
     if ('data' in options) {
@@ -147,6 +143,7 @@ var process2html = function(options, entry) {
             var ind = rendered.fname.indexOf('/');
             fs.writeFile(options.root_out +"/"+ rendered.fname.substr(ind+1), rendered.content, 'utf8', function (err) {
                 if (err) throw err;
+                fs.utimesSync(options.root_out +"/"+ rendered.fname.substr(ind+1), entry.stat.atime, entry.stat.mtime);
             });
         });
     // TODO } else other asynchronous template engines.. or are they handled inside renderFileAsync?
@@ -155,6 +152,7 @@ var process2html = function(options, entry) {
         var ind = rendered.fname.indexOf('/');
         fs.writeFile(options.root_out +"/"+ rendered.fname.substr(ind+1), rendered.content, 'utf8', function (err) {
             if (err) throw err;
+            fs.utimesSync(options.root_out +"/"+ rendered.fname.substr(ind+1), entry.stat.atime, entry.stat.mtime);
         });
     }
 }
