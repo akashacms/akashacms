@@ -148,25 +148,32 @@ var process2html = function(options, entry, done) {
             renderopts[prop] = options.funcs[prop];
         }
     }
+    renderopts["root_url"] = options.root_url;
     if (entry.path.match(/\.html\.kernel$/)) {
         renderer.renderFileAsync(entry.rootdir +'/'+ entry.path, renderopts, function(err, rendered) {
             var ind = rendered.fname.indexOf('/');
-            fs.writeFile(options.root_out +"/"+ rendered.fname.substr(ind+1), rendered.content, 'utf8', function (err) {
+            var renderTo = options.root_out +"/"+ rendered.fname.substr(ind+1);
+            fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
                 if (err) done(err);
-                fs.utimesSync(options.root_out +"/"+ rendered.fname.substr(ind+1), entry.stat.atime, entry.stat.mtime);
-                add_sitemap_entry(options.root_url+"/"+rendered.fname.substr(ind+1), 0.5, entry.stat.mtime);
-                done();
+                else {
+                    fs.utimesSync(renderTo, entry.stat.atime, entry.stat.mtime);
+                    add_sitemap_entry(renderTo, 0.5, entry.stat.mtime);
+                    done();
+                }
             });
         });
     // TODO } else other asynchronous template engines.. or are they handled inside renderFileAsync?
     } else {
         var rendered = renderer.renderFile(entry.rootdir +'/'+ entry.path, renderopts);
         var ind = rendered.fname.indexOf('/');
-        fs.writeFile(options.root_out +"/"+ rendered.fname.substr(ind+1), rendered.content, 'utf8', function (err) {
+        var renderTo = options.root_out +"/"+ rendered.fname.substr(ind+1);
+        fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
             if (err) done(err);
-            fs.utimesSync(options.root_out +"/"+ rendered.fname.substr(ind+1), entry.stat.atime, entry.stat.mtime);
-            add_sitemap_entry(options.root_url+"/"+rendered.fname.substr(ind+1), 0.5, entry.stat.mtime);
-            done();
+            else {
+                fs.utimesSync(renderTo, entry.stat.atime, entry.stat.mtime);
+                add_sitemap_entry(renderTo, 0.5, entry.stat.mtime);
+                done();
+            }
         });
     }
 }
