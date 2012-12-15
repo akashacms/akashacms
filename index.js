@@ -26,6 +26,7 @@ var renderer = require('./lib/renderer');
 var fs       = require('fs');
 var FS       = require('meta-fs');
 var gf       = require('./lib/gatherfiles');
+var smap     = require('sightmap');
 
 module.exports.partial = function(name, locals, callback) {
     renderer.partial(name, locals, callback);
@@ -59,6 +60,9 @@ module.exports.process = function(options) {
         },
         function(done) {
             process_and_render_files(options, done);
+        },
+        function(done) {
+            generate_sitemap(options, done);
         }
     ],
     function(err) {
@@ -125,7 +129,7 @@ var make_directories = function(options, done) {
 /**
  * For files that are processed into an HTML, run the processing.
  **/
-var process2html = function(options, entry) {
+var process2html = function(options, entry, done) {
     if (! renderer.supportedForHtml(entry.path)) {
         throw 'UNKNOWN template engine for ' + entry.path;
     }
@@ -148,8 +152,10 @@ var process2html = function(options, entry) {
         renderer.renderFileAsync(entry.rootdir +'/'+ entry.path, renderopts, function(err, rendered) {
             var ind = rendered.fname.indexOf('/');
             fs.writeFile(options.root_out +"/"+ rendered.fname.substr(ind+1), rendered.content, 'utf8', function (err) {
-                if (err) throw err;
+                if (err) done(err);
                 fs.utimesSync(options.root_out +"/"+ rendered.fname.substr(ind+1), entry.stat.atime, entry.stat.mtime);
+                add_sitemap_entry(options.root_url+"/"+rendered.fname.substr(ind+1), 0.5);
+                done();
             });
         });
     // TODO } else other asynchronous template engines.. or are they handled inside renderFileAsync?
@@ -157,20 +163,23 @@ var process2html = function(options, entry) {
         var rendered = renderer.renderFile(entry.rootdir +'/'+ entry.path, renderopts);
         var ind = rendered.fname.indexOf('/');
         fs.writeFile(options.root_out +"/"+ rendered.fname.substr(ind+1), rendered.content, 'utf8', function (err) {
-            if (err) throw err;
+            if (err) done(err);
             fs.utimesSync(options.root_out +"/"+ rendered.fname.substr(ind+1), entry.stat.atime, entry.stat.mtime);
+            add_sitemap_entry(options.root_url+"/"+rendered.fname.substr(ind+1), 0.5);
+            done();
         });
     }
 }
 
-var copy_to_outdir = function(options, entry) {
+var copy_to_outdir = function(options, entry, done) {
     // for anything not rendered, simply copy it
     FS.copy(entry.fullpath, options.root_out +"/"+ entry.path, function(msg) {
         fs.utimesSync(options.root_out +"/"+ entry.path, entry.stat.atime, entry.stat.mtime);
+        done();
     });
 }
 
-var render_less = function(options, entry) {
+var render_less = function(options, entry, done) {
     renderer.renderLess(entry.rootdir +'/'+ entry.path, function(err, rendered) {
         if (err)
             done(err);
@@ -178,35 +187,68 @@ var render_less = function(options, entry) {
             var ind = rendered.fname.indexOf('/');
             var renderTo = options.root_out +"/"+ rendered.fname.substr(ind+1);
             fs.writeFile(renderTo, rendered.css, 'utf8', function (err) {
-                if (err) throw err;
+                if (err) done(err);
                 fs.utimesSync(renderTo, entry.stat.atime, entry.stat.mtime);
+                done();
             });
         }
     });
 }
 
 var process_and_render_files = function(options, done) {
-    for (var i = 0; i < options.dirs.length; i++) {
-        var dir = options.dirs[i];
-        for (var j = 0; j < dir.length; j++) {
-            var entry = dir[j];
-            if (entry.isdir) continue;
-            util.log(j +' '+ 'FILE ' + entry.path);
-            // TODO support other asynchronous template systems such as
-            // https://github.com/c9/kernel - DONE
-            // https://github.com/akdubya/dustjs
-            // Kernel might be more attractive because of simplicity - DONE
-            // dustjs is more comprehensive however
-            if (renderer.supportedForHtml(entry.path)) {
-                process2html(options, entry);
-            } else if (entry.path.match(/\.css\.less$/)) {
-                // render .less files; rendered.fname will be xyzzy.css
-                render_less(options, entry);
+    async.forEach(options.dirs,
+        function(dir, cbOuter) {
+            async.forEach(dir, function(entry, cbInner) {
+                if (entry.isdir) cbInner();
+                util.log('FILE ' + entry.path);
+                // TODO support other asynchronous template systems such as
+                // https://github.com/c9/kernel - DONE
+                // https://github.com/akdubya/dustjs
+                // Kernel might be more attractive because of simplicity - DONE
+                // dustjs is more comprehensive however
+                if (renderer.supportedForHtml(entry.path)) {
+                    process2html(options, entry, cbInner);
+                } else if (entry.path.match(/\.css\.less$/)) {
+                    // render .less files; rendered.fname will be xyzzy.css
+                    render_less(options, entry, cbInner);
+                } else {
+                    // for anything not rendered, simply copy it
+                    copy_to_outdir(options, entry, cbInner);
+                }
+            },
+            function(err) {
+                if (err) cbOuter(err); else cbOuter();
+            }); 
+        },
+        function(err) {
+            if (err) done(err); else done();
+        });
+}
+
+var rendered_files = [];
+
+var add_sitemap_entry = function(fname, priority) {
+    // util.log('add_sitemap_entry ' + fname);
+    rendered_files.push({loc: fname, priority: priority});
+    /*
+     * This lets us remove the 'index.html' portion of URL's submitted in the sitemap.
+     * But we need to also ensure all links within the site pointing at this also do
+     * not use 'index.html' in the URL.  Ugh.
+     *if (fname.match(/index.html$/)) {
+        rendered_files.push({loc: fname.replace(/index.html$/, ''), priority: priority});
+    }*/
+}
+
+var generate_sitemap = function(options, done) {
+    // util.log('generate_sitemap ' + util.inspect(rendered_files));
+    smap(rendered_files);
+    smap(function(xml) {
+        fs.writeFile(options.root_out +"/sitemap.xml", xml, 'utf8', function (err) {
+            if (err) {
+                done(err);
             } else {
-                // for anything not rendered, simply copy it
-                copy_to_outdir(options, entry);
+                done();
             }
-        }
-    }
-    done();
+        });
+    });
 }
