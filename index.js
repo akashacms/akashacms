@@ -154,7 +154,7 @@ var process2html = function(options, entry, done) {
             fs.writeFile(options.root_out +"/"+ rendered.fname.substr(ind+1), rendered.content, 'utf8', function (err) {
                 if (err) done(err);
                 fs.utimesSync(options.root_out +"/"+ rendered.fname.substr(ind+1), entry.stat.atime, entry.stat.mtime);
-                add_sitemap_entry(options.root_url+"/"+rendered.fname.substr(ind+1), 0.5);
+                add_sitemap_entry(options.root_url+"/"+rendered.fname.substr(ind+1), 0.5, entry.stat.mtime);
                 done();
             });
         });
@@ -165,7 +165,7 @@ var process2html = function(options, entry, done) {
         fs.writeFile(options.root_out +"/"+ rendered.fname.substr(ind+1), rendered.content, 'utf8', function (err) {
             if (err) done(err);
             fs.utimesSync(options.root_out +"/"+ rendered.fname.substr(ind+1), entry.stat.atime, entry.stat.mtime);
-            add_sitemap_entry(options.root_url+"/"+rendered.fname.substr(ind+1), 0.5);
+            add_sitemap_entry(options.root_url+"/"+rendered.fname.substr(ind+1), 0.5, entry.stat.mtime);
             done();
         });
     }
@@ -227,9 +227,14 @@ var process_and_render_files = function(options, done) {
 
 var rendered_files = [];
 
-var add_sitemap_entry = function(fname, priority) {
+var add_sitemap_entry = function(fname, priority, mtime) {
     // util.log('add_sitemap_entry ' + fname);
-    rendered_files.push({loc: fname, priority: priority});
+    var fDate = new Date(mtime);
+    rendered_files.push({
+        loc: encodeURI(fname),
+        priority: priority,
+        lastmod:  fDate.getUTCFullYear() +"-"+ (fDate.getMonth() + 1) +"-"+ fDate.getDate()
+    });
     /*
      * This lets us remove the 'index.html' portion of URL's submitted in the sitemap.
      * But we need to also ensure all links within the site pointing at this also do
