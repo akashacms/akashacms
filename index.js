@@ -28,14 +28,6 @@ var FS       = require('meta-fs');
 var gf       = require('./lib/gatherfiles');
 var smap     = require('sightmap');
 
-module.exports.partial = function(name, locals, callback) {
-    renderer.partial(name, locals, callback);
-}
-
-module.exports.partialSync = function(name, locals) {
-    return renderer.partialSync(name, locals);
-}
-
 // {
 //  root_layouts: 'dirname',
 //  root_out: 'dirname',
@@ -68,6 +60,14 @@ module.exports.process = function(options) {
     function(err) {
         if (err) throw err;
     });
+}
+
+module.exports.partial = function(name, locals, callback) {
+    renderer.partial(name, locals, callback);
+}
+
+module.exports.partialSync = function(name, locals, callback) {
+    return renderer.partialSync(name, locals, callback);
 }
 
 /**
@@ -149,33 +149,22 @@ var process2html = function(options, entry, done) {
         }
     }
     renderopts["root_url"] = options.root_url;
-    if (entry.path.match(/\.html\.kernel$/)) {
-        renderer.renderFileAsync(entry.rootdir +'/'+ entry.path, renderopts, function(err, rendered) {
+    
+    renderer.render(entry.rootdir +'/'+ entry.path, renderopts, function(err, rendered) {
+        if (err) throw err;
+        else {
             var ind = rendered.fname.indexOf('/');
             var renderTo = options.root_out +"/"+ rendered.fname.substr(ind+1);
             fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
                 if (err) done(err);
                 else {
                     fs.utimesSync(renderTo, entry.stat.atime, entry.stat.mtime);
-                    add_sitemap_entry(renderTo, 0.5, entry.stat.mtime);
+                    add_sitemap_entry(options.root_url +'/'+ rendered.fname.substr(ind+1), 0.5, entry.stat.mtime);
                     done();
                 }
             });
-        });
-    // TODO } else other asynchronous template engines.. or are they handled inside renderFileAsync?
-    } else {
-        var rendered = renderer.renderFile(entry.rootdir +'/'+ entry.path, renderopts);
-        var ind = rendered.fname.indexOf('/');
-        var renderTo = options.root_out +"/"+ rendered.fname.substr(ind+1);
-        fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
-            if (err) done(err);
-            else {
-                fs.utimesSync(renderTo, entry.stat.atime, entry.stat.mtime);
-                add_sitemap_entry(renderTo, 0.5, entry.stat.mtime);
-                done();
-            }
-        });
-    }
+        }
+    });
 }
 
 var copy_to_outdir = function(options, entry, done) {
@@ -231,6 +220,8 @@ var process_and_render_files = function(options, done) {
             if (err) done(err); else done();
         });
 }
+
+///////////////// XML Sitemap Generation .. works by building an array, then dumping it out in XML
 
 var rendered_files = [];
 
