@@ -28,22 +28,43 @@ var FS       = require('meta-fs');
 var gf       = require('./lib/gatherfiles');
 var smap     = require('sightmap');
 
-// {
-//  root_layouts: 'dirname',
-//  root_out: 'dirname',
-//  root_docs: [ 'dirname', 'dirname', .. ],
-//  data: { obj1: data, obj2: data, obj3: data ... }
-//  funcs: {
-//     func1: function() { },
-//     func2: function() { }
-//  }
-// }
 module.exports.process = function(options) {
     options.dirs = [];
     renderer.setRootLayouts(options.root_layouts);
     renderer.setRootPartials(options.root_partials);
     
     async.series([
+        // Ensure a clean output directory
+        function(done) {
+            util.log('removing ' + options.root_out);
+            FS.remove(options.root_out, function(err) {
+                if (err) done(err);
+                else done();
+            });
+        },
+        // Make empty one
+        function(done) {
+            util.log('making empty ' + options.root_out);
+            FS.mkdir_p(options.root_out, function(err) {
+                if (err) done(err);
+                else done();
+            });
+        },
+        // Copy over contents of every assets directory
+        function(done) {
+            async.forEachSeries(options.root_assets,
+            function(assetdir, done) {
+                util.log('copy assetdir ' + assetdir + ' to ' + options.root_out);
+                FS.copy(assetdir, options.root_out, function(err) {
+                    if (err) done(err);
+                    else done();
+                });
+            },
+            function(err) {
+                if (err) done(err);
+                else done();
+            });
+        },
         function(done) {
             gather_files_and_directories(options, done);
         },
