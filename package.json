@@ -12,9 +12,9 @@
     "url": "git://github.com/robogeek/akashacms.git"
   },
   "bin": {
-    "akashacms": "bin/cli.js"
+    "akashacms": "cli.js"
   },
-  "version": "0.0.8",
+  "version": "0.0.9",
   "engines": {
     "node": ">=0.8.1"
   },
