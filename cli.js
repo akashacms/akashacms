@@ -5,32 +5,11 @@
 // akasha serve
 
 var util    = require('util');
-var program = require('commander');
-
+var spawn = require('child_process').spawn;
 var http = require('http');
+var program = require('commander');
+var akasha = require('akashacms');
 var staticSrv = require('node-static');
-
-var runStaticServer = function(docroot) {
-    var fileServer = new staticSrv.Server(docroot);
-    http.createServer(function (request, response) {
-        request.addListener('end', function () {
-            fileServer.serve(request, response, function (e, res) {
-                if (e) {
-                    if (e.status === 404) { // If the file wasn't found
-                        fileServer.serveFile('/404.html', 404, {}, request, response);
-                    }
-                    else {
-                        sys.error("Error serving " + request.url + " - " + e.message);
-                        // Respond to the client
-                        response.writeHead(e.status, e.headers);
-                        response.end();
-                    }
-                }
-            });
-        });
-    }).listen(8080);
-}
-
 
 program
    .version('0.0.1')
@@ -42,23 +21,41 @@ program
     .command('init <dirName>')
     .description('initialize a akashacms site')
     .action(function(dirName){
-        util.log('init ' + dirName);
+        var git = spawn('git',
+              [ 'clone', 'git://github.com/robogeek/akashacms-example.git', dirName],
+              {env: process.env, stdio: 'inherit'});
     });
 
 program
     .command('build')
     .description('build an akashacms site in the current directory')
     .action(function(){
-        util.log('build ');
+        akasha.process(require(process.cwd() + '/config.js'));
     });
 
 program
     .command('serve')
     .description('start a webserver')
     .action(function(){
-        util.log('serve ');
-        // XXX Need to parameterize the directory
-        runStaticServer('../akashacms-example/out');
+        var site = require(process.cwd() + '/config.js');
+        var fileServer = new staticSrv.Server(site.root_out);
+        http.createServer(function (request, response) {
+            request.addListener('end', function () {
+                fileServer.serve(request, response, function (e, res) {
+                    if (e) {
+                        if (e.status === 404) { // If the file wasn't found
+                            fileServer.serveFile('/404.html', 404, {}, request, response);
+                        }
+                        else {
+                            sys.error("Error serving " + request.url + " - " + e.message);
+                            // Respond to the client
+                            response.writeHead(e.status, e.headers);
+                            response.end();
+                        }
+                    }
+                });
+            });
+        }).listen(8080);
     });
 
 // program
@@ -69,4 +66,3 @@ program
 //    });
 
 program.parse(process.argv);
-
