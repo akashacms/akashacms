@@ -14,7 +14,7 @@
   "bin": {
     "akashacms": "cli.js"
   },
-  "version": "0.2.0",
+  "version": "0.2.1",
   "engines": {
     "node": ">=0.8.1"
   },
@@ -29,7 +29,8 @@
     "meta-fs": ">=0.0.1",
     "oembed": ">=0.1.0",
     "sightmap": ">=0.0.0",
-    "commander": ">=1.1.1"
+    "commander": ">=1.1.1",
+    "node-static": ">=0.6.6"
   },
   "devDependencies": {}
 }
