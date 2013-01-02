@@ -106,11 +106,11 @@ module.exports.minimize = function(options, done) {
     .on('file', function(path, s, fullPath) {
         if (fullPath.match(/\.js$/) || fullPath.match(/\.html$/) || fullPath.match(/\.css$/)) {
             var stat = fs.statSync(fullPath);
-            util.log("Minimizing " + fullPath);
+            // util.log("Minimizing " + fullPath);
             minify.optimize([fullPath], {
                 cache: true,
                 callback: function(pMinData) {
-                    util.log("Writing Minimized file " + fullPath);
+                    // util.log("Writing Minimized file " + fullPath);
                     fs.writeFile(fullPath, pMinData, 'utf8', function (err) {
                         if (err) done(err);
                         else {
