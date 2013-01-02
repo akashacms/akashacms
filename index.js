@@ -26,6 +26,8 @@ var fs       = require('fs');
 var FS       = require('meta-fs');
 var gf       = require('./lib/gatherfiles');
 var smap     = require('sightmap');
+var minify     = require('minify');
+var filewalker = require('filewalker');
 
 module.exports.process = function(options) {
     options.dirs = [];
@@ -75,6 +77,12 @@ module.exports.process = function(options) {
         },
         function(done) {
             generate_sitemap(options, done);
+        },
+        function(done) {
+            if (options.doMinimize) module.exports.minimize(options, done);
+        },
+        function(done) {
+            if (options.onFinish) options.onFinish(done);
         }
     ],
     function(err) {
@@ -88,6 +96,36 @@ module.exports.partial = function(name, locals, callback) {
 
 module.exports.partialSync = function(name, locals, callback) {
     return renderer.partialSync(name, locals, callback);
+}
+
+/**
+ * Minimize a directory tree using the minify library.
+ **/
+module.exports.minimize = function(options, done) {
+    filewalker(options.root_out, { maxPending: -1, maxAttempts: 3, attemptTimeout: 3000 })
+    .on('file', function(path, s, fullPath) {
+        if (fullPath.match(/\.js$/) || fullPath.match(/\.html$/) || fullPath.match(/\.css$/)) {
+            var stat = fs.statSync(fullPath);
+            util.log("Minimizing " + fullPath);
+            minify.optimize([fullPath], {
+                cache: true,
+                callback: function(pMinData) {
+                    util.log("Writing Minimized file " + fullPath);
+                    fs.writeFile(fullPath, pMinData, 'utf8', function (err) {
+                        if (err) done(err);
+                        else {
+                            fs.utimesSync(fullPath, stat.atime, stat.mtime);
+                        }
+                    });
+                }
+            });
+        }
+    })
+    .on('error', function(err) {
+        if (err) done(err);
+        else { done(); } 
+    })
+    .walk();
 }
 
 /**
@@ -189,8 +227,9 @@ var process2html = function(options, entry, done) {
 
 var copy_to_outdir = function(options, entry, done) {
     // for anything not rendered, simply copy it
-    FS.copy(entry.fullpath, options.root_out +"/"+ entry.path, function(msg) {
-        fs.utimesSync(options.root_out +"/"+ entry.path, entry.stat.atime, entry.stat.mtime);
+    var renderTo = options.root_out +"/"+ entry.path;
+    FS.copy(entry.fullpath, renderTo, function(msg) {
+        fs.utimesSync(renderTo, entry.stat.atime, entry.stat.mtime);
         done();
     });
 }
@@ -204,8 +243,10 @@ var render_less = function(options, entry, done) {
             var renderTo = options.root_out +"/"+ rendered.fname.substr(ind+1);
             fs.writeFile(renderTo, rendered.css, 'utf8', function (err) {
                 if (err) done(err);
-                fs.utimesSync(renderTo, entry.stat.atime, entry.stat.mtime);
-                done();
+                else {
+                    fs.utimesSync(renderTo, entry.stat.atime, entry.stat.mtime);
+                    done();
+                }
             });
         }
     });
@@ -217,7 +258,7 @@ var process_and_render_files = function(options, done) {
             async.forEach(dir, function(entry, cbInner) {
                 if (entry.isdir) cbInner();
                 util.log('FILE ' + entry.path);
-                // TODO support other asynchronous template systems such as
+                // support other asynchronous template systems such as
                 // https://github.com/c9/kernel - DONE
                 // https://github.com/akdubya/dustjs
                 // Kernel might be more attractive because of simplicity - DONE
@@ -240,6 +281,8 @@ var process_and_render_files = function(options, done) {
             if (err) done(err); else done();
         });
 }
+
+
 
 ///////////////// XML Sitemap Generation .. works by building an array, then dumping it out in XML
 

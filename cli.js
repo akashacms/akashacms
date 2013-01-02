@@ -23,13 +23,17 @@
 // akasha build
 // akasha serve
 
-var util    = require('util');
-var spawn = require('child_process').spawn;
-var exec  = require('child_process').exec;
-var http = require('http');
-var program = require('commander');
-var akasha = require('akashacms');
-var staticSrv = require('node-static');
+var util       = require('util');
+var fs         = require('fs');
+var spawn      = require('child_process').spawn;
+var exec       = require('child_process').exec;
+var http       = require('http');
+var program    = require('commander');
+var akasha     = require('akashacms');
+var staticSrv  = require('node-static');
+
+
+var config = require(process.cwd() + '/config.js');
 
 program
    .version('0.0.1')
@@ -59,10 +63,28 @@ program
 program
     .command('build')
     .description('build an akashacms site in the current directory')
-    .action(function(){
-        akasha.process(require(process.cwd() + '/config.js'));
+    .action(function() { akasha.process(config); });
+
+program
+    .command('deploy')
+    .description('Deploy the akashacms site using configuration file')
+    .action(function() {
+        if (config.deploy_rsync) {
+            var user = config.deploy_rsync.user;
+            var host = config.deploy_rsync.host;
+            var dir  = config.deploy_rsync.dir;
+            var rsync = spawn('rsync',
+                    [ '--verbose', '--archive', '--delete', config.root_out+'/', user+'@'+host+':'+dir+'/' ],
+                    {env: process.env, stdio: 'inherit'});
+        } // else .. other kinds of deployment scenarios
     });
 
+
+program
+    .command('minimize')
+    .description('Minimize the rendered akashacms site')
+    .action(function() { akasha.minimize(config); });
+    
 program
     .command('serve')
     .description('start a webserver')
