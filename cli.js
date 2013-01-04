@@ -32,9 +32,6 @@ var program    = require('commander');
 var akasha     = require('akashacms');
 var staticSrv  = require('node-static');
 
-
-var config = require(process.cwd() + '/config.js');
-
 program
    .version('0.0.1')
 //   .option('-C, --chdir <path>', 'change the working directory')
@@ -63,12 +60,16 @@ program
 program
     .command('build')
     .description('build an akashacms site in the current directory')
-    .action(function() { akasha.process(config); });
+    .action(function() {
+        var config = require(process.cwd() + '/config.js');
+        akasha.process(config);
+    });
 
 program
     .command('deploy')
     .description('Deploy the akashacms site using configuration file')
     .action(function() {
+        var config = require(process.cwd() + '/config.js');
         if (config.deploy_rsync) {
             var user = config.deploy_rsync.user;
             var host = config.deploy_rsync.host;
@@ -83,12 +84,16 @@ program
 program
     .command('minimize')
     .description('Minimize the rendered akashacms site')
-    .action(function() { akasha.minimize(config); });
+    .action(function() {
+        var config = require(process.cwd() + '/config.js');
+        akasha.minimize(config);
+    });
     
 program
     .command('serve')
     .description('start a webserver')
-    .action(function(){
+    .action(function() {
+        var config = require(process.cwd() + '/config.js');
         var site = require(process.cwd() + '/config.js');
         var fileServer = new staticSrv.Server(site.root_out);
         http.createServer(function (request, response) {
