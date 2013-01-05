@@ -113,9 +113,11 @@ module.exports.minimize = function(options, done) {
                     fs.writeFile(fullPath, pMinData, 'utf8', function (err) {
                         if (err) done(err);
                         else {
-                            fs.utimes(fullPath, stat.atime, stat.mtime, function(err){
-                                if(err)
-                                    console.log(err);
+                            fs.utimes(fullPath, stat.atime, stat.mtime, function(err) {
+                                if (err)
+                                    done(err);
+                                else
+                                    done();
                             });
                         }
                     });
@@ -157,7 +159,9 @@ var gather_files_and_directories = function(options, done) {
 
 var make_directory = function(options, entry) {
     FS.mkdir_p(options.root_out +"/"+ entry.path, function(msg) {
-        fs.utimesSync(options.root_out +"/"+ entry.path, entry.stat.atime, entry.stat.mtime);
+        fs.utimes(options.root_out +"/"+ entry.path, entry.stat.atime, entry.stat.mtime, function(err) {
+            if (err) throw err;
+        });
     });
 }
 
@@ -218,9 +222,14 @@ var process2html = function(options, entry, done) {
             fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
                 if (err) done(err);
                 else {
-                    fs.utimesSync(renderTo, entry.stat.atime, entry.stat.mtime);
-                    add_sitemap_entry(options.root_url +'/'+ rendered.fname.substr(ind+1), 0.5, entry.stat.mtime);
-                    done();
+                    fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
+                        if (err) {
+                            done(err);
+                        } else {
+                            add_sitemap_entry(options.root_url +'/'+ rendered.fname.substr(ind+1), 0.5, entry.stat.mtime);
+                            done();
+                        }
+                    });
                 }
             });
         }
@@ -231,8 +240,10 @@ var copy_to_outdir = function(options, entry, done) {
     // for anything not rendered, simply copy it
     var renderTo = options.root_out +"/"+ entry.path;
     FS.copy(entry.fullpath, renderTo, function(msg) {
-        fs.utimesSync(renderTo, entry.stat.atime, entry.stat.mtime);
-        done();
+        fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
+            if (err) done(err);
+            else done();
+        });
     });
 }
 
@@ -246,8 +257,10 @@ var render_less = function(options, entry, done) {
             fs.writeFile(renderTo, rendered.css, 'utf8', function (err) {
                 if (err) done(err);
                 else {
-                    fs.utimesSync(renderTo, entry.stat.atime, entry.stat.mtime);
-                    done();
+                    fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
+                        if (err) done(err);
+                        else done();
+                    });
                 }
             });
         }
