@@ -1,4 +1,3 @@
-
 /**
  *
  * Copyright 2012 David Herron
@@ -114,7 +113,10 @@ module.exports.minimize = function(options, done) {
                     fs.writeFile(fullPath, pMinData, 'utf8', function (err) {
                         if (err) done(err);
                         else {
-                            fs.utimesSync(fullPath, stat.atime, stat.mtime);
+                            fs.utimes(fullPath, stat.atime, stat.mtime, function(err){
+                                if(err)
+                                    console.log(err);
+                            });
                         }
                     });
                 }
