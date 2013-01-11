@@ -30,6 +30,11 @@ var filewalker = require('filewalker');
 
 module.exports.process = function(options) {
     options.dirs = [];
+    // Make functions available to any code located in the configuration
+    // These functions need to be ones that are useful to code in configurations
+    options.partial = module.exports.partial;
+    // options.akashacms = module.exports; // Do we need this instead?
+    // util.log('process ' + util.inspect(options));
     renderer.setRootLayouts(options.root_layouts);
     renderer.setRootPartials(options.root_partials);
     
