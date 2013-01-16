@@ -276,21 +276,24 @@ var process_and_render_files = function(options, done) {
     async.forEach(options.dirs,
         function(dir, cbOuter) {
             async.forEach(dir, function(entry, cbInner) {
-                if (entry.isdir) cbInner();
-                util.log('FILE ' + entry.path);
-                // support other asynchronous template systems such as
-                // https://github.com/c9/kernel - DONE
-                // https://github.com/akdubya/dustjs
-                // Kernel might be more attractive because of simplicity - DONE
-                // dustjs is more comprehensive however
-                if (renderer.supportedForHtml(entry.path)) {
-                    process2html(options, entry, cbInner);
-                } else if (entry.path.match(/\.css\.less$/)) {
-                    // render .less files; rendered.fname will be xyzzy.css
-                    render_less(options, entry, cbInner);
+                if (entry.isdir) {
+                    cbInner();
                 } else {
-                    // for anything not rendered, simply copy it
-                    copy_to_outdir(options, entry, cbInner);
+                    util.log('FILE ' + entry.path);
+                    // support other asynchronous template systems such as
+                    // https://github.com/c9/kernel - DONE
+                    // https://github.com/akdubya/dustjs
+                    // Kernel might be more attractive because of simplicity - DONE
+                    // dustjs is more comprehensive however
+                    if (renderer.supportedForHtml(entry.path)) {
+                        process2html(options, entry, cbInner);
+                    } else if (entry.path.match(/\.css\.less$/)) {
+                        // render .less files; rendered.fname will be xyzzy.css
+                        render_less(options, entry, cbInner);
+                    } else {
+                        // for anything not rendered, simply copy it
+                        copy_to_outdir(options, entry, cbInner);
+                    }
                 }
             },
             function(err) {
