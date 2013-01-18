@@ -218,6 +218,9 @@ var process2html = function(options, entry, done) {
         }
     }
     renderopts["root_url"] = options.root_url;
+    if (! renderopts.rendered_date) {
+        renderopts.rendered_date = entry.stat.mtime;
+    }
     
     renderer.render(entry.rootdir +'/'+ entry.path, renderopts, function(err, rendered) {
         if (err) throw err;
