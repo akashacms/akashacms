@@ -31,7 +31,8 @@
     "sightmap": ">=0.0.0",
     "commander": ">=1.1.1",
     "node-static": ">=0.6.6",
-    "minify": ">=0.1.8"
+    "minify": ">=0.1.8",
+    "ssh2sync": "*"
   },
   "devDependencies": {}
 }

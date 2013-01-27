@@ -30,7 +30,7 @@ var exec       = require('child_process').exec;
 var http       = require('http');
 var program    = require('commander');
 var akasha     = require('akashacms');
-var staticSrv  = require('node-static');
+
 
 program
    .version('0.0.1')
@@ -70,6 +70,13 @@ program
     .description('Deploy the akashacms site using configuration file')
     .action(function() {
         var config = require(process.cwd() + '/config.js');
+        if (config.deploy_ssh2sync) {
+            var ssh2sync = require('ssh2sync');
+            ssh2sync.upload(config.root_out,
+                            config.deploy_ssh2sync.root_remote,
+                            config.deploy_ssh2sync.force,
+                            config.deploy_ssh2sync.auth);
+        }
         if (config.deploy_rsync) {
             var user = config.deploy_rsync.user;
             var host = config.deploy_rsync.host;
@@ -93,6 +100,7 @@ program
     .command('serve')
     .description('start a webserver')
     .action(function() {
+        var staticSrv  = require('node-static');
         var config = require(process.cwd() + '/config.js');
         var site = require(process.cwd() + '/config.js');
         var fileServer = new staticSrv.Server(site.root_out);
