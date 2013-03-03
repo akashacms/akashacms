@@ -14,7 +14,7 @@
   "bin": {
     "akashacms": "cli.js"
   },
-  "version": "0.2.9",
+  "version": "0.2.10",
   "engines": {
     "node": ">=0.8.1"
   },
@@ -32,6 +32,8 @@
     "commander": ">=1.1.1",
     "node-static": ">=0.6.6",
     "minify": ">=0.1.8",
+    "request": "*",
+    "node-zip": "*",
     "ssh2sync": "*"
   },
   "devDependencies": {}
