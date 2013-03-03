@@ -25,11 +25,13 @@
 
 var util       = require('util');
 var fs         = require('fs');
+var path       = require('path');
 var spawn      = require('child_process').spawn;
 var exec       = require('child_process').exec;
 var http       = require('http');
 var program    = require('commander');
-var akasha     = require('akashacms');
+var akasha     = require( './index.js' ); //'akashacms');
+var request    = require('request');
 
 
 program
@@ -58,10 +60,37 @@ program
     });
 
 program
+    .command('bootstrap')
+    .description('Download the Twitter Bootstrap code')
+    .action(function() {
+        var AdmZip = require('adm-zip');
+        var data = [], dataLen = 0; 
+        http.request("http://twitter.github.com/bootstrap/assets/bootstrap.zip", function(res) {
+            res.on('data', function(chunk) {
+                data.push(chunk);
+                dataLen += chunk.length;
+            });
+            res.on('end', function() {
+                var buf = new Buffer(dataLen);
+
+                for (var i=0, len = data.length, pos = 0; i < len; i++) { 
+                    data[i].copy(buf, pos); 
+                    pos += data[i].length; 
+                }
+    
+                var zip = new AdmZip(buf);
+                zip.extractAllTo("bootstrap-from-request", true);
+                //var zipEntries = zip.getEntries();
+                //util.log(util.inspect(zipEntries));
+            });
+        }).end();
+    });
+
+program
     .command('build')
     .description('build an akashacms site in the current directory')
     .action(function() {
-        var config = require(process.cwd() + '/config.js');
+        var config = require(path.join(process.cwd(), '/config.js'));
         akasha.process(config);
     });
 
@@ -69,7 +98,7 @@ program
     .command('deploy')
     .description('Deploy the akashacms site using configuration file')
     .action(function() {
-        var config = require(process.cwd() + '/config.js');
+        var config = require(path.join(process.cwd(), '/config.js'));
         if (config.deploy_ssh2sync) {
             var ssh2sync = require('ssh2sync');
             ssh2sync.upload(config.root_out,
@@ -77,7 +106,7 @@ program
                             config.deploy_ssh2sync.force,
                             config.deploy_ssh2sync.auth);
         }
-        if (config.deploy_rsync) {
+        else if (config.deploy_rsync) {
             var user = config.deploy_rsync.user;
             var host = config.deploy_rsync.host;
             var dir  = config.deploy_rsync.dir;
@@ -92,7 +121,7 @@ program
     .command('minimize')
     .description('Minimize the rendered akashacms site')
     .action(function() {
-        var config = require(process.cwd() + '/config.js');
+        var config = require(path.join(process.cwd(), '/config.js'));
         akasha.minimize(config);
     });
     
@@ -101,9 +130,8 @@ program
     .description('start a webserver')
     .action(function() {
         var staticSrv  = require('node-static');
-        var config = require(process.cwd() + '/config.js');
-        var site = require(process.cwd() + '/config.js');
-        var fileServer = new staticSrv.Server(site.root_out);
+        var config = require(path.join(process.cwd(), '/config.js'));
+        var fileServer = new staticSrv.Server(config.root_out);
         http.createServer(function (request, response) {
             request.addListener('end', function () {
                 fileServer.serve(request, response, function (e, res) {
