@@ -23,6 +23,7 @@ var url      = require('url');
 var renderer = require('./lib/renderer');
 var fs       = require('fs');
 var FS       = require('meta-fs');
+var path     = require('path');
 var gf       = require('./lib/gatherfiles');
 var smap     = require('sightmap');
 var minify     = require('minify');
@@ -100,6 +101,23 @@ module.exports.partial = function(name, locals, callback) {
 
 module.exports.partialSync = function(name, locals, callback) {
     return renderer.partialSync(name, locals, callback);
+}
+
+module.exports.renderFile = function(options, fileName, callback) {
+    renderer.setRootLayouts(options.root_layouts);
+    renderer.setRootPartials(options.root_partials);
+    var entry = gf.gatherFile(options.root_docs, fileName);
+    if (!entry) throw new Error('File '+fileName+' not found');
+    
+    if (renderer.supportedForHtml(entry.path)) {
+        process2html(options, entry, callback);
+    } else if (entry.path.match(/\.css\.less$/)) {
+        // render .less files; rendered.fname will be xyzzy.css
+        render_less(options, entry, callback);
+    } else {
+        // for anything not rendered, simply copy it
+        copy_to_outdir(options, entry, callback);
+    }
 }
 
 /**
@@ -227,18 +245,21 @@ var process2html = function(options, entry, done) {
         else {
             var ind = rendered.fname.indexOf('/');
             var renderTo = options.root_out +"/"+ rendered.fname.substr(ind+1);
-            fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
-                if (err) done(err);
-                else {
-                    fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
-                        if (err) {
-                            done(err);
-                        } else {
-                            add_sitemap_entry(options.root_url +'/'+ rendered.fname.substr(ind+1), 0.5, entry.stat.mtime);
-                            done();
-                        }
-                    });
-                }
+            var outPath = path.dirname(renderTo);
+            FS.mkdir_p(outPath, function(msg) {
+                fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
+                    if (err) done(err);
+                    else {
+                        fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
+                            if (err) {
+                                done(err);
+                            } else {
+                                add_sitemap_entry(options.root_url +'/'+ rendered.fname.substr(ind+1), 0.5, entry.stat.mtime);
+                                done();
+                            }
+                        });
+                    }
+                });
             });
         }
     });
