@@ -95,6 +95,16 @@ program
     });
 
 program
+    .command('render <fileName>')
+    .description('render a file into the output directory')
+    .action(function(fileName) {
+        var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.renderFile(config, fileName, function(err) {
+            if (err) throw err;
+        });
+    });
+
+program
     .command('deploy')
     .description('Deploy the akashacms site using configuration file')
     .action(function() {
