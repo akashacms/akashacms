@@ -36,8 +36,9 @@ module.exports.process = function(options) {
     options.partial = module.exports.partial;
     // options.akashacms = module.exports; // Do we need this instead?
     // util.log('process ' + util.inspect(options));
-    renderer.setRootLayouts(options.root_layouts);
-    renderer.setRootPartials(options.root_partials);
+    /*renderer.setRootLayouts(options.root_layouts);
+    renderer.setRootPartials(options.root_partials);*/
+    renderer.config(options);
     
     async.series([
         // Ensure a clean output directory
@@ -55,6 +56,23 @@ module.exports.process = function(options) {
                 if (err) done(err);
                 else done();
             });
+        },
+        // Copy over contents of theme directory
+        function(done) {
+            if (options.root_theme) {
+                async.forEachSeries(options.root_theme,
+                function(themedir, done) {
+                    util.log("copy theme directory " + themedir);
+                    FS.copy(themedir, options.root_out, function(err) {
+                        if (err) done(err);
+                        else done();
+                    });
+                },
+                function(err) {
+                    if (err) done(err);
+                    else done();
+                });
+            } else done();
         },
         // Copy over contents of every assets directory
         function(done) {
@@ -91,7 +109,10 @@ module.exports.process = function(options) {
         }
     ],
     function(err) {
-        if (err) throw err;
+        if (err) {
+            util.log(util.inspect(err));
+            throw err;
+        }
     });
 }
 
@@ -99,13 +120,22 @@ module.exports.partial = function(name, locals, callback) {
     renderer.partial(name, locals, callback);
 }
 
-module.exports.partialSync = function(name, locals, callback) {
-    return renderer.partialSync(name, locals, callback);
+module.exports.partialSync = function(theoptions, name, locals, callback) {
+    return renderer.partialSync(theoptions, name, locals, callback);
+}
+
+module.exports.getFileEntry = function(root_docs, fileName) {
+    return gf.gatherFile(root_docs, fileName);
+}
+
+module.exports.findIndexFile = function(root_docs, dirname) {
+    return gf.findIndex(root_docs, dirname);
 }
 
 module.exports.renderFile = function(options, fileName, callback) {
-    renderer.setRootLayouts(options.root_layouts);
-    renderer.setRootPartials(options.root_partials);
+    /*renderer.setRootLayouts(options.root_layouts);
+    renderer.setRootPartials(options.root_partials);*/
+    renderer.config(options);
     var entry = gf.gatherFile(options.root_docs, fileName);
     if (!entry) throw new Error('File '+fileName+' not found');
     
