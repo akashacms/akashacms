@@ -132,6 +132,26 @@ module.exports.findIndexFile = function(root_docs, dirname) {
     return gf.findIndex(root_docs, dirname);
 }
 
+module.exports.findSiblings = function(theoptions, fileName) {
+    var bnm   = path.basename(fileName);
+    var dirname = path.dirname(fileName);
+    var entry = module.exports.getFileEntry(theoptions.root_docs, fileName);
+    var entries = [];
+    var dirnm = path.dirname(entry.fullpath);
+    var fnames = fs.readdirSync(dirnm);
+    for (var i = 0; i < fnames.length; i++) {
+        var fn = fnames[i];
+        if (renderer.supportedForHtml(path.join(dirname, fn))) {
+            entries.push(gf.gatherFile(theoptions.root_docs, path.join(dirname, fn)));
+        }
+    }
+    return entries;
+}
+
+module.exports.urlForFile = function(fileName) {
+    return '/'+ renderer.renderedFileName(fileName);
+}
+
 module.exports.renderFile = function(options, fileName, callback) {
     /*renderer.setRootLayouts(options.root_layouts);
     renderer.setRootPartials(options.root_partials);*/
