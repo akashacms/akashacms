@@ -30,7 +30,7 @@ var spawn      = require('child_process').spawn;
 var exec       = require('child_process').exec;
 var http       = require('http');
 var program    = require('commander');
-var akasha     = require( './index.js' ); //'akashacms');
+var akasha     = require('akashacms'); // './index.js' ); //'akashacms');
 var request    = require('request');
 
 
