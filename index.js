@@ -29,8 +29,7 @@ var smap     = require('sightmap');
 var minify     = require('minify');
 var filewalker = require('filewalker');
 
-module.exports.process = function(options) {
-    options.dirs = [];
+module.exports.config = function(options) {
     // Make functions available to any code located in the configuration
     // These functions need to be ones that are useful to code in configurations
     options.partial = module.exports.partial;
@@ -39,6 +38,14 @@ module.exports.process = function(options) {
     /*renderer.setRootLayouts(options.root_layouts);
     renderer.setRootPartials(options.root_partials);*/
     renderer.config(options);
+    
+    for (var i = 0; i < options.plugins.length; i++) {
+        require(options.plugins[i]).config(module.exports, options);
+    }
+}
+
+module.exports.process = function(options) {
+    options.dirs = [];
     
     async.series([
         // Ensure a clean output directory

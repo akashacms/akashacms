@@ -91,6 +91,7 @@ program
     .description('build an akashacms site in the current directory')
     .action(function() {
         var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
         akasha.process(config);
     });
 
