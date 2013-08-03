@@ -30,7 +30,7 @@ var spawn      = require('child_process').spawn;
 var exec       = require('child_process').exec;
 var http       = require('http');
 var program    = require('commander');
-var akasha     = require('akashacms'); // './index.js' ); //'akashacms');
+var akasha     = require( './index.js' ); //'akashacms');
 var request    = require('request');
 
 
@@ -92,7 +92,9 @@ program
     .action(function() {
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
-        akasha.process(config);
+        akasha.process(config, function(err) {
+            if (err) throw new Error(err);
+        });
     });
 
 program
@@ -100,6 +102,7 @@ program
     .description('render a file into the output directory')
     .action(function(fileName) {
         var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
         akasha.renderFile(config, fileName, function(err) {
             if (err) throw err;
         });
