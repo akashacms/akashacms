@@ -323,6 +323,7 @@ var process2html = function(options, entry, done) {
             var ind = rendered.fname; //.indexOf('/');
             var renderTo = options.root_out +"/"+ rendered.fname; // .substr(ind+1);
             var outPath = path.dirname(renderTo);
+            util.log('rendered '+ entry.path +' as '+ renderTo);
             FS.mkdir_p(outPath, function(msg) {
                 fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
                     if (err) done(err);
