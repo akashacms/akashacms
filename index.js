@@ -24,66 +24,53 @@ var renderer = require('./lib/renderer');
 var fs       = require('fs');
 var FS       = require('meta-fs');
 var path     = require('path');
-var gf       = require('./lib/gatherfiles');
+var fileCache = require('./lib/fileCache');
 var smap     = require('sightmap');
 var minify     = require('minify');
 var filewalker = require('filewalker');
 
+// Set up an eventEmitter so we can tell other modules what's going on
+var events = require('events');
+var emitter = module.exports.emitter = new events.EventEmitter();
+
 module.exports.config = function(options) {
-    // Make functions available to any code located in the configuration
-    // These functions need to be ones that are useful to code in configurations
-    options.partial = module.exports.partial;
+    // MOOT???? Make functions available to any code located in the configuration
+    // MOOT???? These functions need to be ones that are useful to code in configurations
+    // MOOT???? options.partial = module.exports.partial;
     // options.akashacms = module.exports; // Do we need this instead?
     // util.log('process ' + util.inspect(options));
     /*renderer.setRootLayouts(options.root_layouts);
     renderer.setRootPartials(options.root_partials);*/
     renderer.config(options);
     
+    // Pull in any plugins to extend AkashaCMS
     for (var i = 0; i < options.plugins.length; i++) {
         require(options.plugins[i]).config(module.exports, options);
     }
+    
+    // Then give the configuration file a shot at extending us
+    if (options.config) {
+        options.config(module.exports);
+    }
 }
 
-module.exports.process = function(options) {
-    options.dirs = [];
-    
-    async.series([
-        // Ensure a clean output directory
-        function(done) {
-            util.log('removing ' + options.root_out);
-            FS.remove(options.root_out, function(err) {
-                if (err) done(err);
-                else done();
-            });
-        },
-        // Make empty one
-        function(done) {
-            util.log('making empty ' + options.root_out);
-            FS.mkdir_p(options.root_out, function(err) {
-                if (err) done(err);
-                else done();
-            });
-        },
-        // Copy over contents of theme directory
-        function(done) {
-            if (options.root_theme) {
-                async.forEachSeries(options.root_theme,
-                function(themedir, done) {
-                    util.log("copy theme directory " + themedir);
-                    FS.copy(themedir, options.root_out, function(err) {
-                        if (err) done(err);
-                        else done();
-                    });
-                },
-                function(err) {
+module.exports.process = function(options, callback) {
+    var cleanDir = function(done) {
+        util.log('removing ' + options.root_out);
+        FS.remove(options.root_out, function(err) {
+            if (err) done(err);
+            else {
+                util.log('making empty ' + options.root_out);
+                FS.mkdir_p(options.root_out, function(err) {
                     if (err) done(err);
                     else done();
                 });
-            } else done();
-        },
-        // Copy over contents of every assets directory
-        function(done) {
-            async.forEachSeries(options.root_assets,
+            }
+        });
+    }
+    
+    var copyAssets = function(done) {
+        async.forEachSeries(options.root_assets,
             function(assetdir, done) {
                 util.log('copy assetdir ' + assetdir + ' to ' + options.root_out);
                 FS.copy(assetdir, options.root_out, function(err) {
@@ -95,30 +82,46 @@ module.exports.process = function(options) {
                 if (err) done(err);
                 else done();
             });
-        },
-        function(done) {
-            gather_files_and_directories(options, done);
-        },
-        function(done) {
-            make_directories(options, done);
-        },
-        function(done) {
-            process_and_render_files(options, done);
-        },
-        function(done) {
-            generate_sitemap(options, done);
-        },
-        function(done) {
-            if (options.doMinimize) module.exports.minimize(options, done);
-        },
-        function(done) {
-            if (options.onFinish) options.onFinish(done);
-        }
-    ],
-    function(err) {
-        if (err) {
-            util.log(util.inspect(err));
-            throw err;
+    }
+    
+    cleanDir(function(err) {
+        if (err) throw new Error(err);
+        else {
+            copyAssets(function(err) {
+                if (err) throw new Error(err);
+                else {
+                    make_directories(options, function (err) {
+                        if (err) throw new Error(err);
+                        else {
+                            gather_documents(options, function(err, data) {
+                                // util.log('gather_documents FINISHED');
+                                if (err) throw new Error(err);
+                                else {
+                                    // util.log('gather_documents '+  data.length +' entries');
+                                    options.gatheredDocuments = data;
+                                    // util.log('process '+ options.gatheredDocuments.length +' entries');
+                                    process_and_render_files(options, function(err) {
+                                        if (err) throw new Error(err);
+                                        else {
+                                            generate_sitemap(options, function(err) {
+                                                if (err) throw new Error(err);
+                                                else {
+                                                    if (options.doMinimize) {
+                                                        module.exports.minimize(options, function(err) {
+                                                            if (err) throw new Error(err);
+                                                            else callback();
+                                                        });
+                                                    } else callback();
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+            })
         }
     });
 }
@@ -131,42 +134,52 @@ module.exports.partialSync = function(theoptions, name, locals, callback) {
     return renderer.partialSync(theoptions, name, locals, callback);
 }
 
-module.exports.getFileEntry = function(root_docs, fileName) {
-    return gf.gatherFile(root_docs, fileName);
+module.exports.getFileEntry = function(theoptions, fileName) {
+    return fileCache.readDocument(theoptions, fileName);
 }
 
-module.exports.findIndexFile = function(root_docs, dirname) {
-    return gf.findIndex(root_docs, dirname);
+module.exports.findIndexFile = function(options, dirname) {
+    return fileCache.findIndex(options, dirname);
 }
 
 module.exports.findSiblings = function(theoptions, fileName) {
     var bnm   = path.basename(fileName);
     var dirname = path.dirname(fileName);
-    var entry = module.exports.getFileEntry(theoptions.root_docs, fileName);
+    var entry = fileCache.readDocument(theoptions, fileName);
     var entries = [];
+    var filedir = path.dirname(fileName);
     var dirnm = path.dirname(entry.fullpath);
     var fnames = fs.readdirSync(dirnm);
     for (var i = 0; i < fnames.length; i++) {
         var fn = fnames[i];
-        if (renderer.supportedForHtml(path.join(dirname, fn))) {
-            entries.push(gf.gatherFile(theoptions.root_docs, path.join(dirname, fn)));
+        var fpath = path.join(filedir, fn);
+        if (fileCache.supportedForHtml(fpath)) {
+            entries.push(fileCache.readDocument(theoptions, fpath));
         }
     }
     return entries;
 }
 
 module.exports.urlForFile = function(fileName) {
-    return '/'+ renderer.renderedFileName(fileName);
+    return '/'+ fileCache.renderedFileName(fileName);
+}
+
+module.exports.eachFile = function(theoptions, filecb) {
+    for (var i = 0; i < theoptions.dirs.length; i++) {
+        var dir = theoptions.dirs[i];
+        for (var j = 0; j < dir.length; j++) {
+            var entry = dir[j];
+            if (! entry.isdir) filecb(entry);
+        }
+    }
 }
 
 module.exports.renderFile = function(options, fileName, callback) {
-    /*renderer.setRootLayouts(options.root_layouts);
-    renderer.setRootPartials(options.root_partials);*/
     renderer.config(options);
-    var entry = gf.gatherFile(options.root_docs, fileName);
+    var entry = fileCache.readDocument(options, fileName);
     if (!entry) throw new Error('File '+fileName+' not found');
     
-    if (renderer.supportedForHtml(entry.path)) {
+    if (fileCache.supportedForHtml(entry.path)) {
         process2html(options, entry, callback);
     } else if (entry.path.match(/\.css\.less$/)) {
         // render .less files; rendered.fname will be xyzzy.css
@@ -212,61 +225,68 @@ module.exports.minimize = function(options, done) {
     .walk();
 }
 
-/**
- * Gather a list of input files & directories.
- **/
-var gather_files_and_directories = function(options, done) {
-    util.log('root_docs ' + util.inspect(options.root_docs));
+var gather_documents = function(options, done) {
+    var gathered = [];
+    
+    var gatherDir = function(docroot, cb) {
+        filewalker(docroot, { maxPending: -1, maxAttempts: 3, attemptTimeout: 3000 })
+        .on('file', function(path, s, fullPath) {
+            // util.log(docroot + ' FILE ' + path + ' ' + fullPath);
+            gathered.push(fileCache.readDocument(options, path));
+        })
+        .on('error', function(err) {
+            // util.log('gather_documents ERROR '+ err);
+            cb(err, gathered);
+        })
+        .on('done', function() {
+            util.log('gather_documents DONE '+ gathered.length);
+            cb(undefined, gathered);
+        })
+        .walk();
+    };
+    
     async.forEachSeries(options.root_docs,
-        function(rootdir, cb) {
-            util.log('gathering ' + rootdir);
-            gf.gather(rootdir, function(err, data) {
-                if (err) {
-                    util.log(' error on ' + rootdir + ' ' + err);
-                    cb(err);
-                }
-                else {
-                    util.log('gathered ' + rootdir);
-                    options.dirs.push(data);
-                    cb();
-                }
-            });
-        },
+        gatherDir,
         function(err) {
-            done(err ? err : null);
+            util.log('gather_documents END err='+ err);
+            done(err ? err : null, gathered);
         });
-}
-
-var make_directory = function(options, entry) {
-    FS.mkdir_p(options.root_out +"/"+ entry.path, function(msg) {
-        fs.utimes(options.root_out +"/"+ entry.path, entry.stat.atime, entry.stat.mtime, function(err) {
-            if (err) throw err;
-        });
-    });
 }
 
 /**
  * For the directories in the input list, make matching directories in the output directory tree.
  **/
 var make_directories = function(options, done) {
-    for (var i = 0; i < options.dirs.length; i++) {
-        var dir = options.dirs[i];
-        for (var j = 0; j < dir.length; j++) {
-            var entry = dir[j]; 
-            // util.log(j +' '+ util.inspect(entry));
-            if (entry.isdir) {
-                util.log('DIR ' + entry.path);
-                if (fs.existsSync(options.root_out +"/"+ entry.path)) {
-                    var stat = fs.statSync(options.root_out +"/"+ entry.path);
+    async.forEachSeries(options.root_docs,
+        function(docroot, cb) {
+            filewalker(docroot, { maxPending: -1, maxAttempts: 3, attemptTimeout: 3000 })
+            .on('dir', function(filepath, s, fullPath) {
+                util.log(docroot + ' DIR ' + filepath);
+                if (fs.existsSync(options.root_out +"/"+ filepath)) {
+                    var stat = fs.statSync(options.root_out +"/"+ filepath);
                     if (! stat.isDirectory()) {
-                        done('NON-DIRECTORY '+ options.root_out +"/"+ entry.path +' ALREADY EXISTS');
+                        emitter.emit('done-make-directories');
+                        cb('NON-DIRECTORY '+ options.root_out +"/"+ filepath +' ALREADY EXISTS');
                     }
                 } else {
-                    make_directory(options, entry);
+                    FS.mkdir_p(path.join(options.root_out, filepath), function(msg) {
+                        //
+                    });
                 }
-            }
-        }
-    }
+            })
+            .on('error', function(err) {
+                util.log('make_directories ERROR '+ err);
+                cb(err, data);
+            })
+            .on('done', function() {
+                cb();
+            })
+            .walk();
+        },
+        function(err) {
+            done(err ? err : null);
+        });
+    
     done();
 }
 
@@ -274,13 +294,11 @@ var make_directories = function(options, done) {
  * For files that are processed into an HTML, run the processing.
  **/
 var process2html = function(options, entry, done) {
-    if (! renderer.supportedForHtml(entry.path)) {
+    if (! fileCache.supportedForHtml(entry.path)) {
         throw 'UNKNOWN template engine for ' + entry.path;
     }
     // Start with a base object that will be passed into the template
-    var renderopts = {
-        // TODO - function to search for files in input
-    };
+    var renderopts = { };
     // Copy in any data or functions passed to us
     if ('data' in options) {
         for (var prop in options.data) {
@@ -297,11 +315,13 @@ var process2html = function(options, entry, done) {
         renderopts.rendered_date = entry.stat.mtime;
     }
     
-    renderer.render(entry.rootdir +'/'+ entry.path, renderopts, function(err, rendered) {
+    // util.log('process2html '+ entry.path /* path.join(entry.rootdir, entry.path) */);
+    renderer.render(options, entry.path /* path.join(entry.rootdir, entry.path) */, renderopts, function(err, rendered) {
+        // util.log('***** DONE RENDER ' + util.inspect(rendered));
         if (err) throw err;
         else {
-            var ind = rendered.fname.indexOf('/');
-            var renderTo = options.root_out +"/"+ rendered.fname.substr(ind+1);
+            var ind = rendered.fname; //.indexOf('/');
+            var renderTo = options.root_out +"/"+ rendered.fname; // .substr(ind+1);
             var outPath = path.dirname(renderTo);
             FS.mkdir_p(outPath, function(msg) {
                 fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
@@ -311,7 +331,8 @@ var process2html = function(options, entry, done) {
                             if (err) {
                                 done(err);
                             } else {
-                                add_sitemap_entry(options.root_url +'/'+ rendered.fname.substr(ind+1), 0.5, entry.stat.mtime);
+                                add_sitemap_entry(options.root_url +'/'+ rendered.fname /*.substr(ind+1) */,
+                                                  0.5, entry.stat.mtime);
                                 done();
                             }
                         });
@@ -334,12 +355,12 @@ var copy_to_outdir = function(options, entry, done) {
 }
 
 var render_less = function(options, entry, done) {
-    renderer.renderLess(entry.rootdir +'/'+ entry.path, function(err, rendered) {
+    renderer.renderLess(entry.path, function(err, rendered) {
         if (err)
             done(err);
         else {
-            var ind = rendered.fname.indexOf('/');
-            var renderTo = options.root_out +"/"+ rendered.fname.substr(ind+1);
+            var ind = rendered.fname; // .indexOf('/');
+            var renderTo = options.root_out +"/"+ rendered.fname; // .substr(ind+1);
             fs.writeFile(renderTo, rendered.css, 'utf8', function (err) {
                 if (err) done(err);
                 else {
@@ -354,36 +375,32 @@ var render_less = function(options, entry, done) {
 }
 
 var process_and_render_files = function(options, done) {
-    async.forEach(options.dirs,
-        function(dir, cbOuter) {
-            async.forEach(dir, function(entry, cbInner) {
-                if (entry.isdir) {
-                    cbInner();
-                } else {
-                    util.log('FILE ' + entry.path);
-                    // support other asynchronous template systems such as
-                    // https://github.com/c9/kernel - DONE
-                    // https://github.com/akdubya/dustjs
-                    // Kernel might be more attractive because of simplicity - DONE
-                    // dustjs is more comprehensive however
-                    if (renderer.supportedForHtml(entry.path)) {
-                        process2html(options, entry, cbInner);
-                    } else if (entry.path.match(/\.css\.less$/)) {
-                        // render .less files; rendered.fname will be xyzzy.css
-                        render_less(options, entry, cbInner);
-                    } else {
-                        // for anything not rendered, simply copy it
-                        copy_to_outdir(options, entry, cbInner);
-                    }
-                }
-            },
-            function(err) {
-                if (err) cbOuter(err); else cbOuter();
-            }); 
+    //emitter.emit('before-render-files', function(err) {
+        util.log('process_and_render_files '+ options.gatheredDocuments.length +' entries');
+        async.forEach(options.gatheredDocuments,
+        function(entry, cb) {
+            util.log('FILE ' + entry.path);
+            // support other asynchronous template systems such as
+            // https://github.com/c9/kernel - DONE
+            // https://github.com/akdubya/dustjs
+            // Kernel might be more attractive because of simplicity - DONE
+            // dustjs is more comprehensive however
+            if (fileCache.supportedForHtml(entry.path)) {
+                process2html(options, entry, cb);
+            } else if (entry.path.match(/\.css\.less$/)) {
+                // render .less files; rendered.fname will be xyzzy.css
+                render_less(options, entry, cb);
+            } else {
+                // for anything not rendered, simply copy it
+                copy_to_outdir(options, entry, cb);
+            }
         },
         function(err) {
+            emitter.emit('done-render-files');
             if (err) done(err); else done();
         });
+    //});
+    
 }
 
 
