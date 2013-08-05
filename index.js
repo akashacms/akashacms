@@ -93,12 +93,11 @@ module.exports.process = function(options, callback) {
                     make_directories(options, function (err) {
                         if (err) throw new Error(err);
                         else {
+                            options.gatheredDocuments = [];
                             gather_documents(options, function(err, data) {
                                 // util.log('gather_documents FINISHED');
                                 if (err) throw new Error(err);
                                 else {
-                                    // util.log('gather_documents '+  data.length +' entries');
-                                    options.gatheredDocuments = data;
                                     // util.log('process '+ options.gatheredDocuments.length +' entries');
                                     process_and_render_files(options, function(err) {
                                         if (err) throw new Error(err);
@@ -164,14 +163,8 @@ module.exports.urlForFile = function(fileName) {
     return '/'+ fileCache.renderedFileName(fileName);
 }
 
-module.exports.eachFile = function(theoptions, filecb) {
-    for (var i = 0; i < theoptions.dirs.length; i++) {
-        var dir = theoptions.dirs[i];
-        for (var j = 0; j < dir.length; j++) {
-            var entry = dir[j];
-            if (! entry.isdir) filecb(entry);
-        }
-    }
+module.exports.eachDocument = function(theoptions, doccb) {
+    fileCache.eachDocument(theoptions, doccb);
 }
 
 module.exports.renderFile = function(options, fileName, callback) {
@@ -225,31 +218,33 @@ module.exports.minimize = function(options, done) {
     .walk();
 }
 
+module.exports.gatherDir = function(options, docroot, done) {
+    util.log(util.inspect(docroot));
+    filewalker(docroot, { maxPending: -1, maxAttempts: 3, attemptTimeout: 3000 })
+    .on('file', function(path, s, fullPath) {
+        // util.log(docroot + ' FILE ' + path + ' ' + fullPath);
+        options.gatheredDocuments.push(fileCache.readDocument(options, path));
+    })
+    .on('error', function(err) {
+        // util.log('gather_documents ERROR '+ err);
+        done(err);
+    })
+    .on('done', function() {
+        util.log('gather_documents DONE '+ docroot +' '+ options.gatheredDocuments.length);
+        done();
+    })
+    .walk();
+}
+
 var gather_documents = function(options, done) {
-    var gathered = [];
-    
-    var gatherDir = function(docroot, cb) {
-        filewalker(docroot, { maxPending: -1, maxAttempts: 3, attemptTimeout: 3000 })
-        .on('file', function(path, s, fullPath) {
-            // util.log(docroot + ' FILE ' + path + ' ' + fullPath);
-            gathered.push(fileCache.readDocument(options, path));
-        })
-        .on('error', function(err) {
-            // util.log('gather_documents ERROR '+ err);
-            cb(err, gathered);
-        })
-        .on('done', function() {
-            util.log('gather_documents DONE '+ gathered.length);
-            cb(undefined, gathered);
-        })
-        .walk();
-    };
-    
     async.forEachSeries(options.root_docs,
-        gatherDir,
+        function(docroot, done) {
+            module.exports.gatherDir(options, docroot, function(err) {
+                if (err) done(err); else done();
+            });
+        },
         function(err) {
-            util.log('gather_documents END err='+ err);
-            done(err ? err : null, gathered);
+            if (err) done(err); else done();
         });
 }
 
@@ -376,7 +371,7 @@ var render_less = function(options, entry, done) {
 }
 
 var process_and_render_files = function(options, done) {
-    //emitter.emit('before-render-files', function(err) {
+    emitter.emit('before-render-files', function(err) {
         util.log('process_and_render_files '+ options.gatheredDocuments.length +' entries');
         async.forEach(options.gatheredDocuments,
         function(entry, cb) {
@@ -400,7 +395,7 @@ var process_and_render_files = function(options, done) {
             emitter.emit('done-render-files');
             if (err) done(err); else done();
         });
-    //});
+    });
     
 }
 
