@@ -315,8 +315,8 @@ var process2html = function(options, entry, done) {
         // util.log('***** DONE RENDER ' + util.inspect(rendered));
         if (err) throw err;
         else {
-            var ind = rendered.fname; //.indexOf('/');
-            var renderTo = options.root_out +"/"+ rendered.fname; // .substr(ind+1);
+            var ind = rendered.fname;
+            var renderTo = options.root_out +"/"+ rendered.fname;
             var outPath = path.dirname(renderTo);
             util.log('rendered '+ entry.path +' as '+ renderTo);
             FS.mkdir_p(outPath, function(msg) {
@@ -324,7 +324,7 @@ var process2html = function(options, entry, done) {
                     if (err) done(err);
                     else {
                         fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
-                            add_sitemap_entry(options.root_url +'/'+ rendered.fname /*.substr(ind+1) */,
+                            add_sitemap_entry(options.root_url +'/'+ rendered.fname ,
                                               0.5, entry.stat.mtime);
                             done();
                         });
@@ -351,8 +351,8 @@ var render_less = function(options, entry, done) {
         if (err)
             done(err);
         else {
-            var ind = rendered.fname; // .indexOf('/');
-            var renderTo = options.root_out +"/"+ rendered.fname; // .substr(ind+1);
+            var ind = rendered.fname;
+            var renderTo = options.root_out +"/"+ rendered.fname;
             fs.writeFile(renderTo, rendered.css, 'utf8', function (err) {
                 if (err) done(err);
                 else {
