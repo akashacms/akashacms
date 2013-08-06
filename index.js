@@ -324,13 +324,9 @@ var process2html = function(options, entry, done) {
                     if (err) done(err);
                     else {
                         fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
-                            if (err) {
-                                done(err);
-                            } else {
-                                add_sitemap_entry(options.root_url +'/'+ rendered.fname /*.substr(ind+1) */,
-                                                  0.5, entry.stat.mtime);
-                                done();
-                            }
+                            add_sitemap_entry(options.root_url +'/'+ rendered.fname /*.substr(ind+1) */,
+                                              0.5, entry.stat.mtime);
+                            done();
                         });
                     }
                 });
