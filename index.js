@@ -373,7 +373,7 @@ var render_less = function(options, entry, done) {
 var process_and_render_files = function(options, done) {
     emitter.emit('before-render-files', function(err) {
         util.log('process_and_render_files '+ options.gatheredDocuments.length +' entries');
-        async.forEach(options.gatheredDocuments,
+        async.eachSeries(options.gatheredDocuments,
         function(entry, cb) {
             util.log('FILE ' + entry.path);
             // support other asynchronous template systems such as
