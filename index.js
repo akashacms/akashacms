@@ -95,10 +95,15 @@ module.exports.process = function(options, callback) {
                         else {
                             options.gatheredDocuments = [];
                             gather_documents(options, function(err, data) {
-                                // util.log('gather_documents FINISHED');
+                                util.log('gather_documents CALLBACK CALLED');
                                 if (err) throw new Error(err);
                                 else {
-                                    // util.log('process '+ options.gatheredDocuments.length +' entries');
+                                    var entryCount = 0;
+                                    for (docNm in options.gatheredDocuments) {
+                                        // util.log('DOCUMENT '+ options.gatheredDocuments[docNm].path);
+                                        entryCount++;
+                                    }
+                                    util.log('process '+ options.gatheredDocuments.length +' entries count='+entryCount);
                                     process_and_render_files(options, function(err) {
                                         if (err) throw new Error(err);
                                         else {
@@ -187,7 +192,7 @@ module.exports.renderFile = function(options, fileName, callback) {
  * Minimize a directory tree using the minify library.
  **/
 module.exports.minimize = function(options, done) {
-    filewalker(options.root_out, { maxPending: -1, maxAttempts: 3, attemptTimeout: 3000 })
+    filewalker(options.root_out, { maxPending: 1, maxAttempts: 3, attemptTimeout: 3000 })
     .on('file', function(path, s, fullPath) {
         if (fullPath.match(/\.js$/) || fullPath.match(/\.html$/) || fullPath.match(/\.css$/)) {
             var stat = fs.statSync(fullPath);
@@ -219,18 +224,18 @@ module.exports.minimize = function(options, done) {
 }
 
 module.exports.gatherDir = function(options, docroot, done) {
-    util.log(util.inspect(docroot));
-    filewalker(docroot, { maxPending: -1, maxAttempts: 3, attemptTimeout: 3000 })
+    util.log('******** gatherDir START '+ docroot);
+    filewalker(docroot, { maxPending: 1, maxAttempts: 3, attemptTimeout: 3000 })
     .on('file', function(path, s, fullPath) {
         // util.log(docroot + ' FILE ' + path + ' ' + fullPath);
         options.gatheredDocuments.push(fileCache.readDocument(options, path));
     })
     .on('error', function(err) {
-        // util.log('gather_documents ERROR '+ err);
+        util.log('gatherDir ERROR '+ docroot +' '+ err);
         done(err);
     })
     .on('done', function() {
-        util.log('gather_documents DONE '+ docroot +' '+ options.gatheredDocuments.length);
+        util.log('gatherDir DONE '+ docroot +' '+ options.gatheredDocuments.length);
         done();
     })
     .walk();
@@ -238,12 +243,15 @@ module.exports.gatherDir = function(options, docroot, done) {
 
 var gather_documents = function(options, done) {
     async.forEachSeries(options.root_docs,
-        function(docroot, done) {
+        function(docroot, cb) {
             module.exports.gatherDir(options, docroot, function(err) {
-                if (err) done(err); else done();
+                if (err) cb(err); else cb();
             });
         },
         function(err) {
+            var entryCount = 0;
+            for (docNm in options.gatheredDocuments) { entryCount++; }
+            util.log('gather_documents DONE count='+ entryCount +' length='+ options.gatheredDocuments.length);
             if (err) done(err); else done();
         });
 }
@@ -252,37 +260,37 @@ var gather_documents = function(options, done) {
  * For the directories in the input list, make matching directories in the output directory tree.
  **/
 var make_directories = function(options, done) {
+    var dirCount = 0;
     async.forEachSeries(options.root_docs,
         function(docroot, cb) {
-            filewalker(docroot, { maxPending: -1, maxAttempts: 3, attemptTimeout: 3000 })
+            util.log('make_directories START '+ docroot);
+            filewalker(docroot, { maxPending: 1, maxAttempts: 3, attemptTimeout: 3000 })
             .on('dir', function(filepath, s, fullPath) {
-                util.log(docroot + ' DIR ' + filepath);
+                dirCount++;
+                util.log(docroot + ' DIR '+ dirCount +' '+ filepath);
                 if (fs.existsSync(options.root_out +"/"+ filepath)) {
                     var stat = fs.statSync(options.root_out +"/"+ filepath);
                     if (! stat.isDirectory()) {
-                        emitter.emit('done-make-directories');
                         cb('NON-DIRECTORY '+ options.root_out +"/"+ filepath +' ALREADY EXISTS');
                     }
                 } else {
-                    FS.mkdir_p(path.join(options.root_out, filepath), function(msg) {
-                        //
-                    });
+                    FS.mkdir_p(path.join(options.root_out, filepath), function(msg) { });
                 }
             })
             .on('error', function(err) {
-                util.log('make_directories ERROR '+ err);
+                util.log('make_directories ERROR '+ docroot +' '+ err);
                 cb(err, data);
             })
             .on('done', function() {
+                util.log('make_directories DONE '+ docroot +' count='+ dirCount);
                 cb();
             })
             .walk();
         },
         function(err) {
+            util.log('make_directories DONE count='+ dirCount);
             done(err ? err : null);
         });
-    
-    done();
 }
 
 /**
@@ -368,10 +376,18 @@ var render_less = function(options, entry, done) {
 
 var process_and_render_files = function(options, done) {
     emitter.emit('before-render-files', function(err) {
+        var entryCount = 0;
         util.log('process_and_render_files '+ options.gatheredDocuments.length +' entries');
+        for (docNm in options.gatheredDocuments) {
+            //util.log('DOCUMENT '+ options.gatheredDocuments[docNm].path);
+            entryCount++;
+        }
+        util.log('process_and_render_files entryCount='+ entryCount);
+        entryCount = 0;
         async.eachSeries(options.gatheredDocuments,
         function(entry, cb) {
-            util.log('FILE ' + entry.path);
+            entryCount++;
+            util.log('FILE '+ entryCount +' '+ entry.path);
             // support other asynchronous template systems such as
             // https://github.com/c9/kernel - DONE
             // https://github.com/akdubya/dustjs
@@ -388,6 +404,7 @@ var process_and_render_files = function(options, done) {
             }
         },
         function(err) {
+            util.log('***** process_and_render_files saw count='+ entryCount);
             emitter.emit('done-render-files');
             if (err) done(err); else done();
         });
