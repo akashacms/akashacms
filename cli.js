@@ -113,6 +113,7 @@ program
     .description('Deploy the akashacms site using configuration file')
     .action(function() {
         var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
         if (config.deploy_ssh2sync) {
             var ssh2sync = require('ssh2sync');
             ssh2sync.upload(config.root_out,
@@ -136,6 +137,7 @@ program
     .description('Minimize the rendered akashacms site')
     .action(function() {
         var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
         akasha.minimize(config);
     });
     
@@ -145,6 +147,7 @@ program
     .action(function() {
         var staticSrv  = require('node-static');
         var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
         var fileServer = new staticSrv.Server(config.root_out);
         http.createServer(function (request, response) {
             request.addListener('end', function () {
@@ -163,6 +166,21 @@ program
                 });
             });
         }).listen(8080);
+    });
+    
+program
+    .command('fixup <fileName>')
+    .description('Fix various unwanted characters')
+    .action(function(fileName) {
+        var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
+        
+        var entry = akasha.getFileEntry(config, fileName);
+        var text = fs.readFileSync(entry.fullpath, "utf-8");
+        fs.writeFileSync(entry.fullpath+'-new',
+            text.replace('\320', '--'),
+            "utf-8");
+        
     });
 
 // program
