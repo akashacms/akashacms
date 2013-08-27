@@ -217,6 +217,9 @@ var gather_documents = function(options, done) {
         });
 }
 
+/**
+ * Make in options.root_out the directory path named in dirPath, recursively.
+ **/
 var mkDirPath = function(options, dirPath, done) {
     var pathname = path.join(options.root_out, dirPath);
     var stat = fs.existsSync(pathname)
