@@ -90,34 +90,29 @@ module.exports.process = function(options, callback) {
             copyAssets(function(err) {
                 if (err) throw new Error(err);
                 else {
-                    make_directories(options, function (err) {
+                    options.gatheredDocuments = [];
+                    gather_documents(options, function(err, data) {
+                        util.log('gather_documents CALLBACK CALLED');
                         if (err) throw new Error(err);
                         else {
-                            options.gatheredDocuments = [];
-                            gather_documents(options, function(err, data) {
-                                util.log('gather_documents CALLBACK CALLED');
+                            var entryCount = 0;
+                            for (docNm in options.gatheredDocuments) {
+                                // util.log('DOCUMENT '+ options.gatheredDocuments[docNm].path);
+                                entryCount++;
+                            }
+                            util.log('process '+ options.gatheredDocuments.length +' entries count='+entryCount);
+                            process_and_render_files(options, function(err) {
                                 if (err) throw new Error(err);
                                 else {
-                                    var entryCount = 0;
-                                    for (docNm in options.gatheredDocuments) {
-                                        // util.log('DOCUMENT '+ options.gatheredDocuments[docNm].path);
-                                        entryCount++;
-                                    }
-                                    util.log('process '+ options.gatheredDocuments.length +' entries count='+entryCount);
-                                    process_and_render_files(options, function(err) {
+                                    generate_sitemap(options, function(err) {
                                         if (err) throw new Error(err);
                                         else {
-                                            generate_sitemap(options, function(err) {
-                                                if (err) throw new Error(err);
-                                                else {
-                                                    if (options.doMinimize) {
-                                                        module.exports.minimize(options, function(err) {
-                                                            if (err) throw new Error(err);
-                                                            else callback();
-                                                        });
-                                                    } else callback();
-                                                }
-                                            });
+                                            if (options.doMinimize) {
+                                                module.exports.minimize(options, function(err) {
+                                                    if (err) throw new Error(err);
+                                                    else callback();
+                                                });
+                                            } else callback();
                                         }
                                     });
                                 }
@@ -136,40 +131,6 @@ module.exports.partial = function(name, locals, callback) {
 
 module.exports.partialSync = function(theoptions, name, locals, callback) {
     return renderer.partialSync(theoptions, name, locals, callback);
-}
-
-module.exports.getFileEntry = function(theoptions, fileName) {
-    return fileCache.readDocument(theoptions, fileName);
-}
-
-module.exports.findIndexFile = function(options, dirname) {
-    return fileCache.findIndex(options, dirname);
-}
-
-module.exports.findSiblings = function(theoptions, fileName) {
-    var bnm   = path.basename(fileName);
-    var dirname = path.dirname(fileName);
-    var entry = fileCache.readDocument(theoptions, fileName);
-    var entries = [];
-    var filedir = path.dirname(fileName);
-    var dirnm = path.dirname(entry.fullpath);
-    var fnames = fs.readdirSync(dirnm);
-    for (var i = 0; i < fnames.length; i++) {
-        var fn = fnames[i];
-        var fpath = path.join(filedir, fn);
-        if (fileCache.supportedForHtml(fpath)) {
-            entries.push(fileCache.readDocument(theoptions, fpath));
-        }
-    }
-    return entries;
-}
-
-module.exports.urlForFile = function(fileName) {
-    return '/'+ fileCache.renderedFileName(fileName);
-}
-
-module.exports.eachDocument = function(theoptions, doccb) {
-    fileCache.eachDocument(theoptions, doccb);
 }
 
 module.exports.renderFile = function(options, fileName, callback) {
@@ -256,41 +217,25 @@ var gather_documents = function(options, done) {
         });
 }
 
-/**
- * For the directories in the input list, make matching directories in the output directory tree.
- **/
-var make_directories = function(options, done) {
-    var dirCount = 0;
-    async.forEachSeries(options.root_docs,
-        function(docroot, cb) {
-            util.log('make_directories START '+ docroot);
-            filewalker(docroot, { maxPending: 1, maxAttempts: 3, attemptTimeout: 3000 })
-            .on('dir', function(filepath, s, fullPath) {
-                dirCount++;
-                util.log(docroot + ' DIR '+ dirCount +' '+ filepath);
-                if (fs.existsSync(options.root_out +"/"+ filepath)) {
-                    var stat = fs.statSync(options.root_out +"/"+ filepath);
-                    if (! stat.isDirectory()) {
-                        cb('NON-DIRECTORY '+ options.root_out +"/"+ filepath +' ALREADY EXISTS');
-                    }
-                } else {
-                    FS.mkdir_p(path.join(options.root_out, filepath), function(msg) { });
-                }
-            })
-            .on('error', function(err) {
-                util.log('make_directories ERROR '+ docroot +' '+ err);
-                cb(err, data);
-            })
-            .on('done', function() {
-                util.log('make_directories DONE '+ docroot +' count='+ dirCount);
-                cb();
-            })
-            .walk();
-        },
-        function(err) {
-            util.log('make_directories DONE count='+ dirCount);
-            done(err ? err : null);
+var mkDirPath = function(options, dirPath, done) {
+    var pathname = path.join(options.root_out, dirPath);
+    var stat = fs.existsSync(pathname)
+            ? fs.statSync(pathname)
+            : undefined;
+    if (stat && ! stat.isDirectory()) {
+        throw new Error("Shouldn't get here");
+    } else if (stat) {
+        done();
+    } else {
+        mkDirPath(options, path.dirname(dirPath), function(err) {
+            if (err) done(err);
+            else {
+                fs.mkdir(pathname, 0777, function(err) {
+                    if (err) done(err); else done();
+                });
+            }
         });
+    }
 }
 
 /**
@@ -318,17 +263,16 @@ var process2html = function(options, entry, done) {
         renderopts.rendered_date = entry.stat.mtime;
     }
     
-    // util.log('process2html '+ entry.path /* path.join(entry.rootdir, entry.path) */);
-    renderer.render(options, entry.path /* path.join(entry.rootdir, entry.path) */, renderopts, function(err, rendered) {
+    // util.log('process2html '+ entry.path);
+    renderer.render(options, entry.path, renderopts, function(err, rendered) {
         // util.log('***** DONE RENDER ' + util.inspect(rendered));
         if (err) throw err;
         else {
-            var ind = rendered.fname;
-            var renderTo = options.root_out +"/"+ rendered.fname;
-            var outPath = path.dirname(renderTo);
+            var renderTo = path.join(options.root_out, rendered.fname);
             util.log('rendered '+ entry.path +' as '+ renderTo);
-            FS.mkdir_p(outPath, function(msg) {
-                fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
+            mkDirPath(options, path.dirname(rendered.fname), function(err) {
+                if (err) done(err); 
+                else fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
                     if (err) done(err);
                     else {
                         fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
@@ -345,30 +289,34 @@ var process2html = function(options, entry, done) {
 
 var copy_to_outdir = function(options, entry, done) {
     // for anything not rendered, simply copy it
-    var renderTo = options.root_out +"/"+ entry.path;
-    FS.copy(entry.fullpath, renderTo, function(msg) {
-        fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
-            if (err) done(err);
-            else done();
+    var renderTo = path.join(options.root_out, entry.path);
+    mkDirPath(options, path.dirname(entry.path), function(err) {
+        if (err) done(err); 
+        else FS.copy(entry.fullpath, renderTo, function(msg) {
+            fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
+                if (err) done(err);
+                else done();
+            });
         });
     });
 }
 
 var render_less = function(options, entry, done) {
     renderer.renderLess(entry.path, function(err, rendered) {
-        if (err)
-            done(err);
+        if (err) done(err);
         else {
-            var ind = rendered.fname;
-            var renderTo = options.root_out +"/"+ rendered.fname;
-            fs.writeFile(renderTo, rendered.css, 'utf8', function (err) {
+            var renderTo = path.join(options.root_out, rendered.fname);
+            mkDirPath(options, path.dirname(rendered.fname), function(err) {
                 if (err) done(err);
-                else {
-                    fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
-                        if (err) done(err);
-                        else done();
-                    });
-                }
+                else fs.writeFile(renderTo, rendered.css, 'utf8', function (err) {
+                    if (err) done(err);
+                    else {
+                        fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
+                            if (err) done(err);
+                            else done();
+                        });
+                    }
+                });
             });
         }
     });
@@ -412,6 +360,59 @@ var process_and_render_files = function(options, done) {
     
 }
 
+module.exports.findDocument = function(options, fileName) {
+    return find.document(options, fileName);
+}
+
+module.exports.findTemplate = function(options, fileName) {
+    return find.template(options, fileName);
+}
+
+module.exports.findPartial = function(options, fileName) {
+    return find.partial(options, fileName);
+}
+
+module.exports.readTemplateEntry = function(options, fileName) {
+    return fileCache.readTemplate(options, fileName);
+}
+
+module.exports.readPartialEntry = function(options, fileName) {
+    return fileCache.readPartial(options, fileName);
+}
+
+module.exports.getFileEntry = module.exports.readDocumentEntry = function(theoptions, fileName) {
+    return fileCache.readDocument(theoptions, fileName);
+}
+
+module.exports.findIndexFile = function(options, dirname) {
+    return fileCache.findIndex(options, dirname);
+}
+
+module.exports.findSiblings = function(theoptions, fileName) {
+    var bnm   = path.basename(fileName);
+    var dirname = path.dirname(fileName);
+    var entry = fileCache.readDocument(theoptions, fileName);
+    var entries = [];
+    var filedir = path.dirname(fileName);
+    var dirnm = path.dirname(entry.fullpath);
+    var fnames = fs.readdirSync(dirnm);
+    for (var i = 0; i < fnames.length; i++) {
+        var fn = fnames[i];
+        var fpath = path.join(filedir, fn);
+        if (fileCache.supportedForHtml(fpath)) {
+            entries.push(fileCache.readDocument(theoptions, fpath));
+        }
+    }
+    return entries;
+}
+
+module.exports.urlForFile = function(fileName) {
+    return '/'+ fileCache.renderedFileName(fileName);
+}
+
+module.exports.eachDocument = function(theoptions, doccb) {
+    fileCache.eachDocument(theoptions, doccb);
+}
 
 
 ///////////////// XML Sitemap Generation .. works by building an array, then dumping it out in XML
