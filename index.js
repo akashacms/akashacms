@@ -38,9 +38,6 @@ module.exports.config = function(options) {
     // MOOT???? These functions need to be ones that are useful to code in configurations
     // MOOT???? options.partial = module.exports.partial;
     // options.akashacms = module.exports; // Do we need this instead?
-    // util.log('process ' + util.inspect(options));
-    /*renderer.setRootLayouts(options.root_layouts);
-    renderer.setRootPartials(options.root_partials);*/
     renderer.config(options);
     
     // Pull in any plugins to extend AkashaCMS
@@ -52,6 +49,10 @@ module.exports.config = function(options) {
     if (options.config) {
         options.config(module.exports);
     }
+    
+    // Make the builtin plugin the last on the chain
+    var builtin = path.join(__dirname, 'builtin');
+    require(path.join(builtin, 'index')).config(module.exports, options);
 }
 
 module.exports.process = function(options, callback) {
