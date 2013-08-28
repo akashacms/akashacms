@@ -190,7 +190,7 @@ program
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
         
-        console.log('dirname: '+ config.basedir);
+        console.log('dirname: '+ process.cwd());
         console.log('output directory: '+ config.root_out);
         console.log('');
         console.log('documents directories:');
