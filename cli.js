@@ -182,6 +182,44 @@ program
             "utf-8");
         
     });
+    
+program
+    .command('config')
+    .description('Show configuration parameters of the current site')
+    .action(function() {
+        var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
+        
+        console.log('dirname: '+ config.basedir);
+        console.log('output directory: '+ config.root_out);
+        console.log('');
+        console.log('documents directories:');
+        for (var i = 0; i < config.root_docs.length; i++) {
+            console.log('\t'+ config.root_docs[i]);
+        }
+        console.log('');
+        console.log('assets directories:');
+        for (var i = 0; i < config.root_assets.length; i++) {
+            console.log('\t'+ config.root_assets[i]);
+        }
+        console.log('');
+        console.log('partials directories:');
+        for (var i = 0; i < config.root_partials.length; i++) {
+            console.log('\t'+ config.root_partials[i]);
+        }
+        console.log('');
+        console.log('layouts directories:');
+        for (var i = 0; i < config.root_layouts.length; i++) {
+            console.log('\t'+ config.root_layouts[i]);
+        }
+        console.log('');
+        console.log('plugins:');
+        for (var i = 0; i < config.plugins.length; i++) {
+            console.log('\t'+ config.plugins[i]);
+        }
+        console.log('');
+        console.log('data: '+ util.inspect(config.data));
+    });
 
 // program
 //    .command('*')
