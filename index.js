@@ -20,6 +20,7 @@
 var async    = require('async');
 var util     = require('util');
 var url      = require('url');
+var find     = require('./lib/find');
 var renderer = require('./lib/renderer');
 var fs       = require('fs');
 var FS       = require('meta-fs');
@@ -418,6 +419,25 @@ module.exports.eachDocument = function(theoptions, doccb) {
     fileCache.eachDocument(theoptions, doccb);
 }
 
+module.exports.isSyncHtml = function(fn) {
+    return fileCache.isSyncHtml(fn);
+}
+
+module.exports.isASyncHtml = function(fn) {
+    return fileCache.isASyncHtml(fn);
+}
+
+module.exports.isHtml = function(fn) {
+    return fileCache.isHtml(fn);
+}
+
+module.exports.supportedForHtml = function(fn) {
+    return fileCache.supportedForHtml(fn);
+}
+
+module.exports.isIndexHtml = function(fn) {
+    return fileCache.isIndexHtml(fn);
+}
 
 ///////////////// XML Sitemap Generation .. works by building an array, then dumping it out in XML
 
