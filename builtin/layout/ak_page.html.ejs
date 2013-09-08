@@ -12,11 +12,17 @@
 <%- partial('ak_headermeta.html.ejs', locals) %>
 <%- partial('ak_sitemap.html.ejs', locals) %>
 <%- partial('ak_siteverification.html.ejs', locals) %>
+<%- partial('ak_stylesheets.html.ejs', locals) %>
+<% if (headerScripts && headerScripts.javaScriptTop) {
+    %><%- partial('ak_javaScript.html.ejs', { javaScripts: headerScripts.javaScriptTop }) %><%
+} %>
 </head>
 <body>
 <% if (typeof content !== "undefined") { %><%- content %><% } %>
 <!-- JavaScript at the bottom for fast page loading -->
-<%- partial('ak_jQuery.html', locals) %>
+<% if (headerScripts && headerScripts.javaScriptBottom) {
+    %><%- partial('ak_javaScript.html.ejs', { javaScripts: headerScripts.javaScriptBottom }) %><%
+} %>
 <%- partial('ak_googleAnalytics.html.ejs', locals) %>
 </body>
 </html>
