@@ -1,0 +1,6 @@
+<% // drag in site-defined javascript
+if (javaScripts)
+for (var i in javaScripts) {
+    var script = javaScripts[i];
+    %><script type="lang/javascript" src="<%= script.href %>"></script>
+<% } %>

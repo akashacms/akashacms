@@ -1,11 +1,9 @@
-
 <!-- Our site title and description -->
-<% if (typeof pagetitle !== "undefined") { %>
-        <title><%= pagetitle %></title>
-<% } else if (typeof title !== "undefined") { %>
-        <title><%= title %></title>
-<% } %>
-		
+<% if (typeof pagetitle !== "undefined") {
+         %><title><%= pagetitle %></title><% 
+} else if (typeof title !== "undefined") {
+         %><title><%= title %></title><% 
+} %>	
 <%
     if (typeof metaOGtitle === "undefined") {
 	if (typeof pagetitle !== "undefined") {
@@ -38,14 +36,12 @@
     }
 
 %>
-
 	
 <!--
  - Basic HTML Meta Tags - Copied from https://gist.github.com/1997924
  - Some documentation is on that page
  - Other documentation is here - http://webdesign.about.com/od/metataglibraries/a/meta-tag-list.htm
  -->
-
 <% if (typeof metakeywords    !== "undefined") { %><meta name="keywords"    content="<%= metakeywords %>" /><% } %>
 <% if (typeof metadescription !== "undefined") { %><meta name="description" content="<%= metadescription %>" /><% } %>
 <% if (typeof metasubject     !== "undefined") { %><meta name="subject"     content="<%= metasubject %>" /><% } %>
@@ -130,7 +126,7 @@
 <% if (typeof metaOGaudiotype     !== "undefined") { %><meta property='og:audio:type' content='<%= metaOGaudiotype %>'><% } %>
 
 <!-- http://en.wikipedia.org/wiki/Canonical_link_element -->
-<% if (typeof rendered_url !== "undefined") { %>
-<link rel="canonical" href="<%- rendered_url %>" />
-<% } %>
+<% if (typeof rendered_url !== "undefined") {
+	%><link rel="canonical" href="<%- rendered_url %>" /><% 
+} %>
 
