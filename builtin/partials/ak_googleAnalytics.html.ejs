@@ -1,4 +1,5 @@
-<script type="text/javascript">
+<% if (googleAnalyticsAccount && googleAnalyticsDomain) {
+%><script type="text/javascript">
 var _gaq = _gaq || [];
 _gaq.push(['_setAccount', '<%= googleAnalyticsAccount %>']); // insert key from Google Analytics
 _gaq.push(['_setDomainName', '<%= googleAnalyticsDomain %>']); // insert your domain name here
@@ -8,4 +9,5 @@ _gaq.push(['_trackPageview']);
   ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
   var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
 })();
-</script>
+</script><%
+} %>
