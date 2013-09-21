@@ -365,6 +365,10 @@ var process_and_render_files = function(options, done) {
     
 }
 
+module.exports.oembedRender = function(arg, callback) {
+    return renderer.oembedRender(arg, callback);
+}
+
 module.exports.findDocument = function(options, fileName) {
     return find.document(options, fileName);
 }
