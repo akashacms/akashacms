@@ -1,5 +1,7 @@
-<!-- http://google.com/webmasters -- add googleSiteVerification to your frontmatter -->
-<% if (typeof googleSiteVerification !== "undefined") {
+<%
+// http://google.com/webmasters -- add googleSiteVerification to your frontmatter
+if (typeof googleSiteVerification !== "undefined") {
     %><meta name="google-site-verification" content="<%- googleSiteVerification %>" /><%
-} %>
-<!-- TBD site verification for other services -->
+} 
+// TBD site verification for other services
+%>
