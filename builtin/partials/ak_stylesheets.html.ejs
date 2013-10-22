@@ -3,6 +3,6 @@
 if (headerScripts && headerScripts.stylesheets)
 for (var i in headerScripts.stylesheets) {
     var style = headerScripts.stylesheets[i];
-    %><link rel="stylesheet" href="<%= style.href %>" type="text/css" media="<%= style.media %>" /><%
-}
-%>
+    %><link rel="stylesheet" href="<%= style.href %>" type="text/css" <%
+        if (style.media) { %> media="<%= style.media %>" <% } %> />
+<% } %>

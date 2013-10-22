@@ -2,5 +2,11 @@
 if (javaScripts)
 for (var i in javaScripts) {
     var script = javaScripts[i];
-    %><script type="lang/javascript" src="<%= script.href %>"></script>
+    %><script <%
+        if (script.lang) { %>type="<%= script.lang %>" <% }
+        if (script.href) { %>src="<%= script.href %>" <% }
+        %> > <%
+        if (script.script) { %>
+<%= script.script %>
+<% } %></script>
 <% } %>
