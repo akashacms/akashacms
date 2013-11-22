@@ -17,22 +17,18 @@
  *  limitations under the License.
  */
 
-var async    = require('async');
-var util     = require('util');
-var url      = require('url');
-var find     = require('./lib/find');
-var renderer = require('./lib/renderer');
-var fs       = require('fs');
-var FS       = require('meta-fs');
-var path     = require('path');
-var fileCache = require('./lib/fileCache');
-var smap     = require('sightmap');
+var async      = require('async');
+var util       = require('util');
+var url        = require('url');
+var find       = require('./lib/find');
+var renderer   = require('./lib/renderer');
+var fs         = require('fs');
+var FS         = require('meta-fs');
+var path       = require('path');
+var fileCache  = require('./lib/fileCache');
+var smap       = require('sightmap');
 var minify     = require('minify');
 var filewalker = require('filewalker');
-
-// Set up an eventEmitter so we can tell other modules what's going on
-var events = require('events');
-var emitter = module.exports.emitter = new events.EventEmitter();
 
 module.exports.config = function(options) {
     // MOOT???? Make functions available to any code located in the configuration
@@ -54,6 +50,8 @@ module.exports.config = function(options) {
     // Make the builtin plugin the last on the chain
     var builtin = path.join(__dirname, 'builtin');
     require(path.join(builtin, 'index')).config(module.exports, options);
+    
+    // util.log(util.inspect(options));
 }
 
 module.exports.process = function(options, callback) {
@@ -274,19 +272,25 @@ var process2html = function(options, entry, done) {
         if (err) throw err;
         else {
             var renderTo = path.join(options.root_out, rendered.fname);
-            util.log('rendered '+ entry.path +' as '+ renderTo);
-            mkDirPath(options, path.dirname(rendered.fname), function(err) {
-                if (err) done(err); 
-                else fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
-                    if (err) done(err);
-                    else {
-                        fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
-                            add_sitemap_entry(options.root_url +'/'+ rendered.fname ,
-                                              0.5, entry.stat.mtime);
-                            done();
+            dispatcher('file-rendered', options, entry.path, renderTo, rendered, function(err) {
+                // TBD - the callback needs to send a new rendering 
+                if (err) throw err;
+                else {
+                    util.log('rendered '+ entry.path +' as '+ renderTo);
+                    mkDirPath(options, path.dirname(rendered.fname), function(err) {
+                        if (err) done(err); 
+                        else fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
+                            if (err) done(err);
+                            else {
+                                fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
+                                    add_sitemap_entry(options.root_url +'/'+ rendered.fname ,
+                                                      0.5, entry.stat.mtime);
+                                    done();
+                                });
+                            }
                         });
-                    }
-                });
+                    });
+                }
             });
         }
     });
@@ -328,7 +332,7 @@ var render_less = function(options, entry, done) {
 }
 
 var process_and_render_files = function(options, done) {
-    emitter.emit('before-render-files', function(err) {
+    dispatcher('before-render-files', function(err) {
         var entryCount = 0;
         util.log('process_and_render_files '+ options.gatheredDocuments.length +' entries');
         for (docNm in options.gatheredDocuments) {
@@ -358,7 +362,7 @@ var process_and_render_files = function(options, done) {
         },
         function(err) {
             util.log('***** process_and_render_files saw count='+ entryCount);
-            emitter.emit('done-render-files');
+            dispatcher('done-render-files');
             if (err) done(err); else done();
         });
     });
@@ -441,6 +445,80 @@ module.exports.supportedForHtml = function(fn) {
 
 module.exports.isIndexHtml = function(fn) {
     return fileCache.isIndexHtml(fn);
+}
+
+///////////////// Event handling
+
+// Set up an eventEmitter so we can tell other modules what's going on
+var events = require('events');
+var emitter = module.exports.emitter = new events.EventEmitter();
+
+// The problem with using emitter.emit is that it doesn't call back
+// to our code.  What we want is for the called handler to  
+// notify us when it's done with the event handling.  This way AkashaCMS
+// can act on things knowing that a plugin has done what it wants to do.
+//
+// The inspiration comes from the akashacms-tagged-content plugin
+// which does a lot of stuff, such as generating a bunch of files that
+// must be rendered
+
+var dispatcher = function() {
+    // Convert our arguments into an array to simplify working on the args
+    var args = Array.prototype.slice.call(arguments);
+    // Arg1: eventName - MUST BE A STRING
+    var eventName = args.shift();
+    if (typeof eventName !== 'string') { throw new Error('eventName must be a string'); }
+    var handlers = emitter.listeners(eventName); // list of handler functions 
+    
+    // Last argument: Optional callback function
+    // If no callback is supplied, we provide one that if there's an error throws it
+    var finalCB = undefined;
+    if (args.length > 0 && typeof args[args.length - 1] === 'function') {
+        finalCB = args.pop();
+    } else {
+        finalCB = function(err) {
+            if (err) throw err;
+        };
+    }
+    // If there happens to be no handlers, go ahead and call the callback
+    if (handlers.length <= 0) {
+        return finalCB();
+    }
+    
+    var dispatchToHandler = function(handler, argz, callback) {
+        var argv = [ ].concat(argz);
+        argv.push(function(err) {
+            if (err && !callback.called) {
+                callback.called = true;
+                callback(err);
+            }
+            callback();
+        });
+        return handler.apply(null, argv);
+    };
+        
+    // Step through the array of handlers calling each in turn.
+    
+    var hi = 0;
+    var handler = handlers[hi];
+    
+    var callNextHandler = function(argz) {
+        dispatchToHandler(handler, argz, function(err) {
+            if (err) {
+                finalCB(err);
+            } else {
+                if (hi >= handlers.length) finalCB();
+                else {
+                    handler = handlers[++hi];
+                    process.nextTick(function() {
+                        callNextHandler(argz);
+                    });
+                }
+            }
+        });
+    };
+    
+    callNextHandler(args);
 }
 
 ///////////////// XML Sitemap Generation .. works by building an array, then dumping it out in XML
