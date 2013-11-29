@@ -38,8 +38,24 @@ module.exports.config = function(options) {
     renderer.config(options);
     
     // Pull in any plugins to extend AkashaCMS
+    // We allow either a String to give the name of the plugin,
+    // or a module that is the plugin.  This controls where the 
+    // require statement occurs.
+    //
+    // string: The require is done here, and done relative to where
+    //    AkashaCMS is installed.  That means the module reference
+    //    is relative to AkashaCMS.
+    // module: The require is performed inside config.js, meaning the 
+    //    module reference is done there.
+    
     for (var i = 0; i < options.plugins.length; i++) {
-        require(options.plugins[i]).config(module.exports, options);
+        var pl = options.plugins[i];
+        var plugin = undefined;
+        if (typeof pl === 'string')
+            plugin = require(pl);
+        else
+            plugin = pl;
+        plugin.config(module.exports, options);
     }
     
     // Then give the configuration file a shot at extending us
@@ -486,6 +502,9 @@ var dispatcher = function() {
     }
     
     var dispatchToHandler = function(handler, argz, callback) {
+        if (!handler) {
+            return callback();
+        }
         var argv = [ ].concat(argz);
         argv.push(function(err) {
             if (err && !callback.called) {
