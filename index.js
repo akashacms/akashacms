@@ -481,10 +481,13 @@ var emitter = module.exports.emitter = new events.EventEmitter();
 var dispatcher = function() {
     // Convert our arguments into an array to simplify working on the args
     var args = Array.prototype.slice.call(arguments);
+    // util.log(util.inspect(args));
     // Arg1: eventName - MUST BE A STRING
     var eventName = args.shift();
+    // util.log(eventName +' '+ util.inspect(args));
     if (typeof eventName !== 'string') { throw new Error('eventName must be a string'); }
     var handlers = emitter.listeners(eventName); // list of handler functions 
+    util.log(util.inspect(handlers));
     
     // Last argument: Optional callback function
     // If no callback is supplied, we provide one that if there's an error throws it
@@ -502,6 +505,7 @@ var dispatcher = function() {
     }
     
     var dispatchToHandler = function(handler, argz, callback) {
+        // util.log('dispatchToHandler '+ eventName +' '+ util.inspect(handler));
         if (!handler) {
             return callback();
         }
@@ -523,15 +527,16 @@ var dispatcher = function() {
     
     var callNextHandler = function(argz) {
         dispatchToHandler(handler, argz, function(err) {
+            // util.log('DONE dispatchToHandler '+ err);
             if (err) {
                 finalCB(err);
             } else {
-                if (hi >= handlers.length) finalCB();
+                hi++;
+                // util.log('hi '+ hi +' len '+ handlers.length);
+                if (hi > handlers.length) finalCB();
                 else {
-                    handler = handlers[++hi];
-                    process.nextTick(function() {
-                        callNextHandler(argz);
-                    });
+                    handler = handlers[hi];
+                    callNextHandler(argz);
                 }
             }
         });
