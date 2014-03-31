@@ -487,7 +487,7 @@ var dispatcher = function() {
     // util.log(eventName +' '+ util.inspect(args));
     if (typeof eventName !== 'string') { throw new Error('eventName must be a string'); }
     var handlers = emitter.listeners(eventName); // list of handler functions 
-    util.log(util.inspect(handlers));
+    // util.log(util.inspect(handlers));
     
     // Last argument: Optional callback function
     // If no callback is supplied, we provide one that if there's an error throws it
