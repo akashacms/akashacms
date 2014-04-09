@@ -111,7 +111,8 @@ program
 program
     .command('deploy')
     .description('Deploy the akashacms site using configuration file')
-    .action(function() {
+    // .option('-f, --force', 'force')
+    .action(function(options) {
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
         if (config.deploy_ssh2sync) {
@@ -125,9 +126,24 @@ program
             var user = config.deploy_rsync.user;
             var host = config.deploy_rsync.host;
             var dir  = config.deploy_rsync.dir;
-            var rsync = spawn('rsync',
-                    [ '--verbose', '--archive', '--delete', config.root_out+'/', user+'@'+host+':'+dir+'/' ],
-                    {env: process.env, stdio: 'inherit'});
+            var nargv = [];
+            nargv.push('--verbose');
+			nargv.push('--archive');
+			nargv.push('--delete');
+			nargv.push('--compress');
+            // if (options.force) 
+            if (config.deploy_rsync.exclude) {
+            	nargv.push('--exclude');
+            	nargv.push(config.deploy_rsync.exclude);
+            }
+            if (config.deploy_rsync.excludeFile) {
+            	nargv.push('--exclude-from');
+            	nargv.push(config.deploy_rsync.excludeFile);
+            }
+            nargv.push(config.root_out+'/');
+            nargv.push(user+'@'+host+':'+dir+'/');
+            util.log(util.inspect(nargv));
+            var rsync = spawn('rsync', nargv, {env: process.env, stdio: 'inherit'});
         } // else .. other kinds of deployment scenarios
     });
 
