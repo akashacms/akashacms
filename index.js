@@ -298,9 +298,18 @@ var process2html = function(options, entry, done) {
                         else fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
                             if (err) done(err);
                             else {
-                                fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
-                                    add_sitemap_entry(options.root_url +'/'+ rendered.fname ,
-                                                      0.5, entry.stat.mtime);
+                                var atime = entry.stat.atime;
+                                var mtime = entry.stat.mtime;
+                                if (entry.frontmatter.publDate) {
+                                    var parsed = Date.parse(entry.frontmatter.publDate);
+                                    if (isNaN(parsed)) {
+                                        util.log("WARNING WARNING Bad date provided "+ entry.frontmatter.publDate);
+                                    } else {
+                                        atime = mtime = new Date(parsed);
+                                    }
+                                }
+                                fs.utimes(renderTo, atime, mtime, function(err) {
+                                    add_sitemap_entry(options.root_url +'/'+ rendered.fname, 0.5, mtime);
                                     done();
                                 });
                             }
