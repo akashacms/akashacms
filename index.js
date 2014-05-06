@@ -561,10 +561,22 @@ var rendered_files = [];
 var add_sitemap_entry = function(fname, priority, mtime) {
     // util.log('add_sitemap_entry ' + fname);
     var fDate = new Date(mtime);
+    var mm = fDate.getMonth() + 1;
+    if (mm < 10) {
+        mm = "0" + mm.toString();
+    } else {
+        mm = mm.toString();
+    }
+    var dd = fDate.getDate();
+    if (dd < 10) {
+        dd = "0" + dd.toString();
+    } else {
+        dd = dd.toString();
+    }
     rendered_files.push({
         loc: encodeURI(fname),
         priority: priority,
-        lastmod:  fDate.getUTCFullYear() +"-"+ (fDate.getMonth() + 1) +"-"+ fDate.getDate()
+        lastmod:  fDate.getUTCFullYear() +"-"+ mm +"-"+ dd
     });
     /*
      * This lets us remove the 'index.html' portion of URL's submitted in the sitemap.
