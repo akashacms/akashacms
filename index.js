@@ -48,7 +48,7 @@ module.exports.config = function(options) {
     // module: The require is performed inside config.js, meaning the 
     //    module reference is done there.
     
-    for (var i = 0; i < options.plugins.length; i++) {
+    for (var i = 0; options.plugins && i < options.plugins.length; i++) {
         var pl = options.plugins[i];
         var plugin = undefined;
         if (typeof pl === 'string')
@@ -108,7 +108,7 @@ module.exports.process = function(options, callback) {
                 else {
                     options.gatheredDocuments = [];
                     gather_documents(options, function(err, data) {
-                        util.log('gather_documents CALLBACK CALLED');
+                        // util.log('gather_documents CALLBACK CALLED');
                         if (err) throw new Error(err);
                         else {
                             var entryCount = 0;
