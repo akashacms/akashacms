@@ -36,6 +36,11 @@
     "node-zip": "*",
     "ssh2sync": "*"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "vows": "*"
+  },
+  "scripts": {
+    "test": "vows --spec test/*"
+  }
 }
 

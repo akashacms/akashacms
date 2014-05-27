@@ -21,7 +21,7 @@ var async      = require('async');
 var util       = require('util');
 var url        = require('url');
 var find       = require('./lib/find');
-var renderer   = require('./lib/renderer');
+var renderer   = require('./lib/renderer2');
 var fs         = require('fs');
 var FS         = require('meta-fs');
 var path       = require('path');
@@ -283,7 +283,7 @@ var process2html = function(options, entry, done) {
     }
     
     // util.log('process2html '+ entry.path +' '+ util.log(util.inspect(renderopts)));
-    renderer.render(options, entry.path, renderopts, function(err, rendered) {
+    renderer.render(options, entry, entry.path, renderopts, {}, function(err, rendered) {
         // util.log('***** DONE RENDER ' + util.inspect(rendered));
         if (err) throw err;
         else {
