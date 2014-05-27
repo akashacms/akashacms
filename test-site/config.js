@@ -9,7 +9,7 @@ module.exports = {
 
     root_url: "http://test.site", // Root URL for the site this will generate
     
-    mahabhuta: [ /*function($, metadata, done) {
+    mahabhuta: [ /*function(config, $, metadata, done) {
       
             util.log('before: '+ $.html());
           util.log('testcase  mahabhuta '+ util.inspect(metadata));

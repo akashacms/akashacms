@@ -5,7 +5,7 @@ module.exports.config = function(akasha, config) {
     config.root_layouts.push(path.join(__dirname, 'layout'));
     
     if (config.mahabhuta) {
-        config.mahabhuta.push(function($, metadata, done) {
+        config.mahabhuta.push(function(config, $, metadata, done) {
             if (typeof metadata.pagetitle !== "undefined") {
                 /*akasha.partialSync(config, 'ak_titletag.html.ejs', {
                   title: data.pagetitle !== "undefined" ? data.pagetitle : data.title
