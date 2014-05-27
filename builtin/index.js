@@ -4,6 +4,22 @@ module.exports.config = function(akasha, config) {
     config.root_partials.push(path.join(__dirname, 'partials'));
     config.root_layouts.push(path.join(__dirname, 'layout'));
     
+    if (config.mahabhuta) {
+        config.mahabhuta.push(function($, metadata, done) {
+            if (typeof metadata.pagetitle !== "undefined") {
+                /*akasha.partialSync(config, 'ak_titletag.html.ejs', {
+                  title: data.pagetitle !== "undefined" ? data.pagetitle : data.title
+                }, function(err, html) {
+                  
+                });*/
+                $('ak-page-title').replaceWith('<title>'+ metadata.pagetitle +'</title>');
+            } else if (typeof metadata.title !== "undefined") {
+                $('ak-page-title').replaceWith('<title>'+ metadata.title +'</title>');
+            }
+            done();
+        });
+    }
+    
     config.funcs.akDoHeaderMeta = function(arg, callback) {
         var data = {};
         for (var prop in arg) {
