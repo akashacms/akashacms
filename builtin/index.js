@@ -21,12 +21,15 @@ module.exports.config = function(akasha, config) {
             // <partial file-name="file-name.html.whatever" data-attr-1=val data-attr-2=val/>
             $('partial').each(function(i, elem) {
                 var fname = $(this).attr("file-name");
+                var d = {};
+                for (var mprop in metadata) { d[mprop] = metadata[mprop]; }
                 var data = $(this).data();
-                for (var mprop in metadata) {
-                    data[mprop] = metadata[mprop];
-                }
+                for (var dprop in data) { d[dprop] = data[dprop]; }
                 // util.log('partial tag fname='+ fname +' attrs '+ util.inspect(data));
-                $(this).replaceWith(akasha.partialSync(config, fname, data)); 
+                var elemP = this;
+                akasha.partial(config, fname, d, function(err, html) {
+                    $(elemP).replaceWith(html);
+                });
             });
             done();
         });
