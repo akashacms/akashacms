@@ -1,4 +1,5 @@
 var path = require('path');
+var util = require('util');
 
 module.exports.config = function(akasha, config) {
     config.root_partials.push(path.join(__dirname, 'partials'));
@@ -16,6 +17,17 @@ module.exports.config = function(akasha, config) {
             } else if (typeof metadata.title !== "undefined") {
                 $('ak-page-title').replaceWith('<title>'+ metadata.title +'</title>');
             }
+
+            // <partial file-name="file-name.html.whatever" data-attr-1=val data-attr-2=val/>
+            $('partial').each(function(i, elem) {
+                var fname = $(this).attr("file-name");
+                var data = $(this).data();
+                for (var mprop in metadata) {
+                    data[mprop] = metadata[mprop];
+                }
+                // util.log('partial tag fname='+ fname +' attrs '+ util.inspect(data));
+                $(this).replaceWith(akasha.partialSync(config, fname, data)); 
+            });
             done();
         });
     }
