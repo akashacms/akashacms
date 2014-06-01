@@ -66,13 +66,14 @@ module.exports.config = function(akasha, config) {
             else
                 $('ak-footerJavaScript').remove();
             
-            if (typeof config.googleAnalyticsAccount !== "undefined" && typeof config.googleAnalyticsDomain !== "undefined")
+            if (typeof config.googleAnalyticsAccount !== "undefined" && typeof config.googleAnalyticsDomain !== "undefined") {
                 $('ak-google-analytics').replaceWith(
                     akasha.partialSync(config, "ak_googleAnalytics.html.ejs", {
                         googleAnalyticsAccount: config.googleAnalyticsAccount,
                         googleAnalyticsDomain: config.googleAnalyticsDomain
                     })
                 );
+            }
             else
                 $('ak-google-analytics').remove();
             

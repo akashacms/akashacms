@@ -34,7 +34,8 @@
     "minify": ">=0.1.8",
     "request": "*",
     "node-zip": "*",
-    "ssh2sync": "*"
+    "ssh2sync": "*",
+    "cheerio": "0.15"
   },
   "devDependencies": {
     "vows": "*"
