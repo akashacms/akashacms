@@ -11,35 +11,16 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <ak-page-title/>
-<ak-do-header-meta/>
+<ak-header-metatags/>
 <ak-sitemapxml/>
 <ak-siteverification/>
 <ak-stylesheets/>
 <ak-headerJavaScript/>
-<%
-// Our site title and description 
-if (typeof pagetitle !== "undefined") {
-         %><title><%= pagetitle %></title><% 
-} else if (typeof title !== "undefined") {
-         %><title><%= title %></title><% 
-} %>
-<%- akDoHeaderMeta(locals) %>
-<%- partial('ak_sitemap.html.ejs', locals) %>
-<%- partial('ak_siteverification.html.ejs', locals) %>
-<%- partial('ak_stylesheets.html.ejs', locals) %>
-<% if (headerScripts && headerScripts.javaScriptTop) {
-    %><%- partial('ak_javaScript.html.ejs', { javaScripts: headerScripts.javaScriptTop }) %><%
-} %>
 </head>
 <body>
 <ak-insert-body-content/>
+<!-- JavaScript at the bottom for fast page loading -->
 <ak-footerJavaScript/>
 <ak-google-analytics/>
-<% if (typeof content !== "undefined") { %><%- content %><% } %>
-<!-- JavaScript at the bottom for fast page loading -->
-<% if (headerScripts && headerScripts.javaScriptBottom) {
-    %><%- partial('ak_javaScript.html.ejs', { javaScripts: headerScripts.javaScriptBottom }) %><%
-} %>
-<%- partial('ak_googleAnalytics.html.ejs', locals) %>
 </body>
 </html>

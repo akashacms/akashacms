@@ -13,11 +13,80 @@ module.exports.config = function(akasha, config) {
                 }, function(err, html) {
                   
                 });*/
-                $('ak-page-title').replaceWith('<title>'+ metadata.pagetitle +'</title>');
+                $('ak-page-title').replaceWith(
+                    akasha.partialSync(config, "ak_titletag.html.ejs", { title: metadata.pagetitle })
+                );
             } else if (typeof metadata.title !== "undefined") {
-                $('ak-page-title').replaceWith('<title>'+ metadata.title +'</title>');
+                $('ak-page-title').replaceWith(
+                    akasha.partialSync(config, "ak_titletag.html.ejs", { title: metadata.title })
+                );
             }
+            
+            // TBD Should reimplement this
+            $('ak-header-metatags').replaceWith(config.funcs.akDoHeaderMeta(metadata));
+            
+            if (typeof metadata.rendered_url !== "undefined")
+                $('ak-header-canonical-url').replaceWith(
+                    akasha.partialSync(config, "ak_linkreltag.html.ejs", {
+                        relationship: "canonical",
+                        url: metadata.rendered_url
+                    })
+                );
+            else
+                $('ak-header-canonical-url').remove();
+            
+            if (typeof config.headerScripts !== "undefined")
+                $('ak-stylesheets').replaceWith(
+                    akasha.partialSync(config, "ak_stylesheets.html.ejs", { headerScripts: config.headerScripts })
+                );
+            else
+                $('ak-stylesheets').remove();
+            
+            if (typeof config.googleSiteVerification !== "undefined")
+                $('ak-siteverification').replaceWith(
+                    akasha.partialSync(config, "ak_siteverification.html.ejs", 
+                        { googleSiteVerification: config.googleSiteVerification })
+                );
+            else
+                $('ak-siteverification').remove();
+            
+            if (typeof config.headerScripts !== "undefined" && typeof config.headerScripts.javaScriptTop !== "undefined")
+                $('ak-headerJavaScript').replaceWith(
+                    akasha.partialSync(config, "ak_javaScript.html.ejs", 
+                        { javaScripts: config.headerScripts.javaScriptTop })
+                    );
+            else
+                $('ak-headerJavaScript').remove();
+            
+            if (typeof config.headerScripts !== "undefined" && typeof config.headerScripts.javaScriptBottom !== "undefined")
+                $('ak-footerJavaScript').replaceWith(
+                    akasha.partialSync(config, "ak_javaScript.html.ejs", 
+                        { javaScripts: config.headerScripts.javaScriptBottom })
+                );
+            else
+                $('ak-footerJavaScript').remove();
+            
+            if (typeof config.googleAnalyticsAccount !== "undefined" && typeof config.googleAnalyticsDomain !== "undefined")
+                $('ak-google-analytics').replaceWith(
+                    akasha.partialSync(config, "ak_googleAnalytics.html.ejs", {
+                        googleAnalyticsAccount: config.googleAnalyticsAccount,
+                        googleAnalyticsDomain: config.googleAnalyticsDomain
+                    })
+                );
+            else
+                $('ak-google-analytics').remove();
+            
+            $('ak-sitemapxml').each(function(i, elem) {
+                $(this).replaceWith(
+                    akasha.partialSync(config, "ak_sitemap.html.ejs", {  })
+                );
+            });
 
+            if (typeof metadata.content !== "undefined")
+                $('ak-insert-body-content').replaceWith(metadata.content);
+            else
+                $('ak-insert-body-content').remove();
+            
             // <partial file-name="file-name.html.whatever" data-attr-1=val data-attr-2=val/>
             $('partial').each(function(i, elem) {
                 var fname = $(this).attr("file-name");
