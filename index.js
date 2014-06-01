@@ -50,7 +50,7 @@ module.exports.config = function(options) {
     
     for (var i = 0; options.plugins && i < options.plugins.length; i++) {
         var pl = options.plugins[i];
-        var plugin = undefined;
+        var plugin;
         if (typeof pl === 'string')
             plugin = require(pl);
         else
@@ -68,7 +68,7 @@ module.exports.config = function(options) {
     require(path.join(builtin, 'index')).config(module.exports, options);
     
     // util.log(util.inspect(options));
-}
+};
 
 module.exports.process = function(options, callback) {
     var cleanDir = function(done) {
@@ -83,7 +83,7 @@ module.exports.process = function(options, callback) {
                 });
             }
         });
-    }
+    };
     
     var copyAssets = function(done) {
         async.forEachSeries(options.root_assets,
@@ -98,7 +98,7 @@ module.exports.process = function(options, callback) {
                 if (err) done(err);
                 else done();
             });
-    }
+    };
     
     cleanDir(function(err) {
         if (err) throw new Error(err);
@@ -112,7 +112,7 @@ module.exports.process = function(options, callback) {
                         if (err) throw new Error(err);
                         else {
                             var entryCount = 0;
-                            for (docNm in options.gatheredDocuments) {
+                            for (var docNm in options.gatheredDocuments) {
                                 // util.log('DOCUMENT '+ options.gatheredDocuments[docNm].path);
                                 entryCount++;
                             }
@@ -136,19 +136,19 @@ module.exports.process = function(options, callback) {
                         }
                     });
                 }
-            })
+            });
         }
     });
-}
+};
 
 module.exports.partial = function(config, name, locals, callback) {
     renderer.partial(config, name, locals, callback);
-}
+};
 
 module.exports.partialSync = function(theoptions, name, locals, callback) {
     // util.log('akasha exports.partialSync '+ name);
     return renderer.partialSync(theoptions, name, locals, callback);
-}
+};
 
 module.exports.renderFile = function(options, fileName, callback) {
     renderer.config(options);
@@ -164,7 +164,7 @@ module.exports.renderFile = function(options, fileName, callback) {
         // for anything not rendered, simply copy it
         copy_to_outdir(options, entry, callback);
     }
-}
+};
 
 /**
  * Minimize a directory tree using the minify library.
@@ -199,7 +199,7 @@ module.exports.minimize = function(options, done) {
         else { done(); } 
     })
     .walk();
-}
+};
 
 module.exports.gatherDir = function(options, docroot, done) {
     util.log('******** gatherDir START '+ docroot);
@@ -217,7 +217,7 @@ module.exports.gatherDir = function(options, docroot, done) {
         done();
     })
     .walk();
-}
+};
 
 var gather_documents = function(options, done) {
     async.forEachSeries(options.root_docs,
@@ -228,11 +228,11 @@ var gather_documents = function(options, done) {
         },
         function(err) {
             var entryCount = 0;
-            for (docNm in options.gatheredDocuments) { entryCount++; }
+            for (var docNm in options.gatheredDocuments) { entryCount++; }
             util.log('gather_documents DONE count='+ entryCount +' length='+ options.gatheredDocuments.length);
             if (err) done(err); else done();
         });
-}
+};
 
 /**
  * Make in options.root_out the directory path named in dirPath, recursively.
@@ -256,7 +256,7 @@ var mkDirPath = function(options, dirPath, done) {
             }
         });
     }
-}
+};
 
 /**
  * For files that are processed into an HTML, run the processing.
@@ -274,11 +274,11 @@ var process2html = function(options, entry, done) {
         }
     }
     if ('funcs' in options) {
-        for (var prop in options.funcs) {
-            renderopts[prop] = options.funcs[prop];
+        for (var fprop in options.funcs) {
+            renderopts[fprop] = options.funcs[fprop];
         }
     }
-    renderopts["root_url"] = options.root_url;
+    renderopts.root_url = options.root_url;
     if (! renderopts.rendered_date) {
         renderopts.rendered_date = entry.stat.mtime;
     }
@@ -320,7 +320,7 @@ var process2html = function(options, entry, done) {
             });
         }
     });
-}
+};
 
 var copy_to_outdir = function(options, entry, done) {
     // for anything not rendered, simply copy it
@@ -334,7 +334,7 @@ var copy_to_outdir = function(options, entry, done) {
             });
         });
     });
-}
+};
 
 var render_less = function(options, entry, done) {
     renderer.renderLess(entry.path, function(err, rendered) {
@@ -355,7 +355,7 @@ var render_less = function(options, entry, done) {
             });
         }
     });
-}
+};
 
 var process_and_render_files = function(options, done) {
     dispatcher('before-render-files', function(err) {
@@ -393,39 +393,39 @@ var process_and_render_files = function(options, done) {
         });
     });
     
-}
+};
 
 module.exports.oembedRender = function(arg, callback) {
     return renderer.oembedRender(arg, callback);
-}
+};
 
 module.exports.findDocument = function(options, fileName) {
     return find.document(options, fileName);
-}
+};
 
 module.exports.findTemplate = function(options, fileName) {
     return find.template(options, fileName);
-}
+};
 
 module.exports.findPartial = function(options, fileName) {
     return find.partial(options, fileName);
-}
+};
 
 module.exports.readTemplateEntry = function(options, fileName) {
     return fileCache.readTemplate(options, fileName);
-}
+};
 
 module.exports.readPartialEntry = function(options, fileName) {
     return fileCache.readPartial(options, fileName);
-}
+};
 
 module.exports.getFileEntry = module.exports.readDocumentEntry = function(theoptions, fileName) {
     return fileCache.readDocument(theoptions, fileName);
-}
+};
 
 module.exports.findIndexFile = function(options, dirname) {
     return fileCache.findIndex(options, dirname);
-}
+};
 
 module.exports.findSiblings = function(theoptions, fileName) {
     var bnm   = path.basename(fileName);
@@ -443,35 +443,35 @@ module.exports.findSiblings = function(theoptions, fileName) {
         }
     }
     return entries;
-}
+};
 
 module.exports.urlForFile = function(fileName) {
     return '/'+ fileCache.renderedFileName(fileName);
-}
+};
 
 module.exports.eachDocument = function(theoptions, doccb) {
     fileCache.eachDocument(theoptions, doccb);
-}
+};
 
 module.exports.isSyncHtml = function(fn) {
     return fileCache.isSyncHtml(fn);
-}
+};
 
 module.exports.isASyncHtml = function(fn) {
     return fileCache.isASyncHtml(fn);
-}
+};
 
 module.exports.isHtml = function(fn) {
     return fileCache.isHtml(fn);
-}
+};
 
 module.exports.supportedForHtml = function(fn) {
     return fileCache.supportedForHtml(fn);
-}
+};
 
 module.exports.isIndexHtml = function(fn) {
     return fileCache.isIndexHtml(fn);
-}
+};
 
 ///////////////// Event handling
 
@@ -553,7 +553,7 @@ var dispatcher = function() {
     };
     
     callNextHandler(args);
-}
+};
 
 ///////////////// XML Sitemap Generation .. works by building an array, then dumping it out in XML
 
@@ -586,7 +586,7 @@ var add_sitemap_entry = function(fname, priority, mtime) {
      *if (fname.match(/index.html$/)) {
         rendered_files.push({loc: fname.replace(/index.html$/, ''), priority: priority});
     }*/
-}
+};
 
 var generate_sitemap = function(options, done) {
     // util.log('generate_sitemap ' + util.inspect(rendered_files));
@@ -600,4 +600,4 @@ var generate_sitemap = function(options, done) {
             }
         });
     });
-}
+};
