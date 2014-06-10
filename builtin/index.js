@@ -1,12 +1,13 @@
 var path = require('path');
 var util = require('util');
+var async = require('async');
 
 module.exports.config = function(akasha, config) {
     config.root_partials.push(path.join(__dirname, 'partials'));
     config.root_layouts.push(path.join(__dirname, 'layout'));
     
     if (config.mahabhuta) {
-        config.mahabhuta.push(function(config, $, metadata, done) {
+        config.mahabhuta.push(function(akasha, config, $, metadata, done) {
             if (typeof metadata.pagetitle !== "undefined") {
                 /*akasha.partialSync(config, 'ak_titletag.html.ejs', {
                   title: data.pagetitle !== "undefined" ? data.pagetitle : data.title
@@ -25,22 +26,27 @@ module.exports.config = function(akasha, config) {
             // TBD Should reimplement this
             $('ak-header-metatags').replaceWith(config.funcs.akDoHeaderMeta(metadata));
             
-            if (typeof metadata.rendered_url !== "undefined")
-                $('ak-header-canonical-url').replaceWith(
-                    akasha.partialSync(config, "ak_linkreltag.html.ejs", {
+            if (typeof metadata.rendered_url !== "undefined") {
+                var ru = akasha.partialSync(config, "ak_linkreltag.html.ejs", {
                         relationship: "canonical",
                         url: metadata.rendered_url
-                    })
+                    });
+                $('ak-header-canonical-url').replaceWith(
+                    ru
                 );
-            else
-                $('ak-header-canonical-url').remove();
+            }
+            else {
+                $('ak-header-canonical-url').remove(); 
+            }
             
-            if (typeof config.headerScripts !== "undefined")
+            if (typeof config.headerScripts !== "undefined") {
                 $('ak-stylesheets').replaceWith(
-                    akasha.partialSync(config, "ak_stylesheets.html.ejs", { headerScripts: config.headerScripts })
+                   akasha.partialSync(config, "ak_stylesheets.html.ejs", { headerScripts: config.headerScripts })
                 );
-            else
+            }
+            else {
                 $('ak-stylesheets').remove();
+            }
             
             if (typeof config.googleSiteVerification !== "undefined")
                 $('ak-siteverification').replaceWith(
@@ -87,21 +93,33 @@ module.exports.config = function(akasha, config) {
                 $('ak-insert-body-content').replaceWith(metadata.content);
             else
                 $('ak-insert-body-content').remove();
+            done();
+        });
             
+        config.mahabhuta.push(function(akasha, config, $, metadata, done) {
             // <partial file-name="file-name.html.whatever" data-attr-1=val data-attr-2=val/>
-            $('partial').each(function(i, elem) {
-                var fname = $(this).attr("file-name");
+            var partials = [];
+            $('partial').each(function(i, elem) { partials.push(elem); });
+            async.eachSeries(partials,
+            function(partial, next) {
+                var fname = $(partial).attr("file-name");
                 var d = {};
                 for (var mprop in metadata) { d[mprop] = metadata[mprop]; }
-                var data = $(this).data();
+                var data = $(partial).data();
                 for (var dprop in data) { d[dprop] = data[dprop]; }
                 // util.log('partial tag fname='+ fname +' attrs '+ util.inspect(data));
-                var elemP = this;
                 akasha.partial(config, fname, d, function(err, html) {
-                    $(elemP).replaceWith(html);
+                    if (err) next(err);
+                    else {
+                        $(partial).replaceWith(html);
+                        next(); 
+                    }
                 });
+            },
+            function(err) {
+              if (err) done(err);
+              else done();
             });
-            done();
         });
     }
     

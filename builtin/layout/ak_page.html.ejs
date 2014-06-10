@@ -10,27 +10,27 @@
 <!-- Use the .htaccess and remove these lines to avoid edge case issues. More info: h5bp.com/i/378 -->
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<ak-page-title/>
+<ak-header-metatags/>
+<ak-sitemapxml/>
+<ak-siteverification/>
+<ak-stylesheets/>
+<ak-headerJavaScript/>
 <%
 // Our site title and description 
 if (typeof pagetitle !== "undefined") {
-         %><title><%= pagetitle %></title><% 
+         %><p>Old title</p><title><%= pagetitle %></title><% 
 } else if (typeof title !== "undefined") {
-         %><title><%= title %></title><% 
+         %><p>Old title</p><title><%= title %></title><% 
 } %>
-<%- akDoHeaderMeta(locals) %>
+<!-- %- akDoHeaderMeta(locals) % -->
 <%- partial('ak_sitemap.html.ejs', locals) %>
 <%- partial('ak_siteverification.html.ejs', locals) %>
-<%- partial('ak_stylesheets.html.ejs', locals) %>
-<% if (headerScripts && headerScripts.javaScriptTop) {
-    %><%- partial('ak_javaScript.html.ejs', { javaScripts: headerScripts.javaScriptTop }) %><%
-} %>
 </head>
 <body>
-<% if (typeof content !== "undefined") { %><%- content %><% } %>
+<ak-insert-body-content/>
 <!-- JavaScript at the bottom for fast page loading -->
-<% if (headerScripts && headerScripts.javaScriptBottom) {
-    %><%- partial('ak_javaScript.html.ejs', { javaScripts: headerScripts.javaScriptBottom }) %><%
-} %>
-<%- partial('ak_googleAnalytics.html.ejs', locals) %>
+<ak-footerJavaScript/>
+<ak-google-analytics/>
 </body>
 </html>
