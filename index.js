@@ -284,7 +284,7 @@ var process2html = function(options, entry, done) {
     }
     
     // util.log('process2html '+ entry.path +' '+ util.log(util.inspect(renderopts)));
-    renderer.render(options, entry, entry.path, renderopts, {}, function(err, rendered) {
+    renderer.render(module.exports, options, entry, entry.path, renderopts, {}, function(err, rendered) {
         // util.log('***** DONE RENDER ' + util.inspect(rendered));
         if (err) throw err;
         else {
