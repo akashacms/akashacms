@@ -68,6 +68,8 @@ module.exports.config = function(options) {
     require(path.join(builtin, 'index')).config(module.exports, options);
     
     // util.log(util.inspect(options));
+    
+    return module.exports;
 };
 
 module.exports.process = function(options, callback) {
