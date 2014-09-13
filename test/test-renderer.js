@@ -11,7 +11,9 @@ render.config(config);
 vows.describe("renderer").addBatch({
   "render index.html.md": {
       topic: function() {
-          render.render(config, undefined, "index.html.md", {}, undefined, this.callback);
+          render.render(akasha, config, undefined,
+                        "index.html.md", {}, undefined,
+                        this.callback);
       },
       /*"show": function(topic) {
           util.log(util.inspect(topic));
@@ -37,7 +39,9 @@ vows.describe("renderer").addBatch({
   },
   "render list.html.md.ejs": {
       topic: function() {
-          render.render(config, undefined, "list.html.md.ejs", {}, undefined, this.callback);
+          render.render(akasha, config, undefined,
+                        "list.html.md.ejs", {}, undefined,
+                        this.callback);
       },
       /*"show": function(topic) {
           util.log(util.inspect(topic));
@@ -66,7 +70,9 @@ vows.describe("renderer").addBatch({
   },
   "render youtube.html.md.kernel": {
       topic: function() {
-          render.render(config, undefined, "youtube.html.md.kernel", {}, undefined, this.callback);
+          render.render(akasha, config, undefined,
+                        "youtube.html.md.kernel", {}, undefined,
+                        this.callback);
       },
       /*"show": function(topic) {
           util.log(util.inspect(topic));

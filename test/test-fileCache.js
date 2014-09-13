@@ -15,7 +15,7 @@ vows.describe("fileCache").addBatch({
           assert.isFalse(topic.isdir);
       },
       "frontmatter foobar": function(topic) {
-          assert.equal(topic.frontmatter["foo"], "bar");
+          assert.equal(topic.frontmatter.yaml["foo"], "bar");
       },
       "body text": function(topic) {
           assert.isTrue(topic.data.indexOf("index of test-site") >= 0)

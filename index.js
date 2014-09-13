@@ -303,10 +303,10 @@ var process2html = function(options, entry, done) {
                             else {
                                 var atime = entry.stat.atime;
                                 var mtime = entry.stat.mtime;
-                                if (entry.frontmatter.publDate) {
-                                    var parsed = Date.parse(entry.frontmatter.publDate);
+                                if (entry.frontmatter.yaml.publDate) {
+                                    var parsed = Date.parse(entry.frontmatter.yaml.publDate);
                                     if (isNaN(parsed)) {
-                                        util.log("WARNING WARNING Bad date provided "+ entry.frontmatter.publDate);
+                                        util.log("WARNING WARNING Bad date provided "+ entry.frontmatter.yaml.publDate);
                                     } else {
                                         atime = mtime = new Date(parsed);
                                     }

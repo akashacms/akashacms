@@ -2,7 +2,7 @@
   "author": {
     "name": "David Herron",
     "email": "david@davidherron.com",
-    "url": "http://nodejs.davidherron.com"
+    "url": "http://davidherron.com"
   },
   "name": "akashacms",
   "description": "A content management system that generates static websites.",
@@ -14,7 +14,7 @@
   "bin": {
     "akashacms": "cli.js"
   },
-  "version": "0.3.8",
+  "version": "0.3.9",
   "engines": {
     "node": ">=0.8.1"
   },
@@ -35,13 +35,14 @@
     "request": "*",
     "node-zip": "*",
     "ssh2sync": "*",
-    "cheerio": "0.15"
+    "cheerio": "0.15",
+    "yamljs": "*"
   },
   "devDependencies": {
     "vows": "*"
   },
   "scripts": {
-    "test": "vows --spec test/*"
+    "test": "vows --verbose --spec test/*"
   }
 }
 
