@@ -4,88 +4,240 @@
  - Some documentation is on that page
  - Other documentation is here - http://webdesign.about.com/od/metataglibraries/a/meta-tag-list.htm
  */
-     if (typeof metakeywords    !== "undefined") { %><meta name="keywords"    content="<%= metakeywords %>" /><% } %>
-<%   if (typeof metadescription !== "undefined") { %><meta name="description" content="<%= metadescription %>" /><% } %>
-<%   if (typeof metasubject     !== "undefined") { %><meta name="subject"     content="<%= metasubject %>" /><% } %>
-<%   if (typeof metacopyright   !== "undefined") { %><meta name="copyright"   content="<%= metacopyright %>" /><% } %>
-<%   if (typeof metalanguage    !== "undefined") { %><meta name="language"    content="<%= metalanguage %>" /><% } %>
-<%   if (typeof metarobots      !== "undefined") { %><meta name="robots"      content="<%= metarobots %>" /><% } %>
-<%   if (typeof metarevised     !== "undefined") { %><meta name="revised"     content="<%= metarevised %>" /><% } %>
-<%   if (typeof metaabstract    !== "undefined") { %><meta name="abstract"    content="<%= metaabstract %>" /><% } %>
-<%   if (typeof metatopic       !== "undefined") { %><meta name="topic"       content="<%= metatopic %>" /><% } %>
-<%   if (typeof metasummary     !== "undefined") { %><meta name="summary"     content="<%= metasummary %>" /><% } %>
-<%   if (typeof metaclassification !== "undefined") { %><meta name="Classification" content="<%= metaclassification %>" /><% } %>
-<%   if (typeof metaauthor      !== "undefined") { %><meta name="author"      content="<%= metaauthor %>" /><% } %>
-<%   if (typeof metadesigner    !== "undefined") { %><meta name="designer"    content="<%= metadesigner %>" /><% } %>
-<%   if (typeof metareplyTo     !== "undefined") { %><meta name="reply-to"    content="<%= metareplyTo %>" /><% } %>
-<%   if (typeof metaowner       !== "undefined") { %><meta name="owner"       content="<%= metaowner %>" /><% } %>
-<%   if (typeof metaurl         !== "undefined") { %><meta name="url"         content="<%= metaurl %>" /><% } %>
-<%   if (typeof metaidentifierURL !== "undefined") { %><meta name="identifier-URL" content="<%= metaidentifierURL %>" /><% } %>
-<%   if (typeof metadirectory   !== "undefined") { %><meta name="directory"   content="<%= metadirectory %>" /><% } %>
-<%   if (typeof metapagename    !== "undefined") { %><meta name="pagename"    content="<%= metapagename %>" /><% } %>
-<%   if (typeof metacategory    !== "undefined") { %><meta name="category"    content="<%= metacategory %>" /><% } %>
-<%   if (typeof metacoverage    !== "undefined") { %><meta name="coverage"    content="<%= metacoverage %>" /><% } %>
-<%   if (typeof metadistribution !== "undefined") { %><meta name="distribution" content="<%= metadistribution %>" /><% } %>
-<%   if (typeof metarating      !== "undefined") { %><meta name="rating"      content="<%= metarating %>" /><% } %>
-<%   if (typeof metarevisitAfter !== "undefined") { %><meta name="revisit-after" content="<%= metarevisitAfter %>" /><% } %>
-<%   if (typeof metasubtitle    !== "undefined") { %><meta name="subtitle"    content="<%= metasubtitle %>" /><% } %>
-<%   if (typeof metatarget      !== "undefined") { %><meta name="target"      content="<%= metatarget %>" /><% } %>
-<%   if (typeof metaHandheldFriendly !== "undefined") { %><meta name="HandheldFriendly" content="<%= metaHandheldFriendly %>" /><% } %>
-<%   if (typeof metaMobileOptimized !== "undefined") { %><meta name="MobileOptimized" content="<%= metaMobileOptimized %>" /><% } %>
-<%   if (typeof metadate        !== "undefined") { %><meta name="date"        content="<%= metadate %>" /><% } %>
-<%   if (typeof metasearch_date !== "undefined") { %><meta name="search_date" content="<%= metasearch_date %>" /><% } %>
-<%   if (typeof metaDCtitle     !== "undefined") { %><meta name="DC.title"    content="<%= metaDCtitle %>" /><% } %>
-<%   if (typeof metaResourceLoaderDynamicStyles !== "undefined") { %><meta name="ResourceLoaderDynamicStyles" content="<%= metaResourceLoaderDynamicStyles %>" /><% } %>
-<%   if (typeof metamedium      !== "undefined") { %><meta name="medium"      content="<%= metamedium %>" /><% } %>
-<%   if (typeof metasyndicationSource !== "undefined") { %><meta name="syndication-source" content="<%= metasyndicationSource %>" /><% } %>
-<%   if (typeof metaoriginalSource !== "undefined") { %><meta name="original-source" content="<%= metaoriginalSource %>" /><% } %>
-<%   if (typeof metaverifyv1    !== "undefined") { %><meta name="verify-v1"   content="<%= metaverifyv1 %>" /><% } %>
-<%   if (typeof metay_key       !== "undefined") { %><meta name="y_key"       content="<%= metay_key %>" /><% } %>
-<%   if (typeof metapageKey     !== "undefined") { %><meta name="pageKey"     content="<%= metapageKey %>" /><% } %>
-<%   if (typeof metaname        !== "undefined") { %><meta name="name"        content="<%= metaname %>" /><% } %>
-<%   if (typeof metaExpires     !== "undefined") { %><meta name="Expires"     content="<%= metaExpires %>" /><% } %>
-<%   if (typeof metaPragma      !== "undefined") { %><meta name="Pragma"      content="<%= metaPragma %>" /><% } %>
-<%   if (typeof metaCacheControl !== "undefined") { %><meta name="Cache-Control" content="<%= metaCacheControl %>" /><% } %>
-<%   if (typeof metaimagetoolbar !== "undefined") { %><meta name="imagetoolbar" content="<%= metaimagetoolbar %>" /><% } %>
-<%   if (typeof metax_dns_prefetch_control !== "undefined") { %><meta name="x-dns-prefetch-control" content="<%= metax_dns_prefetch_control %>" /><% } %>
 
-<%
-   // OpenGraph Meta Tags
-     if (typeof metaOGtitle         !== "undefined") { %><meta name='og:title' content='<%= metaOGtitle %>'><% } %>
-<%   if (typeof metaOGtype          !== "undefined") { %><meta name='og:type'  content='<%= metaOGtype %>'><% } %>
-<%   if (typeof rendered_url        !== "undefined") { %><meta name='og:url'   content='<%= rendered_url %>'><% } %>
-<%   if (typeof metaOGimage         !== "undefined") { %><meta name='og:image' content='<%= metaOGimage %>'><% } %>
-<%   if (typeof metaOGsite_name     !== "undefined") { %><meta name='og:site_name' content='<%= metaOGsite_name %>'><% } %>
-<%   if (typeof metaOGdescription   !== "undefined") { %><meta name='og:description' content='<%= metaOGdescription %>'><% } %>
+if (typeof metakeywords    !== "undefined") { %>
+    <meta name="keywords"    content="<%= metakeywords %>" /><% }
+    
+if (typeof metadescription !== "undefined") { %>
+    <meta name="description" content="<%= metadescription %>" /><%
+} else if (typeof teaser !== "undefined") { %>
+    <meta name="description" content="<%= teaser %>" /><%
+}
 
-<%   if (typeof metaOGpage_id       !== "undefined") { %><meta name='fb:page_id' content='<%= metaOGpage_id %>'><% } %>
-<%   if (typeof metaOGapplicationname !== "undefined") { %><meta name='application-name' content='<%= metaOGapplicationname %>'><% } %>
-<%   if (typeof metaOGemail         !== "undefined") { %><meta name='og:email' content='<%= metaOGemail %>'><% } %>
-<%   if (typeof metaOGphone_number  !== "undefined") { %><meta name='og:phone_number' content='<%= metaOGphone_number %>'><% } %>
-<%   if (typeof metaOGfax_number    !== "undefined") { %><meta name='og:fax_number' content='<%= metaOGfax_number %>'><% } %>
+if (typeof metasubject     !== "undefined") { %>
+    <meta name="subject"     content="<%= metasubject %>" /><%
+}
+if (typeof metacopyright   !== "undefined") { %>
+    <meta name="copyright"   content="<%= metacopyright %>" /><%
+}
+if (typeof metalanguage    !== "undefined") { %>
+    <meta name="language"    content="<%= metalanguage %>" /><%
+}
+if (typeof metarobots      !== "undefined") { %>
+    <meta name="robots"      content="<%= metarobots %>" /><%
+}
+if (typeof metarevised     !== "undefined") { %>
+    <meta name="revised"     content="<%= metarevised %>" /><%
+}
+if (typeof metaabstract    !== "undefined") { %>
+    <meta name="abstract"    content="<%= metaabstract %>" /><%
+}
+if (typeof metatopic       !== "undefined") { %>
+    <meta name="topic"       content="<%= metatopic %>" /><%
+}
+if (typeof metasummary     !== "undefined") { %>
+    <meta name="summary"     content="<%= metasummary %>" /><%
+}
+if (typeof metaclassification !== "undefined") { %>
+    <meta name="Classification" content="<%= metaclassification %>" /><%
+}
+if (typeof metaauthor      !== "undefined") { %>
+    <meta name="author"      content="<%= metaauthor %>" /><%
+}
+if (typeof metadesigner    !== "undefined") { %>
+    <meta name="designer"    content="<%= metadesigner %>" /><%
+}
+if (typeof metareplyTo     !== "undefined") { %>
+    <meta name="reply-to"    content="<%= metareplyTo %>" /><%
+}
+if (typeof metaowner       !== "undefined") { %>
+    <meta name="owner"       content="<%= metaowner %>" /><%
+}
+if (typeof metaurl         !== "undefined") { %>
+    <meta name="url"         content="<%= metaurl %>" /><%
+}
+if (typeof metaidentifierURL !== "undefined") { %>
+    <meta name="identifier-URL" content="<%= metaidentifierURL %>" /><%
+}
+if (typeof metadirectory   !== "undefined") { %>
+    <meta name="directory"   content="<%= metadirectory %>" /><%
+}
+if (typeof metapagename    !== "undefined") { %>
+    <meta name="pagename"    content="<%= metapagename %>" /><%
+}
+if (typeof metacategory    !== "undefined") { %>
+    <meta name="category"    content="<%= metacategory %>" /><%
+}
+if (typeof metacoverage    !== "undefined") { %>
+    <meta name="coverage"    content="<%= metacoverage %>" /><%
+}
+if (typeof metadistribution !== "undefined") { %>
+    <meta name="distribution" content="<%= metadistribution %>" /><%
+}
+if (typeof metarating      !== "undefined") { %>
+    <meta name="rating"      content="<%= metarating %>" /><%
+}
+if (typeof metarevisitAfter !== "undefined") { %>
+    <meta name="revisit-after" content="<%= metarevisitAfter %>" /><%
+}
+if (typeof metasubtitle    !== "undefined") { %>
+    <meta name="subtitle"    content="<%= metasubtitle %>" /><%
+}
+if (typeof metatarget      !== "undefined") { %>
+    <meta name="target"      content="<%= metatarget %>" /><%
+}
+if (typeof metaHandheldFriendly !== "undefined") { %>
+    <meta name="HandheldFriendly" content="<%= metaHandheldFriendly %>" /><%
+}
+if (typeof metaMobileOptimized !== "undefined") { %>
+    <meta name="MobileOptimized" content="<%= metaMobileOptimized %>" /><%
+}
+if (typeof metadate        !== "undefined") { %>
+    <meta name="date"        content="<%= metadate %>" /><%
+}
+if (typeof metasearch_date !== "undefined") { %>
+    <meta name="search_date" content="<%= metasearch_date %>" /><%
+}
+if (typeof metaDCtitle     !== "undefined") { %>
+    <meta name="DC.title"    content="<%= metaDCtitle %>" /><%
+}
+if (typeof metaResourceLoaderDynamicStyles !== "undefined") { %>
+    <meta name="ResourceLoaderDynamicStyles" content="<%= metaResourceLoaderDynamicStyles %>" /><%
+}
+if (typeof metamedium      !== "undefined") { %>
+    <meta name="medium"      content="<%= metamedium %>" /><%
+}
+if (typeof metasyndicationSource !== "undefined") { %>
+    <meta name="syndication-source" content="<%= metasyndicationSource %>" /><%
+}
+if (typeof metaoriginalSource !== "undefined") { %>
+    <meta name="original-source" content="<%= metaoriginalSource %>" /><%
+}
+if (typeof metaverifyv1    !== "undefined") { %>
+    <meta name="verify-v1"   content="<%= metaverifyv1 %>" /><%
+}
+if (typeof metay_key       !== "undefined") { %>
+    <meta name="y_key"       content="<%= metay_key %>" /><%
+}
+if (typeof metapageKey     !== "undefined") { %>
+    <meta name="pageKey"     content="<%= metapageKey %>" /><%
+}
+if (typeof metaname        !== "undefined") { %>
+    <meta name="name"        content="<%= metaname %>" /><%
+}
+if (typeof metaExpires     !== "undefined") { %>
+    <meta name="Expires"     content="<%= metaExpires %>" /><%
+}
+if (typeof metaPragma      !== "undefined") { %>
+    <meta name="Pragma"      content="<%= metaPragma %>" /><%
+}
 
-<%   if (typeof metaOGlatitude      !== "undefined") { %><meta name='og:latitude' content='<%= metaOGlatitude %>'><% } %>
-<%   if (typeof metaOGlongitude     !== "undefined") { %><meta name='og:longitude' content='<%= metaOGlongitude %>'><% } %>
-<%   if (typeof metaOGstreetaddress !== "undefined") { %><meta name='og:street-address' content='<%= metaOGstreetaddress %>'><% } %>
-<%   if (typeof metaOGlocality      !== "undefined") { %><meta name='og:locality' content='<%= metaOGlocality %>'><% } %>
-<%   if (typeof metaOGregion        !== "undefined") { %><meta name='og:region' content='<%= metaOGregion %>'><% } %>
-<%   if (typeof metaOGpostalcode    !== "undefined") { %><meta name='og:postal-code' content='<%= metaOGpostalcode %>'><% } %>
-<%   if (typeof metaOGcountryname   !== "undefined") { %><meta name='og:country-name' content='<%= metaOGcountryname %>'><% } %>
+if (typeof metaimagetoolbar !== "undefined") { %>
+    <meta name="imagetoolbar" content="<%= metaimagetoolbar %>" /><%
+}
+if (typeof metax_dns_prefetch_control !== "undefined") { %>
+    <meta name="x-dns-prefetch-control" content="<%= metax_dns_prefetch_control %>" /><%
+}
 
-<%   if (typeof metaOGadmins        !== "undefined") { %><meta property='fb:admins' content='<%= metaOGadmins %>'><% } %>
-<%   if (typeof metaOGproptype      !== "undefined") { %><meta property='og:type' content='<%= metaOGproptype %>'><% } %>
-<%   if (typeof metaOGpoints        !== "undefined") { %><meta property='og:points' content='<%= metaOGpoints %>'><% } %>
 
-<%   if (typeof metaOGvideo         !== "undefined") { %><meta property='og:video' content='<%= metaOGvideo %>'><% } %>
-<%   if (typeof metaOGvideoheight   !== "undefined") { %><meta property='og:video:height' content='<%= metaOGvideoheight %>'><% } %>
-<%   if (typeof metaOGvideowidth    !== "undefined") { %><meta property='og:video:width' content='<%= metaOGvideowidth %>'><% } %>
-<%   if (typeof metaOGvideotype     !== "undefined") { %><meta property='og:video:type' content='<%= metaOGvideotype %>'><% } %>
+// OpenGraph Meta Tags
 
-<%   if (typeof metaOGaudio         !== "undefined") { %><meta property='og:audio' content='<%= metaOGaudio %>'><% } %>
-<%   if (typeof metaOGaudiotitle    !== "undefined") { %><meta property='og:audio:title' content='<%= metaOGaudiotitle %>'><% } %>
-<%   if (typeof metaOGaudioartist   !== "undefined") { %><meta property='og:audio:artist' content='<%= metaOGaudioartist %>'><% } %>
-<%   if (typeof metaOGaudioalbum    !== "undefined") { %><meta property='og:audio:album' content='<%= metaOGaudioalbum %>'><% } %>
-<%   if (typeof metaOGaudiotype     !== "undefined") { %><meta property='og:audio:type' content='<%= metaOGaudiotype %>'><% } %>
-<%
-      // http://en.wikipedia.org/wiki/Canonical_link_element
-     if (typeof rendered_url !== "undefined") { %><link rel="canonical" href="<%- rendered_url %>" /><% } %>
+if (typeof metaOGtitle         !== "undefined") { %>
+    <meta name='og:title' content='<%= metaOGtitle %>'><%
+} 
+if (typeof metaOGtype          !== "undefined") { %>
+    <meta name='og:type'  content='<%= metaOGtype %>'><%
+} 
+if (typeof rendered_url        !== "undefined") { %>
+    <meta name='og:url'   content='<%= rendered_url %>'><%
+} 
+if (typeof metaOGimage         !== "undefined") { %>
+    <meta name='og:image' content='<%= metaOGimage %>'><% 
+} 
+if (typeof metaOGsite_name     !== "undefined") { %>
+    <meta name='og:site_name' content='<%= metaOGsite_name %>'><% 
+} 
+
+if (typeof metaOGdescription   !== "undefined") { %>
+    <meta name='og:description' content='<%= metaOGdescription %>'><% 
+} else if (typeof teaser !== "undefined") { %>
+    <meta name="og:description" content="<%= teaser %>" /><%
+}
+
+if (typeof metaOGpage_id       !== "undefined") { %>
+    <meta name='fb:page_id' content='<%= metaOGpage_id %>'><% 
+} 
+if (typeof metaOGapplicationname !== "undefined") { %>
+    <meta name='application-name' content='<%= metaOGapplicationname %>'><% 
+} 
+if (typeof metaOGemail         !== "undefined") { %>
+    <meta name='og:email' content='<%= metaOGemail %>'><% 
+} 
+if (typeof metaOGphone_number  !== "undefined") { %>
+    <meta name='og:phone_number' content='<%= metaOGphone_number %>'><% 
+} 
+if (typeof metaOGfax_number    !== "undefined") { %>
+    <meta name='og:fax_number' content='<%= metaOGfax_number %>'><% 
+} 
+if (typeof metaOGlatitude      !== "undefined") { %>
+    <meta name='og:latitude' content='<%= metaOGlatitude %>'><% 
+} 
+if (typeof metaOGlongitude     !== "undefined") { %>
+    <meta name='og:longitude' content='<%= metaOGlongitude %>'><% 
+} 
+if (typeof metaOGstreetaddress !== "undefined") { %>
+    <meta name='og:street-address' content='<%= metaOGstreetaddress %>'><% 
+} 
+if (typeof metaOGlocality      !== "undefined") { %>
+    <meta name='og:locality' content='<%= metaOGlocality %>'><% 
+} 
+if (typeof metaOGregion        !== "undefined") { %>
+    <meta name='og:region' content='<%= metaOGregion %>'><% 
+} 
+if (typeof metaOGpostalcode    !== "undefined") { %>
+    <meta name='og:postal-code' content='<%= metaOGpostalcode %>'><% 
+} 
+if (typeof metaOGcountryname   !== "undefined") { %>
+    <meta name='og:country-name' content='<%= metaOGcountryname %>'><% 
+} 
+if (typeof metaOGadmins        !== "undefined") { %>
+    <meta property='fb:admins' content='<%= metaOGadmins %>'><% 
+} 
+if (typeof metaOGproptype      !== "undefined") { %>
+    <meta property='og:type' content='<%= metaOGproptype %>'><% 
+} 
+if (typeof metaOGpoints        !== "undefined") { %>
+    <meta property='og:points' content='<%= metaOGpoints %>'><% 
+} 
+if (typeof metaOGvideo         !== "undefined") { %>
+    <meta property='og:video' content='<%= metaOGvideo %>'><% 
+} 
+if (typeof metaOGvideoheight   !== "undefined") { %>
+    <meta property='og:video:height' content='<%= metaOGvideoheight %>'><% 
+} 
+if (typeof metaOGvideowidth    !== "undefined") { %>
+    <meta property='og:video:width' content='<%= metaOGvideowidth %>'><% 
+} 
+if (typeof metaOGvideotype     !== "undefined") { %>
+    <meta property='og:video:type' content='<%= metaOGvideotype %>'><% 
+} 
+if (typeof metaOGaudio         !== "undefined") { %>
+    <meta property='og:audio' content='<%= metaOGaudio %>'><% 
+} 
+if (typeof metaOGaudiotitle    !== "undefined") { %>
+    <meta property='og:audio:title' content='<%= metaOGaudiotitle %>'><% 
+} 
+if (typeof metaOGaudioartist   !== "undefined") { %>
+    <meta property='og:audio:artist' content='<%= metaOGaudioartist %>'><% 
+} 
+if (typeof metaOGaudioalbum    !== "undefined") { %>
+    <meta property='og:audio:album' content='<%= metaOGaudioalbum %>'><% 
+} 
+if (typeof metaOGaudiotype     !== "undefined") { %>
+    <meta property='og:audio:type' content='<%= metaOGaudiotype %>'><%
+} 
+
+// http://en.wikipedia.org/wiki/Canonical_link_element
+if (typeof rendered_url !== "undefined") { %>
+    <link rel="canonical" href="<%- rendered_url %>" /><%
+} %>
