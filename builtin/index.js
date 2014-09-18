@@ -31,9 +31,7 @@ module.exports.config = function(akasha, config) {
                         relationship: "canonical",
                         url: metadata.rendered_url
                     });
-                $('ak-header-canonical-url').replaceWith(
-                    ru
-                );
+                $('ak-header-canonical-url').replaceWith(ru);
             }
             else {
                 $('ak-header-canonical-url').remove(); 
