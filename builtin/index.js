@@ -91,6 +91,20 @@ module.exports.config = function(akasha, config) {
                 $('ak-insert-body-content').replaceWith(metadata.content);
             else
                 $('ak-insert-body-content').remove();
+                
+            if (typeof metadata.teaser !== "undefined" || typeof metadata["ak-teaser"] !== "undefined") {
+                $('ak-teaser').each(function(i, elem) {
+                    $(this).replaceWith(
+                        akasha.partialSync(config, "ak_teaser.html.ejs", {
+                            teaser: typeof metadata["ak-teaser"] !== "undefined"
+                                ? metadata["ak-teaser"] : metadata.teaser
+                        })
+                    )
+                });
+            } else {
+                $('ak-teaser').remove();
+            }
+            
             done();
         });
             
@@ -107,7 +121,10 @@ module.exports.config = function(akasha, config) {
                 for (var dprop in data) { d[dprop] = data[dprop]; }
                 // util.log('partial tag fname='+ fname +' attrs '+ util.inspect(data));
                 akasha.partial(config, fname, d, function(err, html) {
-                    if (err) next(err);
+                    if (err) {
+                        // util.log('partial ERROR '+ util.inspect(err));
+                        next(err);
+                    }
                     else {
                         $(partial).replaceWith(html);
                         next(); 
@@ -115,7 +132,10 @@ module.exports.config = function(akasha, config) {
                 });
             },
             function(err) {
-              if (err) done(err);
+              if (err) {
+                // util.log('partial Errored with '+ util.inspect(err));
+                done(err);
+              }
               else done();
             });
         });
