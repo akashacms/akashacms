@@ -108,7 +108,6 @@ module.exports.process = function(options, callback) {
             copyAssets(function(err) {
                 if (err) throw new Error(err);
                 else {
-                    options.gatheredDocuments = [];
                     gather_documents(options, function(err, data) {
                         // util.log('gather_documents CALLBACK CALLED');
                         if (err) throw new Error(err);
@@ -221,7 +220,8 @@ module.exports.gatherDir = function(options, docroot, done) {
     .walk();
 };
 
-var gather_documents = function(options, done) {
+var gather_documents = module.exports.gather_documents = function(options, done) {
+    options.gatheredDocuments = [];
     async.forEachSeries(options.root_docs,
         function(docroot, cb) {
             module.exports.gatherDir(options, docroot, function(err) {
@@ -288,16 +288,17 @@ var process2html = function(options, entry, done) {
     // util.log('process2html '+ entry.path +' '+ util.log(util.inspect(renderopts)));
     renderer.render(module.exports, options, entry, entry.path, renderopts, {}, function(err, rendered) {
         // util.log('***** DONE RENDER ' + util.inspect(rendered));
-        if (err) throw err;
+        if (err) done('Rendering '+ entry.path +' failed with '+ err);
         else {
             var renderTo = path.join(options.root_out, rendered.fname);
             dispatcher('file-rendered', options, entry.path, renderTo, rendered, function(err) {
                 // TBD - the callback needs to send a new rendering 
-                if (err) throw err;
+                if (err) done('Rendering file-rendered '+ entry.path +' failed with '+ err);
                 else {
                     util.log('rendered '+ entry.path +' as '+ renderTo);
-                    mkDirPath(options, path.dirname(rendered.fname), function(err) {
-                        if (err) done(err); 
+                    var dir2make = path.dirname(rendered.fname);
+                    mkDirPath(options, dir2make, function(err) {
+                        if (err) done('FAILED to make directory '+ dir2make +' failed with '+ err); 
                         else fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
                             if (err) done(err);
                             else {
@@ -421,6 +422,10 @@ module.exports.readPartialEntry = function(options, fileName) {
     return fileCache.readPartial(options, fileName);
 };
 
+module.exports.readDocumentEntry = function(options, fileName) {
+    return fileCache.readDocument(options, fileName);
+};
+    
 module.exports.getFileEntry = module.exports.readDocumentEntry = function(theoptions, fileName) {
     return fileCache.readDocument(theoptions, fileName);
 };

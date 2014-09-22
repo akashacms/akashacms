@@ -109,6 +109,15 @@ program
     });
 
 program
+    .command('metadata <fileName>')
+    .description('Print the metadata for a document')
+    .action(function(fileName) {
+        var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
+        util.log(util.inspect(akasha.readDocumentEntry(config, fileName).frontmatter.yaml));
+    });
+
+program
     .command('deploy')
     .description('Deploy the akashacms site using configuration file')
     // .option('-f, --force', 'force')
@@ -197,6 +206,24 @@ program
             text.replace('\320', '--'),
             "utf-8");
         
+    });
+    
+program
+    .command('listfiles')
+    .description('List the files in this site')
+    .action(function() {
+	
+        var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
+	akasha.gather_documents(config, function(err, data) {
+	    if (err) {
+		util.log('ERROR '+ err);
+	    } else {
+		akasha.eachDocument(config, function(entry) {
+		    util.log(entry.fullpath);
+		});
+	    }
+	});
     });
     
 program
