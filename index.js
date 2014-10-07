@@ -154,16 +154,17 @@ module.exports.partialSync = function(theoptions, name, locals, callback) {
 module.exports.renderFile = function(options, fileName, callback) {
     renderer.config(options);
     var entry = fileCache.readDocument(options, fileName);
-    if (!entry) throw new Error('File '+fileName+' not found');
-    
-    if (fileCache.supportedForHtml(entry.path)) {
-        process2html(options, entry, callback);
-    } else if (entry.path.match(/\.css\.less$/)) {
-        // render .less files; rendered.fname will be xyzzy.css
-        render_less(options, entry, callback);
-    } else {
-        // for anything not rendered, simply copy it
-        copy_to_outdir(options, entry, callback);
+    if (!entry) callback(new Error('File '+fileName+' not found'));
+    else {
+        if (fileCache.supportedForHtml(entry.path)) {
+            process2html(options, entry, callback);
+        } else if (entry.path.match(/\.css\.less$/)) {
+            // render .less files; rendered.fname will be xyzzy.css
+            render_less(options, entry, callback);
+        } else {
+            // for anything not rendered, simply copy it
+            copy_to_outdir(options, entry, callback);
+        }
     }
 };
 
@@ -265,64 +266,65 @@ var mkDirPath = function(options, dirPath, done) {
  **/
 var process2html = function(options, entry, done) {
     if (! fileCache.supportedForHtml(entry.path)) {
-        throw 'UNKNOWN template engine for ' + entry.path;
-    }
-    // Start with a base object that will be passed into the template
-    var renderopts = { };
-    // Copy in any data or functions passed to us
-    if ('data' in options) {
-        for (var prop in options.data) {
-            renderopts[prop] = options.data[prop];
+        done(new Error('UNKNOWN template engine for ' + entry.path));
+    } else {
+        // Start with a base object that will be passed into the template
+        var renderopts = { };
+        // Copy in any data or functions passed to us
+        if ('data' in options) {
+            for (var prop in options.data) {
+                renderopts[prop] = options.data[prop];
+            }
         }
-    }
-    if ('funcs' in options) {
-        for (var fprop in options.funcs) {
-            renderopts[fprop] = options.funcs[fprop];
+        if ('funcs' in options) {
+            for (var fprop in options.funcs) {
+                renderopts[fprop] = options.funcs[fprop];
+            }
         }
-    }
-    renderopts.root_url = options.root_url;
-    if (! renderopts.rendered_date) {
-        renderopts.rendered_date = entry.stat.mtime;
-    }
-    
-    // util.log('process2html '+ entry.path +' '+ util.log(util.inspect(renderopts)));
-    renderer.render(module.exports, options, entry, entry.path, renderopts, {}, function(err, rendered) {
-        // util.log('***** DONE RENDER ' + util.inspect(rendered));
-        if (err) done('Rendering '+ entry.path +' failed with '+ err);
-        else {
-            var renderTo = path.join(options.root_out, rendered.fname);
-            dispatcher('file-rendered', options, entry.path, renderTo, rendered, function(err) {
-                // TBD - the callback needs to send a new rendering 
-                if (err) done('Rendering file-rendered '+ entry.path +' failed with '+ err);
-                else {
-                    util.log('rendered '+ entry.path +' as '+ renderTo);
-                    var dir2make = path.dirname(rendered.fname);
-                    mkDirPath(options, dir2make, function(err) {
-                        if (err) done('FAILED to make directory '+ dir2make +' failed with '+ err); 
-                        else fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
-                            if (err) done(err);
-                            else {
-                                var atime = entry.stat.atime;
-                                var mtime = entry.stat.mtime;
-                                if (entry.frontmatter.yaml.publDate) {
-                                    var parsed = Date.parse(entry.frontmatter.yaml.publDate);
-                                    if (isNaN(parsed)) {
-                                        util.log("WARNING WARNING Bad date provided "+ entry.frontmatter.yaml.publDate);
-                                    } else {
-                                        atime = mtime = new Date(parsed);
+        renderopts.root_url = options.root_url;
+        if (! renderopts.rendered_date) {
+            renderopts.rendered_date = entry.stat.mtime;
+        }
+        
+        util.log('process2html '+ entry.path +' '+ util.log(util.inspect(renderopts)));
+        renderer.render(module.exports, options, entry, entry.path, renderopts, {}, function(err, rendered) {
+            // util.log('***** DONE RENDER ' + util.inspect(rendered));
+            if (err) done('Rendering '+ entry.path +' failed with '+ err);
+            else {
+                var renderTo = path.join(options.root_out, rendered.fname);
+                dispatcher('file-rendered', options, entry.path, renderTo, rendered, function(err) {
+                    // TBD - the callback needs to send a new rendering 
+                    if (err) done('Rendering file-rendered '+ entry.path +' failed with '+ err);
+                    else {
+                        util.log('rendered '+ entry.path +' as '+ renderTo);
+                        var dir2make = path.dirname(rendered.fname);
+                        mkDirPath(options, dir2make, function(err) {
+                            if (err) done('FAILED to make directory '+ dir2make +' failed with '+ err); 
+                            else fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
+                                if (err) done(err);
+                                else {
+                                    var atime = entry.stat.atime;
+                                    var mtime = entry.stat.mtime;
+                                    if (entry.frontmatter.yaml.publDate) {
+                                        var parsed = Date.parse(entry.frontmatter.yaml.publDate);
+                                        if (isNaN(parsed)) {
+                                            util.log("WARNING WARNING Bad date provided "+ entry.frontmatter.yaml.publDate);
+                                        } else {
+                                            atime = mtime = new Date(parsed);
+                                        }
                                     }
+                                    fs.utimes(renderTo, atime, mtime, function(err) {
+                                        add_sitemap_entry(options.root_url +'/'+ rendered.fname, 0.5, mtime);
+                                        done();
+                                    });
                                 }
-                                fs.utimes(renderTo, atime, mtime, function(err) {
-                                    add_sitemap_entry(options.root_url +'/'+ rendered.fname, 0.5, mtime);
-                                    done();
-                                });
-                            }
+                            });
                         });
-                    });
-                }
-            });
-        }
-    });
+                    }
+                });
+            }
+        });
+    }
 };
 
 var copy_to_outdir = function(options, entry, done) {
@@ -406,6 +408,10 @@ module.exports.findDocument = function(options, fileName) {
     return find.document(options, fileName);
 };
 
+module.exports.findDocumentForUrlpath = function(options, urlpath) {
+    return fileCache.documentForUrlpath(options, urlpath);
+};
+
 module.exports.findTemplate = function(options, fileName) {
     return find.template(options, fileName);
 };
@@ -425,7 +431,19 @@ module.exports.readPartialEntry = function(options, fileName) {
 module.exports.readDocumentEntry = function(options, fileName) {
     return fileCache.readDocument(options, fileName);
 };
-    
+
+module.exports.updateDocumentData = function(config, docEntry, metadata, content, cb) {
+    fileCache.updateDocumentData(config, docEntry, metadata, content, cb);
+};
+
+module.exports.createDocument = function(config, rootdir, path, metadata, content, cb) {
+    fileCache.createDocument(config, rootdir, path, metadata, content, cb);
+};
+
+module.exports.deleteDocumentForUrlpath = function(config, path, cb) {
+    fileCache.deleteDocumentForUrlpath(config, path, cb);
+};
+
 module.exports.getFileEntry = module.exports.readDocumentEntry = function(theoptions, fileName) {
     return fileCache.readDocument(theoptions, fileName);
 };
