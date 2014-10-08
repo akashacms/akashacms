@@ -1,0 +1,25 @@
+{
+  "name": "overlay-js",
+  "version": "0.2.1",
+  "homepage": "https://github.com/mrhenry/overlay-js",
+  "authors": [
+    "Steven Vandevelde <icidasset@gmail.com>",
+    "Yves Van Broekhoven <yvesvanbroekhoven@gmail.com>"
+  ],
+  "description": "Basic overlay module written for easy customization.",
+  "main": "overlay.js",
+  "keywords": [
+    "jquery",
+    "zepto",
+    "overlay",
+    "lightbox"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

@@ -1,0 +1,16 @@
+
+#ak-editor-toolbar {
+    width: 100%;
+    height: 40px;
+    border: solid 3px black;
+    background-color: lightgrey;
+}
+
+.ak-editor-button {
+    width: 100px;
+    height: 30px;
+    border: ridge 3px red;
+    background-color: white;
+    padding: 5px;
+    margin: 5px;
+}

@@ -1,0 +1,13 @@
+<span class="ak-editor-span-add">
+<form method="POST" id="ak-editor-add-form" action="/..admin/add">
+    <input type=hidden name=urlpath id="ak-editor-urlpath" value="">
+    <label for="pathname-input">File Name:</label><br/>
+    <span id="ak-editor-add-dirname"></span><input type="text" name="pathname" id="ak-editor-pathname-input" size="50"><br/>
+    <label for="metadata">Metadata:</label><br/>
+    <textarea id="ak-editor-metadata-input" name="metadata" rows="5" cols="80"></textarea><br/>
+    <label for="content">Content:</label><br/>
+    <textarea id="ak-editor-content-input" name="content" rows="20" cols="80"></textarea><br/>
+    <button type="submit" name=action value="Submit" class="btn btn-primary">Submit</button>
+    <input type=reset>
+</form>
+</span>

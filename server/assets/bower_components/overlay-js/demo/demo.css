@@ -1,0 +1,78 @@
+/*
+
+  Overlay
+
+*/
+.mod-overlay-background {
+  background-color: rgba(0, 0, 0, .8);
+}
+
+.mod-overlay .overlay-content {
+  height: 450px;
+  width: 800px;
+}
+
+.mod-overlay .overlay-header {
+  border-bottom: 1px solid #e2e2e2;
+  overflow: hidden;
+  position: relative;
+}
+
+.mod-overlay .overlay-header .close {
+  color: black;
+  float: right;
+  font-size: 18px;
+  height: 21px;
+  line-height: 22px;
+  margin: 14px 16px 12px;
+  text-align: center;
+  text-decoration: none;
+  width: 22px;
+}
+
+.mod-overlay .close:after {
+  content: "✕";
+}
+
+.mod-overlay .close:hover {
+  color: #ED0103;
+}
+
+.mod-overlay .overlay-content .text {
+  font: normal 15px/24px "Georgia", serif;
+  padding: 11px 33px;
+}
+
+
+/*
+
+  Other
+
+*/
+body {
+  background-color: #d2fafe;
+  font-family: sans-serif;
+}
+
+.trigger {
+  background-color: #261038;
+  border-radius: 50%;
+  color: #9FF4FC;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  height: 50px;
+  left: 50%;
+  line-height: 52px;
+  margin: -25px 0 0 -25px;
+  position: absolute;
+  text-align: center;
+  top: 50%;
+  width: 50px;
+
+  transition: background-color 350ms;
+}
+
+.trigger:hover {
+  background-color: #17C0EA;
+}
