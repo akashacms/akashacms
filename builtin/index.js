@@ -135,8 +135,9 @@ module.exports.config = function(akasha, config) {
               if (err) {
                 // util.log('partial Errored with '+ util.inspect(err));
                 done(err);
+              } else {
+                done();
               }
-              else done();
             });
         });
     }
