@@ -170,10 +170,17 @@ program
     .command('serve')
     .description('start a webserver')
     .action(function() {
-        var staticSrv  = require('node-static');
+        // var staticSrv  = require('node-static');
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
-        var fileServer = new staticSrv.Server(config.root_out);
+	akasha.gather_documents(config, function(err, data) {
+	    if (err) {
+		util.log('ERROR '+ err);
+	    } else {
+		require('./server/server')(akasha, config);
+	    }
+	});
+        /*var fileServer = new staticSrv.Server(config.root_out);
         http.createServer(function (request, response) {
             request.addListener('end', function () {
                 fileServer.serve(request, response, function (e, res) {
@@ -190,7 +197,7 @@ program
                     }
                 });
             }).resume();
-        }).listen(8080);
+        }).listen(8080);*/
     });
     
 program
