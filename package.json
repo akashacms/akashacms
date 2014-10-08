@@ -30,12 +30,13 @@
     "oembed": ">=0.1.0",
     "sightmap": ">=0.0.0",
     "commander": ">=1.1.1",
-    "node-static": ">=0.6.6",
+    "mime": "*",
+    "body": "*",
     "minify": ">=0.1.8",
     "request": "*",
     "node-zip": "*",
     "ssh2sync": "*",
-    "cheerio": "0.15",
+    "cheerio": ">=0.17",
     "yamljs": "*"
   },
   "devDependencies": {
