@@ -265,6 +265,7 @@ var mkDirPath = function(options, dirPath, done) {
  * For files that are processed into an HTML, run the processing.
  **/
 var process2html = function(options, entry, done) {
+    // util.log('process2html '+ util.inspect(entry));
     if (! fileCache.supportedForHtml(entry.path)) {
         done(new Error('UNKNOWN template engine for ' + entry.path));
     } else {
@@ -286,7 +287,7 @@ var process2html = function(options, entry, done) {
             renderopts.rendered_date = entry.stat.mtime;
         }
         
-        util.log('process2html '+ entry.path +' '+ util.log(util.inspect(renderopts)));
+        // util.log('process2html '+ entry.path +' '+ util.log(util.inspect(renderopts)));
         renderer.render(module.exports, options, entry, entry.path, renderopts, {}, function(err, rendered) {
             // util.log('***** DONE RENDER ' + util.inspect(rendered));
             if (err) done('Rendering '+ entry.path +' failed with '+ err);
