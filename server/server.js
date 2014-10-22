@@ -9,10 +9,7 @@ var util = require('util');
 var cheerio = require('cheerio');
 var anyBody = require("body/any");
 
-/* Redo this so the UI is a frame - one frame contains the toolbar - other contains the content
-No need to modify the content while serving it, just stream it to the browser
-
-
+/* 
 server/assets contains the code for the toolbar
 
 Needs two server objects
@@ -62,7 +59,67 @@ var startServer = function(akasha, config) {
         util.log(request.method +' '+ util.inspect(request.url));
         var requrl = url.parse(request.url, true);
         if (request.method === "GET") {
-            if (requrl.pathname.match(/^\/\.\.admin\//)) {
+            var matches;
+            if ((matches = requrl.pathname.match(/^\/\.\.admin\/editpage(\/.*)/)) !== null) {
+                var urlpath = matches[1];
+                // util.log(util.inspect(matches));
+                // util.log('urlpath '+ urlpath);
+                var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
+                if (docEntry) {
+                    fs.readFile(path.join(config.root_out, urlpath), { encoding: 'utf8' }, function(err, buf) {
+                        if (err) {
+                            buf = '<html><head></head><body></body></html>';
+                        }
+                        var $ = newCheerio(buf);
+                        
+                        $('body').empty();
+                        $('body').append(prepareDocEditForm(
+                                    urlpath,
+                                    docEntry.frontmatter.yamltext,
+                                    docEntry.frontmatter.text));
+                        $('html head').append(
+                            '<link rel="stylesheet" href="/..admin/css/editor.css" type="text/css"/>'
+                        );
+                        res.end($.html());
+                    });
+                } else {
+                    showError(res, 404, "file "+ urlpath +" doesn't exist");
+                }
+            } else if ((matches = requrl.pathname.match(/^\/\.\.admin\/addnewpage(\/.*)/)) !== null) {
+                var urlpath = matches[1];
+                // util.log(util.inspect(matches));
+                // util.log('urlpath '+ urlpath);
+                fs.readFile(path.join(config.root_out, urlpath), { encoding: 'utf8' }, function(err, buf) {
+                    if (err) {
+                        buf = '<html><head></head><body></body></html>';
+                    }
+                    var $ = newCheerio(buf);
+                    
+                    $('body').empty();
+                    $('body').append(prepareDocCreateForm(
+                                    urlpath,
+                                    path.dirname(urlpath),
+                                    path.basename(urlpath)));
+                    $('html head').append(
+                        '<link rel="stylesheet" href="/..admin/css/editor.css" type="text/css"/>'
+                    );
+                    res.end($.html());
+                });
+            } else if ((matches = requrl.pathname.match(/^\/\.\.admin\/deletepage(\/.*)/)) !== null) {
+                var urlpath = matches[1];
+                fs.readFile(path.join(config.root_out, urlpath), { encoding: 'utf8' }, function(err, buf) {
+                    if (err) {
+                        buf = '<html><head></head><body></body></html>';
+                    }
+                    var $ = newCheerio(buf);
+                    $('body').empty();
+                    $('body').append(prepareDocDeleteForm(urlpath));
+                    $('html head').append(
+                        '<link rel="stylesheet" href="/..admin/css/editor.css" type="text/css"/>'
+                    );
+                    res.end($.html());
+                });
+            } else if (requrl.pathname.match(/^\/\.\.admin\//)) {
                 var assetsdir = path.join(__dirname, 'assets');
                 var fname = path.join(assetsdir, requrl.pathname.substring(9));
                 fs.exists(fname, function(exists) {
@@ -94,107 +151,61 @@ var startServer = function(akasha, config) {
                 });
             }
         } else if (request.method === "POST") {
-            util.log(util.inspect(requrl));
+            util.log('POST URL '+ util.inspect(requrl));
+            // util.log('POST URL '+ util.inspect(request.query));
             // util.log(util.inspect(request));
             
-            anyBody(request, res, function (err, body) {
+            anyBody(request, res, function (err, body) { // parse request body
+                // util.log('POST BODY '+ util.inspect(body));
                 if (err) {
                     showError(res, 404, "POST received error "+err);
                 } else {
-                    util.log(util.inspect(body));
                     
                     if (requrl.pathname === "/..admin/edit") {
                         var docEntry = akasha.findDocumentForUrlpath(config, body.urlpath);
                         if (docEntry) {
-                            util.log('found docEntry for urlpath '+ body.urlpath +' '+ util.inspect(docEntry));
+                            // util.log('found docEntry for urlpath '+ body.urlpath +' '+ util.inspect(docEntry));
                             akasha.updateDocumentData(config, docEntry, trimtxt(body.metadata), trimtxt(body.content), function(err) {
                                 if (err) {
-                                    var fname = path.join(config.root_out, body.urlpath);
-                                    fs.readFile(fname, { encoding: 'utf8' }, function(readerr, data) {
-                                        if (readerr) {
-                                            data = '<html><head></head><body></body></html>';
-                                        }
-                                        
-                                        var $ = cheerio.load(data, {
-                                            recognizeSelfClosing: true,
-                                            recognizeCDATA: true
-                                        });
-                
-                                        $('body').empty();
-                                        $('body').append(prepareDocEditForm(
-                                                    body.urlpath,
-                                                    trimtxt(body.metadata),
-                                                    trimtxt(body.content)));
-                                        $('body').prepend('<strong>Could not save '
-                                                + body.urlpath +' because '+ err +'</strong>');
-                                        res.end($.html());
-                                    });
+                            		// Need to send an error message instead
+                                    showError(res, 400, "Could not update "+ docEntry.fullpath +" because "+ err);
                                 } else {
-                                    util.log('before renderFile '+ docEntry.path);
+                                    // util.log('before renderFile '+ docEntry.path);
                                     akasha.renderFile(config, docEntry.path, function(err) {
                                         if (err) {
                                             showError(res, 404, "Could not render "+ docEntry.fullpath +" because "+ err);
                                         } else {
-                                            redirect(res, body.urlpath);
+                                            // redirect(res, body.urlpath);
+                                            sendJSON(res, 200, {
+                                                newlocation: body.urlpath
+                                            });
                                         }
                                     });
                                 }
                             });
                         } else {
-                            var fname = path.join(config.root_out, body.urlpath);
-                            fs.readFile(fname, { encoding: 'utf8' }, function(readerr, data) {
-                                if (readerr) {
-                                    data = '<html><head></head><body></body></html>';
-                                }
-                                var $ = cheerio.load(data, {
-                                    recognizeSelfClosing: true,
-                                    recognizeCDATA: true
-                                });
-        
-                                $('body').empty();
-                                $('body').append(prepareDocCreateForm(
-                                        body.urlpath,
-                                        path.dirname(body.urlpath),
-                                        path.basename(body.urlpath),
-                                        trimtxt(body.metadata), trimtxt(body.content)));
-                                $('body').append(txtAddForm);
-                                $('body').prepend('<strong>Could not save '
-                                        + body.urlpath +' because '+ err +'</strong>');
-                                res.end($.html());
-                            });
+                            // Need to send an error message instead
+                            
+                            showError(res, 400, "No docEntry found for "+ body.urlpath);
                         }
                     } else if (requrl.pathname === "/..admin/add") {
-                        var fname = path.join(config.root_docs[0], path.dirname(body.urlpath), body.pathname.trim());
+                        // var fname = path.join(config.root_docs[0], path.dirname(body.urlpath), body.pathname.trim());
                         akasha.createDocument(config, config.root_docs[0],
                             path.join(path.dirname(body.urlpath), body.pathname.trim()),
                             trimtxt(body.metadata), trimtxt(body.content), function(err, docEntry) {
                                 if (err) {
-                                    var fname = path.join(config.root_out, body.urlpath.trim());
-                                    fs.readFile(fname, { encoding: 'utf8' }, function(readerr, data) {
-                                        if (readerr) {
-                                            data = '<html><head></head><body></body></html>';
-                                        }
-                                        var $ = cheerio.load(data, {
-                                            recognizeSelfClosing: true,
-                                            recognizeCDATA: true
-                                        });
-                
-                                        $('body').empty();
-                                        $('body').append(prepareDocCreateForm(
-                                                body.urlpath.trim(),
-                                                path.dirname(body.urlpath.trim()),
-                                                path.basename(body.urlpath.trim()),
-                                                trimtxt(body.metadata), trimtxt(body.content)));
-                                        $('body').prepend('<strong>Could not save '
-                                                + body.urlpath +' because '+ err +'</strong>');
-                                        res.end($.html());
-                                    });
+                                    // Need to send an error message instead
+                                    showError(res, 404, "Error while creating "+ body.urlpath +" "+ err);
                                 } else {
+                                	// util.log(util.inspect(docEntry));
                                     akasha.renderFile(config, docEntry.path, function(err) {
                                         if (err) {
                                             showError(res, 404, "Could not render "+ docEntry.fullpath +" because "+ err);
                                         } else {
-                                            redirect(res, path.join(path.dirname(body.urlpath), path.basename(docEntry.renderedFileName)));
+                                            // redirect(res, path.join(path.dirname(body.urlpath), path.basename(docEntry.renderedFileName)));
+                                            sendJSON(res, 200, {
+                                                newlocation: path.join(path.dirname(body.urlpath), path.basename(docEntry.renderedFileName))
+                                            });
                                         }
                                     });
                                 }
@@ -202,12 +213,15 @@ var startServer = function(akasha, config) {
                     } else if (requrl.pathname === "/..admin/delete") {
                         var docEntry = akasha.findDocumentForUrlpath(config, body.urlpath);
                         if (docEntry) {
-                            util.log(util.inspect(docEntry));
+                            // util.log(util.inspect(docEntry));
                             akasha.deleteDocumentForUrlpath(config, docEntry.path, function(err) {
                                 if (err) {
                                     showError(res, 404, "Could not delete "+ body.urlpath +" because "+ err);
                                 } else {
-                                    redirect(res, path.dirname(body.urlpath));
+                                	fs.unlink(path.join(config.root_docs[0], body.urlpath), function(err2) {
+                                		// purposely ignoring if an error occurs
+                                		redirect(res, path.join(path.dirname(body.urlpath), "index.html"));
+                                	});
                                 }
                             });
                         } else {
@@ -216,7 +230,6 @@ var startServer = function(akasha, config) {
                     } else {
                         showError(res, 404, "No handler for POST "+ requrl.pathname);
                     }
-                    
                 }
             });
         } else {
@@ -233,11 +246,7 @@ var streamFile = function(akasha, config, res, requrl, fname) {
             if (err) {
                 showError(res, 404, "file "+ fname +" not readable "+ err);
             } else {
-                var $ = cheerio.load(buf, {
-                    recognizeSelfClosing: true,
-                    recognizeCDATA: true
-                });
-                
+                var $ = newCheerio(buf);
                 var docEntry = akasha.findDocumentForUrlpath(config, requrl.pathname);
                 // util.log('streamFile '+ requrl.pathname);
                 // util.log(util.inspect(docEntry));
@@ -245,35 +254,21 @@ var streamFile = function(akasha, config, res, requrl, fname) {
                 $('body').prepend(
                      '<div id="ak-editor-toolbar">'
                     +'<span id="ak-editor-file-name"></span>'
-                    +'<span class="ak-editor-button" id="ak-editor-edit-button">Edit</span>'
-                    +'<span class="ak-editor-button" id="ak-editor-delete-button">Delete</span>'
-                    +'<span class="ak-editor-button" id="ak-editor-add-new-button">Add NEW</span>'
+                    +'<a id="ak-editor-edit-link" href=""><span class="ak-editor-button" id="ak-editor-edit-button">Edit</span></a>'
+                    +'<a id="ak-editor-delete-link" href=""><span class="ak-editor-button" id="ak-editor-delete-button">Delete</span></a>'
+                    +'<a id="ak-editor-addnew-link" href=""><span class="ak-editor-button" id="ak-editor-add-new-button">Add NEW</span></a>'
                     +'</div>'
-                    +'<script type="text/html" class="ak-editor-form-edit">'
-                    +prepareDocEditForm(
-                                requrl.pathname,
-                                docEntry ? trimtxt(docEntry.frontmatter.yamltext) : "",
-                                docEntry ? trimtxt(docEntry.frontmatter.text) : "")
-                    +'</script>'
-                    +'<script type="text/html" class="ak-editor-form-add">'
-                    +prepareDocCreateForm(
-                                requrl.pathname,
-                                path.dirname(requrl.pathname), "",
-                                "", "")
-                    +'</script>'
-                    +'<script type="text/html" class="ak-editor-form-delete">'
-                    +prepareDocDeleteForm(requrl.pathname)
-                    +'</script>'
                 );
                 $("#ak-editor-file-name").append("<strong>File Name: "+ requrl.pathname +"</strong>");
-                
+                $("#ak-editor-edit-link").attr('href', "/..admin/editpage"+requrl.pathname);
+                $("#ak-editor-delete-link").attr('href', "/..admin/deletepage"+requrl.pathname);
+                $("#ak-editor-addnew-link").attr('href', "/..admin/addnewpage"+requrl.pathname);
                 $('body').append(
-                    '<script src="/..admin/bower_components/overlay-js/overlay.js"></script>'
-                   +'<script src="/..admin/js/toolbar.js"></script>'
+                    '<script src="/..admin/js/editor.js"></script>'
+                   +'<script src="/..admin/vendor/ace-1.1.7/ace.js" type="text/javascript" charset="utf-8"></script>'
                 );
                 $('html head').append(
-                    '<link rel="stylesheet" href="/..admin/bower_components/overlay-js/overlay.css" type="text/css"/>'
-                   +'<link rel="stylesheet" href="/..admin/css/toolbar.css" type="text/css"/>'
+                    '<link rel="stylesheet" href="/..admin/css/editor.css" type="text/css"/>'
                 );
                 var ht = $.html();
                 res.writeHead(200, {
@@ -303,23 +298,15 @@ var streamFile = function(akasha, config, res, requrl, fname) {
 };
 
 var prepareDocEditForm = function(urlpath, metadata, content) {
-    var $ = cheerio.load(txtEditForm, {
-        recognizeSelfClosing: true,
-        recognizeCDATA: true
-    });
+    var $ = newCheerio(txtEditForm);
     $('#ak-editor-urlpath').attr('value', urlpath);
     $('#ak-editor-metadata-input').append(metadata ? metadata : "");
     $('#ak-editor-content-input').append(content ? content : "");
-    util.log("prepareDocEditForm urlpath="+ urlpath +" metadata="+ metadata +" content="+ content);
-    util.log($.html());
     return $.html();
 };
 
 var prepareDocCreateForm = function(urlpath, dirname, fname, metadata, content) {
-    var $ = cheerio.load(txtAddForm, {
-        recognizeSelfClosing: true,
-        recognizeCDATA: true
-    });
+    var $ = newCheerio(txtAddForm);
     $('#ak-editor-urlpath').attr('value', urlpath);
     $('#ak-editor-add-dirname').append(dirname);
     $('#ak-editor-pathname-input').attr('value', fname);
@@ -329,10 +316,7 @@ var prepareDocCreateForm = function(urlpath, dirname, fname, metadata, content) 
 };
 
 var prepareDocDeleteForm = function(urlpath) {
-    var $ = cheerio.load(txtDeleteForm, {
-        recognizeSelfClosing: true,
-        recognizeCDATA: true
-    });
+    var $ = newCheerio(txtDeleteForm);
     $('#ak-editor-urlpath').attr('value', urlpath);
     return $.html();
 };
@@ -346,10 +330,10 @@ var trimtxt = function(txt) {
     for (i = 0; i < lines.length; i++) {
         lines[i] = lines[i].replace(/\r*$/, "");
     }
-    while (lines[lines.length - 1].length === 0) {
+    while (lines.length > 0 && lines[lines.length - 1] && lines[lines.length - 1].length === 0) {
         lines.pop();
     }
-    while (lines[0].length === 0) {
+    while (lines.length > 0 && lines[0] && lines[0].length === 0) {
         lines.shift();
     }
     return lines.join('\n');
@@ -367,3 +351,17 @@ var showError = function(res, code, message) {
     });
     res.end(message);
 };
+
+var sendJSON = function(res, code, obj) {
+    res.setHeader('Content-type','application/json');
+    res.setHeader('Charset','utf8');
+    res.statusCode = code;
+    res.end(JSON.stringify(obj));
+}
+
+var newCheerio = function(buf) {
+    return cheerio.load(buf, {
+        recognizeSelfClosing: true,
+        recognizeCDATA: true
+    });
+}
