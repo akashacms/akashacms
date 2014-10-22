@@ -14,3 +14,13 @@
     padding: 5px;
     margin: 5px;
 }
+
+#ak-editor-metadata-input {
+    width: 100%;
+    height: 200px;
+}
+
+#ak-editor-content-input {
+    width: 100%;
+    height: 400px;
+}
