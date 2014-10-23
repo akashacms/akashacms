@@ -20,7 +20,7 @@ Toolbar has two modes
 - Manipulating current file
 - Showing info or manipulating the whole site */
 
-var txtEditForm, txtAddForm, txtDeleteForm;
+var txtEditForm, txtAddForm, dirAddForm, txtDeleteForm;
 
 module.exports = function(akasha, config) {
     readFiles(function(err) {
@@ -41,12 +41,18 @@ var readFiles = function(cb) {
                 if (err) cb(err);
                 else {
                     txtAddForm = data;
-                    fs.readFile(path.join(__dirname, "form-delete.html"), { encoding: 'utf8' }, function(err, data) {
-                        if (err) cb(err);
-                        else {
-                            txtDeleteForm = data;
-                            cb();
-                        }
+                    fs.readFile(path.join(__dirname, "form-adddir.html"), { encoding: 'utf8' }, function(err, data) {
+                    	if (err) cb(err);
+                    	else {
+                    		dirAddForm = data;
+							fs.readFile(path.join(__dirname, "form-delete.html"), { encoding: 'utf8' }, function(err, data) {
+								if (err) cb(err);
+								else {
+									txtDeleteForm = data;
+									cb();
+								}
+							});
+						}
                     });
                 }
             });
@@ -85,6 +91,20 @@ var startServer = function(akasha, config) {
                 } else {
                     showError(res, 404, "file "+ urlpath +" doesn't exist");
                 }
+            } else if ((matches = requrl.pathname.match(/^\/\.\.admin\/addnewdir(\/.*)/)) !== null) {
+                var urlpath = matches[1];
+                fs.readFile(path.join(config.root_out, urlpath), { encoding: 'utf8' }, function(err, buf) {
+                    if (err) {
+                        buf = '<html><head></head><body></body></html>';
+                    }
+                    var $ = newCheerio(buf);
+                    $('body').empty();
+                    $('body').append(prepareDirCreateForm(urlpath));
+                    $('html head').append(
+                        '<link rel="stylesheet" href="/..admin/css/editor.css" type="text/css"/>'
+                    );
+                    res.end($.html());
+                });
             } else if ((matches = requrl.pathname.match(/^\/\.\.admin\/addnewpage(\/.*)/)) !== null) {
                 var urlpath = matches[1];
                 // util.log(util.inspect(matches));
@@ -136,14 +156,7 @@ var startServer = function(akasha, config) {
                         showError(res, 404, "file "+ fname +" not found "+ err);
                     } else {
                         if (status.isDirectory()) {
-                            fname = path.join(fname, "index.html");
-                            fs.exists(fname, function(exists) {
-                                if (exists) {
-                                    streamFile(akasha, config, res, requrl, fname);
-                                } else {
-                                    showError(res, 404, "file "+ fname +" not found "+ err);
-                                }
-                            });
+                        	redirect(res, path.join(requrl.pathname, "index.html"));
                         } else {
                             streamFile(akasha, config, res, requrl, fname);
                         }
@@ -227,6 +240,24 @@ var startServer = function(akasha, config) {
                         } else {
                             showError(res, 404, "Could not delete "+ body.urlpath +" because it doesn't exist");
                         }
+                    } else if (requrl.pathname === "/..admin/adddir") {
+                    	var dirnm = path.join(config.root_docs[0], body.dirname, body.pathname);
+                    	fs.mkdir(dirnm, function(err) {
+                    		if (err) {
+                    			showError(res, 404, "Could not create directory "+ dirnm +" because "+ err);
+                    		} else {
+                    			var dirnm2 = path.join(config.root_out, body.dirname, body.pathname);
+                    			fs.mkdir(dirnm2, function(err) {
+                    				if (err) {
+                    					showError(res, 404, "Could not create directory "+ dirnm2 +" because "+ err);
+                    				} else {
+                    					// Now what?
+                    					// Need to make the user create dirnm/index.html
+                    					redirect(res, path.join('/..admin/addnewpage', body.dirname, body.pathname, "index.html"));
+                    				}
+                    			});
+                    		}
+                    	});
                     } else {
                         showError(res, 404, "No handler for POST "+ requrl.pathname);
                     }
@@ -256,13 +287,15 @@ var streamFile = function(akasha, config, res, requrl, fname) {
                     +'<span id="ak-editor-file-name"></span>'
                     +'<a id="ak-editor-edit-link" href=""><span class="ak-editor-button" id="ak-editor-edit-button">Edit</span></a>'
                     +'<a id="ak-editor-delete-link" href=""><span class="ak-editor-button" id="ak-editor-delete-button">Delete</span></a>'
-                    +'<a id="ak-editor-addnew-link" href=""><span class="ak-editor-button" id="ak-editor-add-new-button">Add NEW</span></a>'
+                    +'<a id="ak-editor-addnewdir-link" href=""><span class="ak-editor-button" id="ak-editor-add-newdir-button">Add NEW Directory</span></a>'
+                    +'<a id="ak-editor-addnew-link" href=""><span class="ak-editor-button" id="ak-editor-add-new-button">Add NEW File</span></a>'
                     +'</div>'
                 );
                 $("#ak-editor-file-name").append("<strong>File Name: "+ requrl.pathname +"</strong>");
                 $("#ak-editor-edit-link").attr('href', "/..admin/editpage"+requrl.pathname);
                 $("#ak-editor-delete-link").attr('href', "/..admin/deletepage"+requrl.pathname);
                 $("#ak-editor-addnew-link").attr('href', "/..admin/addnewpage"+requrl.pathname);
+                $("#ak-editor-addnewdir-link").attr('href', "/..admin/addnewdir"+requrl.pathname);
                 $('body').append(
                     '<script src="/..admin/js/editor.js"></script>'
                    +'<script src="/..admin/vendor/ace-1.1.7/ace.js" type="text/javascript" charset="utf-8"></script>'
@@ -302,6 +335,14 @@ var prepareDocEditForm = function(urlpath, metadata, content) {
     $('#ak-editor-urlpath').attr('value', urlpath);
     $('#ak-editor-metadata-input').append(metadata ? metadata : "");
     $('#ak-editor-content-input').append(content ? content : "");
+    return $.html();
+};
+
+var prepareDirCreateForm = function(urlpath) {
+    var $ = newCheerio(dirAddForm);
+    $('#ak-editor-urlpath').attr('value', urlpath);
+    $('#ak-editor-dirname').attr('value', path.dirname(urlpath));
+    $('#ak-editor-add-dirname').append(path.dirname(urlpath));
     return $.html();
 };
 
