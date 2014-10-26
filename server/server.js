@@ -283,7 +283,7 @@ var startServer = function(akasha, config) {
 };
 
 var streamFile = function(akasha, config, res, requrl, fname) {
-    util.log('streamFile '+ fname +' '+ util.inspect(requrl));
+    util.log('streamFile '+ fname /*+' '+ util.inspect(requrl)*/);
     if (requrl.pathname.match(/\.html$/)) {
         fs.readFile(fname, { encoding: 'utf8' }, function(err, buf) {
             if (err) {
@@ -383,10 +383,10 @@ var trimtxt = function(txt) {
     for (i = 0; i < lines.length; i++) {
         lines[i] = lines[i].replace(/\r*$/, "");
     }
-    while (lines.length > 0 && lines[lines.length - 1] && lines[lines.length - 1].length === 0) {
+    while (lines.length > 0 && lines[lines.length - 1].length === 0) {
         lines.pop();
     }
-    while (lines.length > 0 && lines[0] && lines[0].length === 0) {
+    while (lines.length > 0 && lines[0].length === 0) {
         lines.shift();
     }
     return lines.join('\n');
