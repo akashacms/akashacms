@@ -139,6 +139,18 @@ var startServer = function(akasha, config) {
                     );
                     res.end($.html());
                 });
+            } else if ((matches = requrl.pathname.match(/^\/\.\.admin\/docData(\/.*)/)) !== null) {
+                var urlpath = matches[1];
+                var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
+                if (docEntry) {
+					sendJSON(res, 200, {
+						urlpath: urlpath,
+						metadata: docEntry.frontmatter.yamltext,
+						content: docEntry.frontmatter.text
+					});
+                } else {
+                    showError(res, 404, "file "+ urlpath +" doesn't exist");
+                }
             } else if (requrl.pathname.match(/^\/\.\.admin\//)) {
                 var assetsdir = path.join(__dirname, 'assets');
                 var fname = path.join(assetsdir, requrl.pathname.substring(9));
@@ -333,8 +345,8 @@ var streamFile = function(akasha, config, res, requrl, fname) {
 var prepareDocEditForm = function(urlpath, metadata, content) {
     var $ = newCheerio(txtEditForm);
     $('#ak-editor-urlpath').attr('value', urlpath);
-    $('#ak-editor-metadata-input').append(metadata ? metadata : "");
-    $('#ak-editor-content-input').append(content ? content : "");
+    // $('#ak-editor-metadata-input').append(metadata ? metadata : "");
+    // $('#ak-editor-content-input').append(content ? content : "");
     return $.html();
 };
 
@@ -351,8 +363,8 @@ var prepareDocCreateForm = function(urlpath, dirname, fname, metadata, content) 
     $('#ak-editor-urlpath').attr('value', urlpath);
     $('#ak-editor-add-dirname').append(dirname);
     $('#ak-editor-pathname-input').attr('value', fname);
-    $('#ak-editor-metadata-input').append(metadata ? metadata : "");
-    $('#ak-editor-content-input').append(content ? content : "");
+    // $('#ak-editor-metadata-input').append(metadata ? metadata : "");
+    // $('#ak-editor-content-input').append(content ? content : "");
     return $.html();
 };
 
