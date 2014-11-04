@@ -114,7 +114,14 @@ program
     .action(function(fileName) {
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
-        util.log(util.inspect(akasha.readDocumentEntry(config, fileName).frontmatter.yaml));
+        akasha.readDocumentEntry(config, fileName, function(err, docEntry) {
+        	if (err) {
+        		util.log(err);
+        	} else {
+        		util.log(util.inspect(docEntry.frontmatter.yaml));
+        	}
+        });
+        
     });
 
 program
@@ -206,15 +213,35 @@ program
     .action(function(fileName) {
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
-        
-        var entry = akasha.getFileEntry(config, fileName);
-        var text = fs.readFileSync(entry.fullpath, "utf-8");
-        fs.writeFileSync(entry.fullpath+'-new',
-            text.replace('\320', '--'),
-            "utf-8");
+        akasha.readDocument(config, fileName, function(err, entry) {
+        	if (err) throw err;
+        	else {        	
+				var text = fs.readFileSync(entry.fullpath, "utf-8");
+				fs.writeFileSync(entry.fullpath+'-new',
+					text.replace('\320', '--'),
+					"utf-8");
+            }
+        });
         
     });
-    
+
+program
+	.command('indexChain <fileName>')
+	.description("List the chain of index.html's for a file")
+	.action(function(fileName) {
+	
+        var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
+		akasha.gather_documents(config, function(err, data) {
+			if (err) {
+				util.log('ERROR '+ err);
+			} else {
+        		var chain = akasha.indexChain(config, fileName);
+        		util.log(util.inspect(chain));
+        	}
+        });
+	});
+
 program
     .command('listfiles')
     .description('List the files in this site')
@@ -222,15 +249,15 @@ program
 	
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
-	akasha.gather_documents(config, function(err, data) {
-	    if (err) {
-		util.log('ERROR '+ err);
-	    } else {
-		akasha.eachDocument(config, function(entry) {
-		    util.log(entry.fullpath);
+		akasha.gather_documents(config, function(err, data) {
+			if (err) {
+				util.log('ERROR '+ err);
+			} else {
+				akasha.eachDocument(config, function(entry) {
+					util.log(entry.fullpath);
+				});
+			}
 		});
-	    }
-	});
     });
     
 program
