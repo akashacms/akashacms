@@ -63,18 +63,20 @@ $(function() {
     
     if ($(".ak-editor-addedit-form").length > 0) {
     
-    	$.ajax({
-    		url: "/..admin/docData"+ $("#ak-editor-urlpath").attr("value"),
-    		type: "GET",
-    		dataType: "json",
-    		success: function(json) {
-    			Yeditor.setValue(json.metadata);
-    			Ceditor.setValue(json.content);
-    		},
-			error: function(xhr, status, errorThrown) {
-				$("#ak-editor-message-area").text("ERROR "+ status +" "+ errorThrown);
-			}
-    	});
+    	if ($(".ak-editor-addedit-form[id='ak-editor-edit-form']").length > 0) {
+			$.ajax({
+				url: "/..admin/docData"+ $("#ak-editor-urlpath").attr("value"),
+				type: "GET",
+				dataType: "json",
+				success: function(json) {
+					Yeditor.setValue(json.metadata);
+					Ceditor.setValue(json.content);
+				},
+				error: function(xhr, status, errorThrown) {
+					$("#ak-editor-message-area").text("ERROR "+ status +" "+ errorThrown);
+				}
+			});
+    	}
     
         $(".ak-editor-addedit-form").submit(function(event) {
             event.preventDefault();
@@ -99,7 +101,7 @@ $(function() {
                     window.location = json.newlocation;
                 },
                 error: function(xhr, status, errorThrown) {
-                    $("#ak-editor-message-area").text("ERROR "+ status +" "+ errorThrown);
+                    $("#ak-editor-message-area").text("ERROR "+ xhr.responseText);
                 }
             });
         });
