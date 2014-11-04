@@ -153,19 +153,21 @@ module.exports.partialSync = function(theoptions, name, locals, callback) {
 
 module.exports.renderFile = function(options, fileName, callback) {
     renderer.config(options);
-    var entry = fileCache.readDocument(options, fileName);
-    if (!entry) callback(new Error('File '+fileName+' not found'));
-    else {
-        if (fileCache.supportedForHtml(entry.path)) {
-            process2html(options, entry, callback);
-        } else if (entry.path.match(/\.css\.less$/)) {
-            // render .less files; rendered.fname will be xyzzy.css
-            render_less(options, entry, callback);
-        } else {
-            // for anything not rendered, simply copy it
-            copy_to_outdir(options, entry, callback);
-        }
-    }
+    fileCache.readDocument(options, fileName, function(err, entry) {
+    	if (err) callback(err);
+		else if (!entry) callback(new Error('File '+fileName+' not found'));
+		else {
+			if (fileCache.supportedForHtml(entry.path)) {
+				process2html(options, entry, callback);
+			} else if (entry.path.match(/\.css\.less$/)) {
+				// render .less files; rendered.fname will be xyzzy.css
+				render_less(options, entry, callback);
+			} else {
+				// for anything not rendered, simply copy it
+				copy_to_outdir(options, entry, callback);
+			}
+		}
+    });
 };
 
 /**
@@ -208,7 +210,10 @@ module.exports.gatherDir = function(options, docroot, done) {
     filewalker(docroot, { maxPending: 1, maxAttempts: 3, attemptTimeout: 3000 })
     .on('file', function(path, s, fullPath) {
         // util.log(docroot + ' FILE ' + path + ' ' + fullPath);
-        options.gatheredDocuments.push(fileCache.readDocument(options, path));
+        fileCache.readDocument(options, path, function(err, docEntry) {
+        	if (!err && docEntry) options.gatheredDocuments.push(docEntry);
+        	if (err) util.log(err);
+        });
     })
     .on('error', function(err) {
         util.log('gatherDir ERROR '+ docroot +' '+ err);
@@ -265,7 +270,7 @@ var mkDirPath = function(options, dirPath, done) {
  * For files that are processed into an HTML, run the processing.
  **/
 var process2html = function(options, entry, done) {
-    // util.log('process2html '+ util.inspect(entry));
+    // util.log('process2html #1 '+ entry.path); // util.inspect(entry));
     if (! fileCache.supportedForHtml(entry.path)) {
         done(new Error('UNKNOWN template engine for ' + entry.path));
     } else {
@@ -287,9 +292,9 @@ var process2html = function(options, entry, done) {
             renderopts.rendered_date = entry.stat.mtime;
         }
         
-        // util.log('process2html '+ entry.path +' '+ util.log(util.inspect(renderopts)));
-        renderer.render(module.exports, options, entry, entry.path, renderopts, {}, function(err, rendered) {
-            // util.log('***** DONE RENDER ' + util.inspect(rendered));
+        // util.log('process2html #2 '+ entry.path); //  +' '+ util.log(util.inspect(renderopts)));
+        renderer.render(module.exports, options, entry, /*entry.path*/ undefined, renderopts, /*"",*/ function(err, rendered) {
+            // util.log('***** DONE RENDER ' + entry.path); // util.inspect(rendered));
             if (err) done('Rendering '+ entry.path +' failed with '+ err);
             else {
                 var renderTo = path.join(options.root_out, rendered.fname);
@@ -363,17 +368,17 @@ var render_less = function(options, entry, done) {
     });
 };
 
-var process_and_render_files = function(options, done) {
+var process_and_render_files = function(config, done) {
     dispatcher('before-render-files', function(err) {
         var entryCount = 0;
-        util.log('process_and_render_files '+ options.gatheredDocuments.length +' entries');
-        for (docNm in options.gatheredDocuments) {
-            //util.log('DOCUMENT '+ options.gatheredDocuments[docNm].path);
+        // util.log('process_and_render_files '+ config.gatheredDocuments.length +' entries');
+        for (docNm in config.gatheredDocuments) {
+            // util.log('DOCUMENT '+ options.gatheredDocuments[docNm].path);
             entryCount++;
         }
         util.log('process_and_render_files entryCount='+ entryCount);
         entryCount = 0;
-        async.eachSeries(options.gatheredDocuments,
+        async.eachSeries(config.gatheredDocuments,
         function(entry, cb) {
             entryCount++;
             util.log('FILE '+ entryCount +' '+ entry.path);
@@ -383,13 +388,13 @@ var process_and_render_files = function(options, done) {
             // Kernel might be more attractive because of simplicity - DONE
             // dustjs is more comprehensive however
             if (fileCache.supportedForHtml(entry.path)) {
-                process2html(options, entry, cb);
+                process2html(config, entry, cb);
             } else if (entry.path.match(/\.css\.less$/)) {
                 // render .less files; rendered.fname will be xyzzy.css
-                render_less(options, entry, cb);
+                render_less(config, entry, cb);
             } else {
                 // for anything not rendered, simply copy it
-                copy_to_outdir(options, entry, cb);
+                copy_to_outdir(config, entry, cb);
             }
         },
         function(err) {
@@ -405,32 +410,32 @@ module.exports.oembedRender = function(arg, callback) {
     return renderer.oembedRender(arg, callback);
 };
 
-module.exports.findDocument = function(options, fileName) {
-    return find.document(options, fileName);
+module.exports.findDocument = function(config, fileName) {
+    return find.document(config, fileName);
 };
 
-module.exports.findDocumentForUrlpath = function(options, urlpath) {
-    return fileCache.documentForUrlpath(options, urlpath);
+module.exports.findDocumentForUrlpath = function(config, urlpath) {
+    return fileCache.documentForUrlpath(config, urlpath);
 };
 
-module.exports.findTemplate = function(options, fileName) {
-    return find.template(options, fileName);
+module.exports.findTemplate = function(config, fileName) {
+    return find.template(config, fileName);
 };
 
-module.exports.findPartial = function(options, fileName) {
-    return find.partial(options, fileName);
+module.exports.findPartial = function(config, fileName) {
+    return find.partial(config, fileName);
 };
 
-module.exports.readTemplateEntry = function(options, fileName) {
-    return fileCache.readTemplate(options, fileName);
+module.exports.readTemplateEntry = function(config, fileName) {
+    return fileCache.readTemplate(config, fileName);
 };
 
-module.exports.readPartialEntry = function(options, fileName) {
-    return fileCache.readPartial(options, fileName);
+module.exports.readPartialEntry = function(config, fileName) {
+    return fileCache.readPartial(config, fileName);
 };
 
-module.exports.readDocumentEntry = function(options, fileName) {
-    return fileCache.readDocument(options, fileName);
+module.exports.readDocumentEntry = function(config, fileName, done) {
+    fileCache.readDocument(config, fileName, done);
 };
 
 module.exports.updateDocumentData = function(config, docEntry, metadata, content, cb) {
@@ -445,38 +450,52 @@ module.exports.deleteDocumentForUrlpath = function(config, path, cb) {
     fileCache.deleteDocumentForUrlpath(config, path, cb);
 };
 
-module.exports.getFileEntry = module.exports.readDocumentEntry = function(theoptions, fileName) {
-    return fileCache.readDocument(theoptions, fileName);
+/*module.exports.getFileEntry = module.exports.readDocumentEntry = function(theoptions, fileName, done) {
+    fileCache.readDocument(theoptions, fileName, done);
+};*/
+
+module.exports.findIndexFile = function(config, dirname, done) {
+    fileCache.findIndex(config, dirname, done);
 };
 
-module.exports.findIndexFile = function(options, dirname) {
-    return fileCache.findIndex(options, dirname);
-};
-
-module.exports.findSiblings = function(theoptions, fileName) {
+module.exports.findSiblings = function(config, fileName, done) {
     var bnm   = path.basename(fileName);
     var dirname = path.dirname(fileName);
-    var entry = fileCache.readDocument(theoptions, fileName);
-    var entries = [];
-    var filedir = path.dirname(fileName);
-    var dirnm = path.dirname(entry.fullpath);
-    var fnames = fs.readdirSync(dirnm);
-    for (var i = 0; i < fnames.length; i++) {
-        var fn = fnames[i];
-        var fpath = path.join(filedir, fn);
-        if (fileCache.supportedForHtml(fpath)) {
-            entries.push(fileCache.readDocument(theoptions, fpath));
-        }
-    }
-    return entries;
+    fileCache.readDocument(config, fileName, function(err, entry) {
+    	if (err) done(err);
+    	else {
+			var entries = [];
+			var filedir = path.dirname(fileName);
+			var dirnm = path.dirname(entry.fullpath);
+			var fnames = fs.readdirSync(dirnm);
+			async.each(fnames,
+				function(err, fn, cb) {
+					var fpath = path.join(filedir, fn);
+					if (fileCache.supportedForHtml(fpath)) {
+						fileCache.readDocument(config, fpath, function(err, docEntry) {
+							if (err) cb(err);
+							else entries.push(docEntry);
+						});
+					}
+				},
+				function(err) {
+					if (err) done(err);
+					else done(undefined, entries);
+				});
+    	}
+    });
 };
 
 module.exports.urlForFile = function(fileName) {
     return '/'+ fileCache.renderedFileName(fileName);
 };
 
-module.exports.eachDocument = function(theoptions, doccb) {
-    fileCache.eachDocument(theoptions, doccb);
+module.exports.eachDocument = function(config, doccb) {
+    fileCache.eachDocument(config, doccb);
+};
+
+module.exports.indexChain = function(config, fileName) {
+	return fileCache.indexChain(config, fileName);
 };
 
 module.exports.isSyncHtml = function(fn) {
