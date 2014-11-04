@@ -454,9 +454,9 @@ module.exports.deleteDocumentForUrlpath = function(config, path, cb) {
     fileCache.readDocument(theoptions, fileName, done);
 };*/
 
-module.exports.findIndexFile = function(config, dirname, done) {
+/*module.exports.findIndexFile = function(config, dirname, done) {
     fileCache.findIndex(config, dirname, done);
-};
+};*/
 
 module.exports.findSiblings = function(config, fileName, done) {
     var bnm   = path.basename(fileName);
