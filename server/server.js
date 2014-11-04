@@ -190,15 +190,19 @@ var startServer = function(akasha, config) {
                         var docEntry = akasha.findDocumentForUrlpath(config, body.urlpath);
                         if (docEntry) {
                             // util.log('found docEntry for urlpath '+ body.urlpath +' '+ util.inspect(docEntry));
-                            akasha.updateDocumentData(config, docEntry, trimtxt(body.metadata), trimtxt(body.content), function(err) {
+                            akasha.updateDocumentData(config, docEntry,
+                            		 trimtxt(body.metadata), trimtxt(body.content),
+                            		 function(err) {
                                 if (err) {
                             		// Need to send an error message instead
-                                    showError(res, 400, "Could not update "+ docEntry.fullpath +" because "+ err);
+                                    showError(res, 400, "Could not update "+
+                                    	docEntry.fullpath +" because "+ err);
                                 } else {
                                     // util.log('before renderFile '+ docEntry.path);
                                     akasha.renderFile(config, docEntry.path, function(err) {
                                         if (err) {
-                                            showError(res, 404, "Could not render "+ docEntry.fullpath +" because "+ err);
+                                            showError(res, 404, "Could not render "+
+                                            	docEntry.fullpath +" because "+ err);
                                         } else {
                                             // redirect(res, body.urlpath);
                                             sendJSON(res, 200, {
@@ -214,13 +218,16 @@ var startServer = function(akasha, config) {
                             showError(res, 400, "No docEntry found for "+ body.urlpath);
                         }
                     } else if (requrl.pathname === "/..admin/add") {
+                    	util.log('in /..admin/add');
                         // var fname = path.join(config.root_docs[0], path.dirname(body.urlpath), body.pathname.trim());
+                        var fname = path.join(path.dirname(body.urlpath), body.pathname.trim());
                         akasha.createDocument(config, config.root_docs[0],
-                            path.join(path.dirname(body.urlpath), body.pathname.trim()),
+                            fname,
                             trimtxt(body.metadata), trimtxt(body.content), function(err, docEntry) {
                                 if (err) {
                                     // Need to send an error message instead
-                                    showError(res, 404, "Error while creating "+ body.urlpath +" "+ err);
+                                    showError(res, 500, "Error while creating "+ fname +" "+ err);
+                                    // util.log('FAIL received from createDocument because '+ err);
                                 } else {
                                 	// util.log(util.inspect(docEntry));
                                     akasha.renderFile(config, docEntry.path, function(err) {
