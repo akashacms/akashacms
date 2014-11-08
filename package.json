@@ -14,7 +14,7 @@
   "bin": {
     "akashacms": "cli.js"
   },
-  "version": "0.3.16",
+  "version": "0.3.17",
   "engines": {
     "node": ">=0.8.1"
   },
@@ -38,7 +38,7 @@
     "ssh2sync": "*",
     "cheerio": ">=0.17",
     "yamljs": "*",
-    "log4js-node": "*"
+    "log4js": "*"
   },
   "devDependencies": {
     "vows": "*"
