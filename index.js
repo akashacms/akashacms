@@ -22,6 +22,7 @@ var util       = require('util');
 var url        = require('url');
 var find       = require('./lib/find');
 var renderer   = require('./lib/renderer2');
+var mahabhuta  = require('./lib/mahabhuta');
 var fs         = require('fs');
 var FS         = require('meta-fs');
 var path       = require('path');
@@ -29,13 +30,34 @@ var fileCache  = require('./lib/fileCache');
 var smap       = require('sightmap');
 var minify     = require('minify');
 var filewalker = require('filewalker');
+var log4js     = require('log4js');
+var logger;
 
-module.exports.config = function(options) {
-    // MOOT???? Make functions available to any code located in the configuration
-    // MOOT???? These functions need to be ones that are useful to code in configurations
-    // MOOT???? options.partial = module.exports.partial;
-    // options.akashacms = module.exports; // Do we need this instead?
-    renderer.config(options);
+
+module.exports.config = function(config) {
+
+	// Set up logging support
+	
+	if (config.log4js) {
+		log4js.configure(config.log4js);
+	} else {
+		log4js.configure({
+			appenders: [
+				{ type: "console" }
+			],
+			replaceConsole: true
+		});
+	}
+
+	logger = module.exports.getLogger("akashacms");
+	logger.setLevel("INFO");
+
+	// Configure all the modules - primarily so they can get logger support
+	
+    fileCache.config(module.exports, config);
+    find.config(module.exports, config);
+    renderer.config(module.exports, config);
+    mahabhuta.config(module.exports, config);
     
     // Pull in any plugins to extend AkashaCMS
     // We allow either a String to give the name of the plugin,
@@ -48,37 +70,41 @@ module.exports.config = function(options) {
     // module: The require is performed inside config.js, meaning the 
     //    module reference is done there.
     
-    for (var i = 0; options.plugins && i < options.plugins.length; i++) {
-        var pl = options.plugins[i];
+    for (var i = 0; config.plugins && i < config.plugins.length; i++) {
+        var pl = config.plugins[i];
         var plugin;
         if (typeof pl === 'string')
             plugin = require(pl);
         else
             plugin = pl;
-        plugin.config(module.exports, options);
+        plugin.config(module.exports, config);
     }
     
     // Then give the configuration file a shot at extending us
-    if (options.config) {
-        options.config(module.exports);
+    if (config.config) {
+        config.config(module.exports);
     }
     
     // Make the builtin plugin the last on the chain
     var builtin = path.join(__dirname, 'builtin');
-    require(path.join(builtin, 'index')).config(module.exports, options);
+    require(path.join(builtin, 'index')).config(module.exports, config);
     
     // util.log(util.inspect(options));
     
     return module.exports;
 };
 
+module.exports.getLogger = function(category) {
+	return category ? log4js.getLogger(category) : log4js.getLogger();
+};
+
 module.exports.process = function(options, callback) {
     var cleanDir = function(done) {
-        util.log('removing ' + options.root_out);
+        logger.info('removing ' + options.root_out);
         FS.remove(options.root_out, function(err) {
             if (err) done(err);
             else {
-                util.log('making empty ' + options.root_out);
+                logger.info('making empty ' + options.root_out);
                 FS.mkdir_p(options.root_out, function(err) {
                     if (err) done(err);
                     else done();
@@ -90,7 +116,7 @@ module.exports.process = function(options, callback) {
     var copyAssets = function(done) {
         async.forEachSeries(options.root_assets,
             function(assetdir, done) {
-                util.log('copy assetdir ' + assetdir + ' to ' + options.root_out);
+                logger.info('copy assetdir ' + assetdir + ' to ' + options.root_out);
                 FS.copy(assetdir, options.root_out, function(err) {
                     if (err) done(err);
                     else done();
@@ -117,7 +143,7 @@ module.exports.process = function(options, callback) {
                                 // util.log('DOCUMENT '+ options.gatheredDocuments[docNm].path);
                                 entryCount++;
                             }
-                            util.log('process '+ options.gatheredDocuments.length +' entries count='+entryCount);
+                            logger.info('process '+ options.gatheredDocuments.length +' entries count='+entryCount);
                             process_and_render_files(options, function(err) {
                                 if (err) throw new Error(err);
                                 else {
@@ -152,7 +178,7 @@ module.exports.partialSync = function(theoptions, name, locals, callback) {
 };
 
 module.exports.renderFile = function(options, fileName, callback) {
-    renderer.config(options);
+    renderer.config(module.exports, options);
     fileCache.readDocument(options, fileName, function(err, entry) {
     	if (err) callback(err);
 		else if (!entry) callback(new Error('File '+fileName+' not found'));
@@ -206,21 +232,21 @@ module.exports.minimize = function(options, done) {
 };
 
 module.exports.gatherDir = function(options, docroot, done) {
-    util.log('******** gatherDir START '+ docroot);
+    logger.info('******** gatherDir START '+ docroot);
     filewalker(docroot, { maxPending: 1, maxAttempts: 3, attemptTimeout: 3000 })
     .on('file', function(path, s, fullPath) {
-        // util.log(docroot + ' FILE ' + path + ' ' + fullPath);
+        logger.trace(docroot + ' FILE ' + path + ' ' + fullPath);
         fileCache.readDocument(options, path, function(err, docEntry) {
         	if (!err && docEntry) options.gatheredDocuments.push(docEntry);
         	if (err) util.log(err);
         });
     })
     .on('error', function(err) {
-        util.log('gatherDir ERROR '+ docroot +' '+ err);
+        logger.info('gatherDir ERROR '+ docroot +' '+ err);
         done(err);
     })
     .on('done', function() {
-        util.log('gatherDir DONE '+ docroot +' '+ options.gatheredDocuments.length);
+        logger.info('gatherDir DONE '+ docroot +' '+ options.gatheredDocuments.length);
         done();
     })
     .walk();
@@ -237,7 +263,7 @@ var gather_documents = module.exports.gather_documents = function(options, done)
         function(err) {
             var entryCount = 0;
             for (var docNm in options.gatheredDocuments) { entryCount++; }
-            util.log('gather_documents DONE count='+ entryCount +' length='+ options.gatheredDocuments.length);
+            logger.info('gather_documents DONE count='+ entryCount +' length='+ options.gatheredDocuments.length);
             if (err) done(err); else done();
         });
 };
@@ -270,7 +296,7 @@ var mkDirPath = function(options, dirPath, done) {
  * For files that are processed into an HTML, run the processing.
  **/
 var process2html = function(options, entry, done) {
-    // util.log('process2html #1 '+ entry.path); // util.inspect(entry));
+    logger.trace('process2html #1 '+ entry.path); // util.inspect(entry));
     if (! fileCache.supportedForHtml(entry.path)) {
         done(new Error('UNKNOWN template engine for ' + entry.path));
     } else {
@@ -292,9 +318,9 @@ var process2html = function(options, entry, done) {
             renderopts.rendered_date = entry.stat.mtime;
         }
         
-        // util.log('process2html #2 '+ entry.path); //  +' '+ util.log(util.inspect(renderopts)));
+        logger.trace('process2html #2 '+ entry.path); //  +' '+ util.log(util.inspect(renderopts)));
         renderer.render(module.exports, options, entry, /*entry.path*/ undefined, renderopts, /*"",*/ function(err, rendered) {
-            // util.log('***** DONE RENDER ' + entry.path); // util.inspect(rendered));
+            logger.trace('***** DONE RENDER ' + entry.path); // util.inspect(rendered));
             if (err) done('Rendering '+ entry.path +' failed with '+ err);
             else {
                 var renderTo = path.join(options.root_out, rendered.fname);
@@ -302,7 +328,7 @@ var process2html = function(options, entry, done) {
                     // TBD - the callback needs to send a new rendering 
                     if (err) done('Rendering file-rendered '+ entry.path +' failed with '+ err);
                     else {
-                        util.log('rendered '+ entry.path +' as '+ renderTo);
+                        logger.info('rendered '+ entry.path +' as '+ renderTo);
                         var dir2make = path.dirname(rendered.fname);
                         mkDirPath(options, dir2make, function(err) {
                             if (err) done('FAILED to make directory '+ dir2make +' failed with '+ err); 
@@ -314,7 +340,7 @@ var process2html = function(options, entry, done) {
                                     if (entry.frontmatter.yaml.publDate) {
                                         var parsed = Date.parse(entry.frontmatter.yaml.publDate);
                                         if (isNaN(parsed)) {
-                                            util.log("WARNING WARNING Bad date provided "+ entry.frontmatter.yaml.publDate);
+                                            logger.info("WARNING WARNING Bad date provided "+ entry.frontmatter.yaml.publDate);
                                         } else {
                                             atime = mtime = new Date(parsed);
                                         }
@@ -371,17 +397,17 @@ var render_less = function(options, entry, done) {
 var process_and_render_files = function(config, done) {
     dispatcher('before-render-files', function(err) {
         var entryCount = 0;
-        // util.log('process_and_render_files '+ config.gatheredDocuments.length +' entries');
+        logger.trace('process_and_render_files '+ config.gatheredDocuments.length +' entries');
         for (docNm in config.gatheredDocuments) {
-            // util.log('DOCUMENT '+ options.gatheredDocuments[docNm].path);
+            logger.trace('DOCUMENT '+ config.gatheredDocuments[docNm].path);
             entryCount++;
         }
-        util.log('process_and_render_files entryCount='+ entryCount);
+        logger.info('process_and_render_files entryCount='+ entryCount);
         entryCount = 0;
         async.eachSeries(config.gatheredDocuments,
         function(entry, cb) {
             entryCount++;
-            util.log('FILE '+ entryCount +' '+ entry.path);
+            logger.info('FILE '+ entryCount +' '+ entry.path);
             // support other asynchronous template systems such as
             // https://github.com/c9/kernel - DONE
             // https://github.com/akdubya/dustjs
@@ -398,7 +424,7 @@ var process_and_render_files = function(config, done) {
             }
         },
         function(err) {
-            util.log('***** process_and_render_files saw count='+ entryCount);
+            logger.info('***** process_and_render_files saw count='+ entryCount);
             dispatcher('done-render-files');
             if (err) done(err); else done();
         });
@@ -536,13 +562,13 @@ var emitter = module.exports.emitter = new events.EventEmitter();
 var dispatcher = function() {
     // Convert our arguments into an array to simplify working on the args
     var args = Array.prototype.slice.call(arguments);
-    // util.log(util.inspect(args));
+    logger.trace(util.inspect(args));
     // Arg1: eventName - MUST BE A STRING
     var eventName = args.shift();
-    // util.log(eventName +' '+ util.inspect(args));
+    logger.trace(eventName +' '+ util.inspect(args));
     if (typeof eventName !== 'string') { throw new Error('eventName must be a string'); }
     var handlers = emitter.listeners(eventName); // list of handler functions 
-    // util.log(util.inspect(handlers));
+    logger.trace(util.inspect(handlers));
     
     // Last argument: Optional callback function
     // If no callback is supplied, we provide one that if there's an error throws it
@@ -560,7 +586,7 @@ var dispatcher = function() {
     }
     
     var dispatchToHandler = function(handler, argz, callback) {
-        // util.log('dispatchToHandler '+ eventName +' '+ util.inspect(handler));
+        logger.trace('dispatchToHandler '+ eventName +' '+ util.inspect(handler));
         if (!handler) {
             return callback();
         }
@@ -582,7 +608,7 @@ var dispatcher = function() {
     
     var callNextHandler = function(argz) {
         dispatchToHandler(handler, argz, function(err) {
-            // util.log('DONE dispatchToHandler '+ err);
+            logger.trace('DONE dispatchToHandler '+ err);
             if (err) {
                 finalCB(err);
             } else {

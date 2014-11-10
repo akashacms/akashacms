@@ -2,7 +2,11 @@ var path = require('path');
 var util = require('util');
 var async = require('async');
 
+var logger;
+
 module.exports.config = function(akasha, config) {
+	logger = akasha.getLogger("builtin");
+	
     config.root_partials.push(path.join(__dirname, 'partials'));
     config.root_layouts.push(path.join(__dirname, 'layout'));
     
@@ -119,10 +123,10 @@ module.exports.config = function(akasha, config) {
                 for (var mprop in metadata) { d[mprop] = metadata[mprop]; }
                 var data = $(partial).data();
                 for (var dprop in data) { d[dprop] = data[dprop]; }
-                // util.log('partial tag fname='+ fname +' attrs '+ util.inspect(data));
+                // logger.trace('partial tag fname='+ fname +' attrs '+ util.inspect(data));
                 akasha.partial(config, fname, d, function(err, html) {
                     if (err) {
-                        // util.log('partial ERROR '+ util.inspect(err));
+                        // logger.trace('partial ERROR '+ util.inspect(err));
                         next(err);
                     }
                     else {
@@ -133,7 +137,7 @@ module.exports.config = function(akasha, config) {
             },
             function(err) {
               if (err) {
-                // util.log('partial Errored with '+ util.inspect(err));
+                // logger.trace('partial Errored with '+ util.inspect(err));
                 done(err);
               } else {
                 done();

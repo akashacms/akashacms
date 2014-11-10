@@ -9,6 +9,8 @@ var util = require('util');
 var cheerio = require('cheerio');
 var anyBody = require("body/any");
 
+var logger;
+
 /* 
 server/assets contains the code for the toolbar
 
@@ -23,6 +25,7 @@ Toolbar has two modes
 var txtEditForm, txtAddForm, dirAddForm, txtDeleteForm;
 
 module.exports = function(akasha, config) {
+	logger = akasha.getLogger("server");
     readFiles(function(err) {
         if (err) {
             throw err;
@@ -62,14 +65,14 @@ var readFiles = function(cb) {
 
 var startServer = function(akasha, config) {
     http.createServer(function (request, res) {
-        util.log(request.method +' '+ util.inspect(request.url));
+        logger.info(request.method +' '+ util.inspect(request.url));
         var requrl = url.parse(request.url, true);
         if (request.method === "GET") {
             var matches;
             if ((matches = requrl.pathname.match(/^\/\.\.admin\/editpage(\/.*)/)) !== null) {
                 var urlpath = matches[1];
-                // util.log(util.inspect(matches));
-                // util.log('urlpath '+ urlpath);
+                // logger.trace(util.inspect(matches));
+                // logger.trace('urlpath '+ urlpath);
                 var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
                 if (docEntry) {
                     fs.readFile(path.join(config.root_out, urlpath), { encoding: 'utf8' }, function(err, buf) {
@@ -107,8 +110,6 @@ var startServer = function(akasha, config) {
                 });
             } else if ((matches = requrl.pathname.match(/^\/\.\.admin\/addnewpage(\/.*)/)) !== null) {
                 var urlpath = matches[1];
-                // util.log(util.inspect(matches));
-                // util.log('urlpath '+ urlpath);
                 fs.readFile(path.join(config.root_out, urlpath), { encoding: 'utf8' }, function(err, buf) {
                     if (err) {
                         buf = '<html><head></head><body></body></html>';
@@ -139,6 +140,7 @@ var startServer = function(akasha, config) {
                     );
                     res.end($.html());
                 });
+            } else if ((matches = requrl.pathname.match(/^\/\.\.admin\/fullbuild(\/.*)/)) !== null) {
             } else if ((matches = requrl.pathname.match(/^\/\.\.admin\/docData(\/.*)/)) !== null) {
                 var urlpath = matches[1];
                 var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
@@ -176,12 +178,12 @@ var startServer = function(akasha, config) {
                 });
             }
         } else if (request.method === "POST") {
-            util.log('POST URL '+ util.inspect(requrl));
-            // util.log('POST URL '+ util.inspect(request.query));
-            // util.log(util.inspect(request));
+            logger.info('POST URL '+ util.inspect(requrl));
+            // logger.trace('POST URL '+ util.inspect(request.query));
+            // logger.trace(util.inspect(request));
             
             anyBody(request, res, function (err, body) { // parse request body
-                // util.log('POST BODY '+ util.inspect(body));
+                // logger.trace('POST BODY '+ util.inspect(body));
                 if (err) {
                     showError(res, 404, "POST received error "+err);
                 } else {
@@ -189,7 +191,7 @@ var startServer = function(akasha, config) {
                     if (requrl.pathname === "/..admin/edit") {
                         var docEntry = akasha.findDocumentForUrlpath(config, body.urlpath);
                         if (docEntry) {
-                            // util.log('found docEntry for urlpath '+ body.urlpath +' '+ util.inspect(docEntry));
+                            // logger.trace('found docEntry for urlpath '+ body.urlpath +' '+ util.inspect(docEntry));
                             akasha.updateDocumentData(config, docEntry,
                             		 trimtxt(body.metadata), trimtxt(body.content),
                             		 function(err) {
@@ -218,7 +220,7 @@ var startServer = function(akasha, config) {
                             showError(res, 400, "No docEntry found for "+ body.urlpath);
                         }
                     } else if (requrl.pathname === "/..admin/add") {
-                    	util.log('in /..admin/add');
+                    	logger.trace('in /..admin/add');
                         // var fname = path.join(config.root_docs[0], path.dirname(body.urlpath), body.pathname.trim());
                         var fname = path.join(path.dirname(body.urlpath), body.pathname.trim());
                         akasha.createDocument(config, config.root_docs[0],
@@ -227,9 +229,9 @@ var startServer = function(akasha, config) {
                                 if (err) {
                                     // Need to send an error message instead
                                     showError(res, 500, "Error while creating "+ fname +" "+ err);
-                                    // util.log('FAIL received from createDocument because '+ err);
+                                    logger.error('FAIL received from createDocument because '+ err);
                                 } else {
-                                	// util.log(util.inspect(docEntry));
+                                	// logger.trace(util.inspect(docEntry));
                                     akasha.renderFile(config, docEntry.path, function(err) {
                                         if (err) {
                                             showError(res, 404, "Could not render "+ docEntry.fullpath +" because "+ err);
@@ -245,7 +247,7 @@ var startServer = function(akasha, config) {
                     } else if (requrl.pathname === "/..admin/delete") {
                         var docEntry = akasha.findDocumentForUrlpath(config, body.urlpath);
                         if (docEntry) {
-                            // util.log(util.inspect(docEntry));
+                            // logger.trace(util.inspect(docEntry));
                             akasha.deleteDocumentForUrlpath(config, docEntry.path, function(err) {
                                 if (err) {
                                     showError(res, 404, "Could not delete "+ body.urlpath +" because "+ err);
@@ -290,7 +292,7 @@ var startServer = function(akasha, config) {
 };
 
 var streamFile = function(akasha, config, res, requrl, fname) {
-    util.log('streamFile '+ fname /*+' '+ util.inspect(requrl)*/);
+    logger.info('streamFile '+ fname /*+' '+ util.inspect(requrl)*/);
     if (requrl.pathname.match(/\.html$/)) {
         fs.readFile(fname, { encoding: 'utf8' }, function(err, buf) {
             if (err) {
@@ -298,8 +300,8 @@ var streamFile = function(akasha, config, res, requrl, fname) {
             } else {
                 var $ = newCheerio(buf);
                 var docEntry = akasha.findDocumentForUrlpath(config, requrl.pathname);
-                // util.log('streamFile '+ requrl.pathname);
-                // util.log(util.inspect(docEntry));
+                // logger.trace('streamFile '+ requrl.pathname);
+                // logger.trace(util.inspect(docEntry));
                 // $('body').wrapInner('<div id="ak-original-content"></div>');
                 $('body').prepend(
                      '<div id="ak-editor-toolbar">'
@@ -308,6 +310,7 @@ var streamFile = function(akasha, config, res, requrl, fname) {
                     +'<a id="ak-editor-delete-link" href=""><span class="ak-editor-button" id="ak-editor-delete-button">Delete</span></a>'
                     +'<a id="ak-editor-addnewdir-link" href=""><span class="ak-editor-button" id="ak-editor-add-newdir-button">Add NEW Directory</span></a>'
                     +'<a id="ak-editor-addnew-link" href=""><span class="ak-editor-button" id="ak-editor-add-new-button">Add NEW File</span></a>'
+                    +'<a id="ak-editor-full-build-link" href=""><span class="ak-editor-button" id="ak-editor-full-build-button">FULL Rebuild</span></a>'
                     +'</div>'
                 );
                 $("#ak-editor-file-name").append("<strong>File Name: "+ requrl.pathname +"</strong>");
@@ -315,6 +318,7 @@ var streamFile = function(akasha, config, res, requrl, fname) {
                 $("#ak-editor-delete-link").attr('href', "/..admin/deletepage"+requrl.pathname);
                 $("#ak-editor-addnew-link").attr('href', "/..admin/addnewpage"+requrl.pathname);
                 $("#ak-editor-addnewdir-link").attr('href', "/..admin/addnewdir"+requrl.pathname);
+                $("#ak-editor-full-build-link").attr('href', "/..admin/fullbuild"+requrl.pathname);
                 $('body').append(
                     '<script src="/..admin/js/editor.js"></script>'
                    +'<script src="/..admin/vendor/ace-1.1.7/ace.js" type="text/javascript" charset="utf-8"></script>'
