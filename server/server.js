@@ -126,6 +126,21 @@ var startServer = function(akasha, config) {
                     );
                     res.end($.html());
                 });
+            } else if ((matches=requrl.pathname.match(/^\/\.\.admin\/addindexpage(\/.*)/)) !== null) {
+                var urlpath = matches[1];
+                fs.readFile(path.join(config.root_out, urlpath), { encoding: 'utf8' }, function(err, buf) {
+                    if (err) {
+                        buf = '<html><head></head><body></body></html>';
+                    }
+                    var $ = newCheerio(buf);
+                    
+                    $('body').empty();
+                    $('body').append(prepareIndexCreateForm(urlpath));
+                    $('html head').append(
+                        '<link rel="stylesheet" href="/..admin/css/editor.css" type="text/css"/>'
+                    );
+                    res.end($.html());
+                });
             } else if ((matches = requrl.pathname.match(/^\/\.\.admin\/deletepage(\/.*)/)) !== null) {
                 var urlpath = matches[1];
                 fs.readFile(path.join(config.root_out, urlpath), { encoding: 'utf8' }, function(err, buf) {
@@ -141,6 +156,14 @@ var startServer = function(akasha, config) {
                     res.end($.html());
                 });
             } else if ((matches = requrl.pathname.match(/^\/\.\.admin\/fullbuild(\/.*)/)) !== null) {
+                var urlpath = matches[1];
+				akasha.process(config, function(err) {
+                    if (err) showError(res, 404, "Failed to rebuild site because "+ err);
+                    else {
+                    	logger.trace(urlpath);
+                    	redirect(res, urlpath);
+                    }
+				});
             } else if ((matches = requrl.pathname.match(/^\/\.\.admin\/docData(\/.*)/)) !== null) {
                 var urlpath = matches[1];
                 var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
@@ -274,7 +297,7 @@ var startServer = function(akasha, config) {
                     				} else {
                     					// Now what?
                     					// Need to make the user create dirnm/index.html
-                    					redirect(res, path.join('/..admin/addnewpage', body.dirname, body.pathname, "index.html"));
+                    					redirect(res, path.join('/..admin/addindexpage', body.dirname, body.pathname));
                     				}
                     			});
                     		}
@@ -375,6 +398,19 @@ var prepareDocCreateForm = function(urlpath, dirname, fname, metadata, content) 
     $('#ak-editor-add-dirname').append(dirname);
     $('#ak-editor-pathname-input').attr('value', fname);
     // $('#ak-editor-metadata-input').append(metadata ? metadata : "");
+    // $('#ak-editor-content-input').append(content ? content : "");
+    return $.html();
+};
+
+var prepareIndexCreateForm = function(dirname) {
+    var $ = newCheerio(txtAddForm);
+    $('#ak-editor-urlpath').attr('value', dirname);
+    $('#ak-editor-add-dirname').append(dirname);
+    $('#ak-editor-pathname-input').replaceWith(
+    	'<input type=hidden name=pathname id="ak-editor-pathname-input" value="index.html.md">'
+       +'<span id="ak-editor-add-dirname">/index.html.md</span>'
+    );
+    $('#ak-editor-metadata-input').append("layout: index-page.html.ejs\ntitle: \n");
     // $('#ak-editor-content-input').append(content ? content : "");
     return $.html();
 };
