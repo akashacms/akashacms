@@ -119,8 +119,7 @@ var startServer = function(akasha, config) {
                     $('body').empty();
                     $('body').append(prepareDocCreateForm(
                                     urlpath,
-                                    path.dirname(urlpath),
-                                    path.basename(urlpath)));
+                                    path.dirname(urlpath)));
                     $('html head').append(
                         '<link rel="stylesheet" href="/..admin/css/editor.css" type="text/css"/>'
                     );
@@ -246,6 +245,7 @@ var startServer = function(akasha, config) {
                     	logger.trace('in /..admin/add');
                         // var fname = path.join(config.root_docs[0], path.dirname(body.urlpath), body.pathname.trim());
                         var fname = path.join(path.dirname(body.urlpath), body.pathname.trim());
+                        if (body.fnextension) fname += body.fnextension;
                         akasha.createDocument(config, config.root_docs[0],
                             fname,
                             trimtxt(body.metadata), trimtxt(body.content), function(err, docEntry) {
@@ -392,11 +392,11 @@ var prepareDirCreateForm = function(urlpath) {
     return $.html();
 };
 
-var prepareDocCreateForm = function(urlpath, dirname, fname, metadata, content) {
+var prepareDocCreateForm = function(urlpath, dirname /*, fname, metadata, content */) {
     var $ = newCheerio(txtAddForm);
     $('#ak-editor-urlpath').attr('value', urlpath);
     $('#ak-editor-add-dirname').append(dirname);
-    $('#ak-editor-pathname-input').attr('value', fname);
+    $('#ak-editor-pathname-input').attr('value', "");
     // $('#ak-editor-metadata-input').append(metadata ? metadata : "");
     // $('#ak-editor-content-input').append(content ? content : "");
     return $.html();
@@ -406,6 +406,7 @@ var prepareIndexCreateForm = function(dirname) {
     var $ = newCheerio(txtAddForm);
     $('#ak-editor-urlpath').attr('value', dirname);
     $('#ak-editor-add-dirname').append(dirname);
+    $('#ak-editor-fnextension').remove();
     $('#ak-editor-pathname-input').replaceWith(
     	'<input type=hidden name=pathname id="ak-editor-pathname-input" value="index.html.md">'
        +'<span id="ak-editor-add-dirname">/index.html.md</span>'

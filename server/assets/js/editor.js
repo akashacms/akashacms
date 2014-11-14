@@ -94,7 +94,10 @@ $(function() {
                             : "",
                     pathname: $("#ak-editor-pathname-input").length > 0
                             ? $("#ak-editor-pathname-input").val()
-                            : ""
+                            : "",
+                    fnextension: $("#ak-editor-fnextension").length > 0
+                    		? $("#ak-editor-fnextension").val()
+                    		: ""
                 },
                 dataType: "json",
                 success: function(json) {

@@ -3,7 +3,14 @@
 <form method="POST" id="ak-editor-add-form" class="ak-editor-addedit-form" action="/..admin/add">
     <input type=hidden name=urlpath id="ak-editor-urlpath" value="">
     <label for="pathname-input">File Name:</label><br/>
-    <span id="ak-editor-add-dirname"></span><input type="text" name="pathname" id="ak-editor-pathname-input" size="50"><br/>
+    <span id="ak-editor-add-dirname"></span>
+    <input type="text" name="pathname" id="ak-editor-pathname-input" size="50">
+	<select name="fnextension" id="ak-editor-fnextension">
+		<option selected>.html.md</option> 
+		<option>.html.ejs.md</option>
+		<option>.html.ejs</option>
+	</select>
+    <br/>
     <label for="metadata">Metadata:</label><br/>
     <div id="ak-editor-metadata-input"></div>
     <label for="content">Content:</label><br/>
