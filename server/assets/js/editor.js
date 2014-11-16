@@ -86,18 +86,10 @@ $(function() {
                 data: {
                     metadata: Yeditor.getValue(),
                     content: Ceditor.getValue(),
-                    urlpath: $(this).attr('id') === "ak-editor-edit-form"
-                            ? $("#ak-editor-urlpath").attr("value")
-                            : $('#ak-editor-add-dirname').text() +'/'+ $('#ak-editor-pathname-input').attr("value"),
-                    dirname: $("#ak-editor-add-dirname").length > 0
-                            ? $("#ak-editor-add-dirname").text()
-                            : "",
-                    pathname: $("#ak-editor-pathname-input").length > 0
-                            ? $("#ak-editor-pathname-input").val()
-                            : "",
-                    fnextension: $("#ak-editor-fnextension").length > 0
-                    		? $("#ak-editor-fnextension").val()
-                    		: ""
+                    urlpath: $("#ak-editor-urlpath").attr("value"),
+                    dirname: $("#ak-editor-add-dirname").length > 0 ? $("#ak-editor-add-dirname").text() : "",
+                    pathname: $("#ak-editor-pathname-input").length > 0 ? $("#ak-editor-pathname-input").val() : "",
+                    fnextension: $("#ak-editor-fnextension").length > 0 ? $("#ak-editor-fnextension").val()	: ""
                 },
                 dataType: "json",
                 success: function(json) {

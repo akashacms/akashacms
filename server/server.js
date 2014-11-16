@@ -244,8 +244,9 @@ var startServer = function(akasha, config) {
                     } else if (requrl.pathname === "/..admin/add") {
                     	logger.trace('in /..admin/add');
                         // var fname = path.join(config.root_docs[0], path.dirname(body.urlpath), body.pathname.trim());
-                        var fname = path.join(path.dirname(body.urlpath), body.pathname.trim());
+                        var fname = path.join(body.dirname, body.pathname.trim());
                         if (body.fnextension) fname += body.fnextension;
+                        // logger.trace('fname='+ fname);
                         akasha.createDocument(config, config.root_docs[0],
                             fname,
                             trimtxt(body.metadata), trimtxt(body.content), function(err, docEntry) {
@@ -385,6 +386,7 @@ var prepareDocEditForm = function(urlpath, metadata, content) {
 };
 
 var prepareDirCreateForm = function(urlpath) {
+	// logger.trace('prepareDirCreateForm urlpath='+ urlpath);
     var $ = newCheerio(dirAddForm);
     $('#ak-editor-urlpath').attr('value', urlpath);
     $('#ak-editor-dirname').attr('value', path.dirname(urlpath));
@@ -393,6 +395,7 @@ var prepareDirCreateForm = function(urlpath) {
 };
 
 var prepareDocCreateForm = function(urlpath, dirname /*, fname, metadata, content */) {
+	// logger.trace('prepareDocCreateForm urlpath='+ urlpath +' dirname='+ dirname);
     var $ = newCheerio(txtAddForm);
     $('#ak-editor-urlpath').attr('value', urlpath);
     $('#ak-editor-add-dirname').append(dirname);
@@ -403,6 +406,7 @@ var prepareDocCreateForm = function(urlpath, dirname /*, fname, metadata, conten
 };
 
 var prepareIndexCreateForm = function(dirname) {
+	// logger.trace('prepareDirCreateForm dirname='+ dirname);
     var $ = newCheerio(txtAddForm);
     $('#ak-editor-urlpath').attr('value', dirname);
     $('#ak-editor-add-dirname').append(dirname);
