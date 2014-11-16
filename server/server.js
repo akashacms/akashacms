@@ -262,7 +262,7 @@ var startServer = function(akasha, config) {
                                         } else {
                                             // redirect(res, path.join(path.dirname(body.urlpath), path.basename(docEntry.renderedFileName)));
                                             sendJSON(res, 200, {
-                                                newlocation: path.join(path.dirname(body.urlpath), path.basename(docEntry.renderedFileName))
+                                                newlocation: path.join(body.dirname, path.basename(docEntry.renderedFileName))
                                             });
                                         }
                                     });
