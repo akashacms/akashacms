@@ -1,5 +1,6 @@
 var path = require('path');
 var util = require('util');
+var url   = require('url');
 var async = require('async');
 
 var logger;
@@ -197,33 +198,70 @@ module.exports.config = function(akasha, config) {
         });
         
         config.mahabhuta.push(function(akasha, config, $, metadata, done) {
-        	// <linkto docref="path/to/document.html">Anchor Text</linkto>
-            var linktos = [];
-            $('linkto').each(function(i, elem) { linktos.push(elem); });
-            async.eachSeries(linktos,
-            function(linkto, next) {
-            	var docref = $(linkto).attr('docref');
-            	var text   = $(linkto).text();
-            	var rel    = $(linkto).attr('rel');
-            	var docEntry = akasha.findDocumentForUrlpath(config, docref);
-            	if (!docEntry) {
-            		next(new Error('Document not found for URL '+ docref));
-            	} else {
-					if (!text) text = docEntry.frontmatter.yaml.title;
-					akasha.partial(config, "ak_linkto.html.ejs", {
-						href: '/'+ docEntry.renderedFileName,
-						anchor: text,
-						title: docEntry.frontmatter.yaml.title
-							 ? docEntry.frontmatter.yaml.title : undefined,
-						rel: rel
-					}, function(err, html) {
-						if (err) next(err);
-						else {
-							$(linkto).replaceWith(html);
-							next();
+            var links = [];
+            $('a').each(function(i, elem) { links.push(elem); });
+            async.eachSeries(links,
+            function(link, next) {
+            	var href   = $(link).attr('href');
+            	/*var text   = $(link).text();
+            	var rel    = $(link).attr('rel');
+            	var lclass = $(link).attr('class');
+            	var id     = $(link).attr('id');
+            	var name   = $(link).attr('name');
+            	var title  = $(link).attr('title');*/
+            	
+            	// The potential exists to manipulate links to local documents
+            	// Such as what's done with the linkto tag above.
+            	// Such as checking for valid links
+            	// Also need to consider links to //hostname/path/to/object
+            	// Potential for complete link checking service right here
+            	
+            	if (href) {
+					var uHref = url.parse(href, true, true);
+					
+					if (uHref.protocol || uHref.slashes) {
+						// It's a link to somewhere else
+						// look at domain in whitelist and blacklist
+					
+						var donofollow = false;
+					
+						if (config.nofollow && config.nofollow.blacklist) {
+							config.nofollow.blacklist.forEach(function(re) {
+								if (uHref.hostname.match(re)) {
+									donofollow = true;
+								}
+							});
 						}
-					});
-				}
+						if (config.nofollow && config.nofollow.whitelist) {
+							config.nofollow.whitelist.forEach(function(re) {
+								if (uHref.hostname.match(re)) {
+									donofollow = false;
+								}
+							});
+						}
+					
+						if (donofollow && !$(link).attr('rel')) {
+							$(link).attr('rel', 'nofollow');
+						}
+					
+						next();
+					} else {
+						// This is where we would handle local links
+            			var docEntry = akasha.findDocumentForUrlpath(config, href);
+            			if (docEntry) {
+            				if (!$(link).attr('title')
+            				 && docEntry.frontmatter.yaml.title) {
+            					$(link).attr('title', docEntry.frontmatter.yaml.title);
+            				}
+            				var linktext = $(link).text();
+            				if ((!linktext || linktext.length <= 0 || linktext === href)
+            				 && docEntry.frontmatter.yaml.title) {
+            					$(link).text(docEntry.frontmatter.yaml.title);
+            				}
+            			}
+            			next();
+					}
+				} else next();
             },
             function(err) {
 				if (err) {
