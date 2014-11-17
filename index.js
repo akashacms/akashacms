@@ -28,7 +28,7 @@ var FS         = require('meta-fs');
 var path       = require('path');
 var fileCache  = require('./lib/fileCache');
 var smap       = require('sightmap');
-var minify     = require('minify');
+// var minify     = require('minify');
 var filewalker = require('filewalker');
 var log4js     = require('log4js');
 var logger;
@@ -200,6 +200,9 @@ module.exports.renderFile = function(options, fileName, callback) {
  * Minimize a directory tree using the minify library.
  **/
 module.exports.minimize = function(options, done) {
+	done();
+	
+	/*
     filewalker(options.root_out, { maxPending: 1, maxAttempts: 3, attemptTimeout: 3000 })
     .on('file', function(path, s, fullPath) {
         if (fullPath.match(/\.js$/) || fullPath.match(/\.html$/) || fullPath.match(/\.css$/)) {
@@ -228,7 +231,7 @@ module.exports.minimize = function(options, done) {
         if (err) done(err);
         else { done(); } 
     })
-    .walk();
+    .walk(); */
 };
 
 module.exports.gatherDir = function(options, docroot, done) {
