@@ -144,6 +144,75 @@ module.exports.config = function(akasha, config) {
               }
             });
         });
+        
+        config.mahabhuta.push(function(akasha, config, $, metadata, done) {
+        	// <footnote href="http:..." name="..." title="..." rel="nofollow">Description</footnote>
+        	var footnoteCount = 0;
+            var footnotes = [];
+            $('footnote').each(function(i, elem) { footnotes.push(elem); });
+            async.eachSeries(footnotes,
+            function(footnote, next) {
+            	var href = $(footnote).attr('href');
+            	var name = $(footnote).attr('name');
+            	var title = $(footnote).attr('title');
+            	var rel   = $(footnote).attr('rel');
+            	var text  = $(footnote).text();
+            	akasha.partial(config, "ak_footnoteRef.html.ejs", {
+            		name: name
+            	}, function(err, html) {
+            		if (err) next(err);
+            		else {
+            			$(footnote).replaceWith(html);
+            			
+            			akasha.partial(config, "ak_footnote.html.ejs", {
+            				count: ++footnoteCount,
+            				url: href,
+            				title: title,
+            				name: name,
+            				description: text,
+            				rel: rel
+            			}, function(err2, html2) {
+            				if (err2) next(err2);
+            				else {
+            					if ($('div#footnote-area').length <= 0) {
+            						$(":root").append("<div id='footnote-area'><strong>Footnotes</strong><br></div>");
+            					}
+            					$('div#footnote-area').append(html2);
+            					next();
+            				}
+            			});
+            			
+            		}
+            	});
+            	// next(new Error("footnote not yet implemented"));
+            },
+            function(err) {
+				if (err) {
+					// logger.trace('partial Errored with '+ util.inspect(err));
+					done(err);
+				} else {
+					done();
+				}
+        	});
+        });
+        
+        config.mahabhuta.push(function(akasha, config, $, metadata, done) {
+        	// <linkto docref="path/to/document.html">Anchor Text</linkto>
+            var linktos = [];
+            $('linkto').each(function(i, elem) { linktos.push(elem); });
+            async.eachSeries(linktos,
+            function(linkto, next) {
+            	next(new Error("linkto not yet implemented"));
+            },
+            function(err) {
+				if (err) {
+					// logger.trace('partial Errored with '+ util.inspect(err));
+					done(err);
+				} else {
+					done();
+				}
+        	});
+        });
     }
     
     config.funcs.akDoHeaderMeta = function(arg, callback) {
