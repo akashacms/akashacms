@@ -202,11 +202,31 @@ module.exports.config = function(akasha, config) {
             $('linkto').each(function(i, elem) { linktos.push(elem); });
             async.eachSeries(linktos,
             function(linkto, next) {
-            	next(new Error("linkto not yet implemented"));
+            	var docref = $(linkto).attr('docref');
+            	var text   = $(linkto).text();
+            	var rel    = $(linkto).attr('rel');
+            	var docEntry = akasha.findDocumentForUrlpath(config, docref);
+            	if (!docEntry) {
+            		next(new Error('Document not found for URL '+ docref));
+            	} else {
+					if (!text) text = docEntry.frontmatter.yaml.title;
+					akasha.partial(config, "ak_linkto.html.ejs", {
+						href: '/'+ docEntry.renderedFileName,
+						anchor: text,
+						title: docEntry.frontmatter.yaml.title
+							 ? docEntry.frontmatter.yaml.title : undefined,
+						rel: rel
+					}, function(err, html) {
+						if (err) next(err);
+						else {
+							$(linkto).replaceWith(html);
+							next();
+						}
+					});
+				}
             },
             function(err) {
 				if (err) {
-					// logger.trace('partial Errored with '+ util.inspect(err));
 					done(err);
 				} else {
 					done();
