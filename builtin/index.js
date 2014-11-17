@@ -10,6 +10,7 @@ module.exports.config = function(akasha, config) {
 	
     config.root_partials.push(path.join(__dirname, 'partials'));
     config.root_layouts.push(path.join(__dirname, 'layout'));
+    config.root_assets.push(path.join(__dirname, 'assets'));
     
     if (config.mahabhuta) {
         config.mahabhuta.push(function(akasha, config, $, metadata, done) {
@@ -242,6 +243,10 @@ module.exports.config = function(akasha, config) {
 					
 						if (donofollow && !$(link).attr('rel')) {
 							$(link).attr('rel', 'nofollow');
+						}
+						
+						if ($(link).find("img.ak-extlink-icon").length <= 0) {
+							$(link).append('<img class="ak-extlink-icon" src="/img/extlink.png"/>');
 						}
 					
 						next();
