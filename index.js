@@ -45,12 +45,14 @@ module.exports.config = function(config) {
 			appenders: [
 				{ type: "console" }
 			],
-			replaceConsole: true
+			replaceConsole: true,
+			"levels": {
+				"[all]": "INFO"
+			}
 		});
 	}
 
 	logger = module.exports.getLogger("akashacms");
-	logger.setLevel("INFO");
 
 	// Configure all the modules - primarily so they can get logger support
 	
@@ -89,7 +91,7 @@ module.exports.config = function(config) {
     var builtin = path.join(__dirname, 'builtin');
     require(path.join(builtin, 'index')).config(module.exports, config);
     
-    // util.log(util.inspect(options));
+    logger.trace(util.inspect(config));
     
     return module.exports;
 };
@@ -173,7 +175,7 @@ module.exports.partial = function(config, name, locals, callback) {
 };
 
 module.exports.partialSync = function(theoptions, name, locals, callback) {
-    // util.log('akasha exports.partialSync '+ name);
+    logger.trace('akasha exports.partialSync '+ name);
     return renderer.partialSync(theoptions, name, locals, callback);
 };
 

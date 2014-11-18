@@ -125,10 +125,10 @@ module.exports.config = function(akasha, config) {
                 for (var mprop in metadata) { d[mprop] = metadata[mprop]; }
                 var data = $(partial).data();
                 for (var dprop in data) { d[dprop] = data[dprop]; }
-                // logger.trace('partial tag fname='+ fname +' attrs '+ util.inspect(data));
+                logger.trace('partial tag fname='+ fname +' attrs '+ util.inspect(data));
                 akasha.partial(config, fname, d, function(err, html) {
                     if (err) {
-                        // logger.trace('partial ERROR '+ util.inspect(err));
+                        logger.trace('partial ERROR '+ util.inspect(err));
                         next(err);
                     }
                     else {
@@ -139,7 +139,7 @@ module.exports.config = function(akasha, config) {
             },
             function(err) {
               if (err) {
-                // logger.trace('partial Errored with '+ util.inspect(err));
+                logger.trace('partial Errored with '+ util.inspect(err));
                 done(err);
               } else {
                 done();
@@ -190,7 +190,7 @@ module.exports.config = function(akasha, config) {
             },
             function(err) {
 				if (err) {
-					// logger.trace('partial Errored with '+ util.inspect(err));
+					logger.trace('partial Errored with '+ util.inspect(err));
 					done(err);
 				} else {
 					done();
