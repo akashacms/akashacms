@@ -180,31 +180,13 @@ program
         // var staticSrv  = require('node-static');
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
-	akasha.gather_documents(config, function(err, data) {
-	    if (err) {
-		util.log('ERROR '+ err);
-	    } else {
-		require('./server/server')(akasha, config);
-	    }
-	});
-        /*var fileServer = new staticSrv.Server(config.root_out);
-        http.createServer(function (request, response) {
-            request.addListener('end', function () {
-                fileServer.serve(request, response, function (e, res) {
-                    if (e) {
-                        if (e.status === 404) { // If the file wasn't found
-                            fileServer.serveFile('/404.html', 404, {}, request, response);
-                        }
-                        else {
-                            sys.error("Error serving " + request.url + " - " + e.message);
-                            // Respond to the client
-                            response.writeHead(e.status, e.headers);
-                            response.end();
-                        }
-                    }
-                });
-            }).resume();
-        }).listen(8080);*/
+		akasha.gather_documents(config, function(err, data) {
+			if (err) {
+				util.log('ERROR '+ err);
+			} else {
+				require('./server/app')(akasha, config);
+			}
+		});
     });
     
 program

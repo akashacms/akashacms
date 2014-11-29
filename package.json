@@ -18,27 +18,31 @@
   "engines": {
     "node": ">=0.8.1"
   },
-  "directories" : { "lib" : "./lib" },
+  "directories": {
+    "lib": "./lib"
+  },
   "dependencies": {
     "async": ">=0.1.22",
+    "body": "*",
+    "cheerio": ">=0.17",
+    "commander": ">=1.1.1",
     "ejs": ">=0.8.3",
+    "express": "^4.10.3",
+    "body-parser": "*",
     "filewalker": ">=0.1.1",
     "kernel": ">=0.1.3",
     "less": ">=1.3.0",
-    "remarkable": "*",
+    "log4js": "*",
     "meta-fs": ">=0.0.1",
-    "oembed": ">=0.1.0",
-    "sightmap": ">=0.0.0",
-    "commander": ">=1.1.1",
     "mime": "*",
-    "body": "*",
     "minify": ">=0.1.8",
-    "request": "*",
     "node-zip": "*",
+    "oembed": ">=0.1.0",
+    "remarkable": "*",
+    "request": "*",
+    "sightmap": ">=0.0.0",
     "ssh2sync": "*",
-    "cheerio": ">=0.17",
-    "yamljs": "*",
-    "log4js": "*"
+    "yamljs": "*"
   },
   "devDependencies": {
     "vows": "*"
@@ -47,4 +51,3 @@
     "test": "vows --verbose --spec test/*"
   }
 }
-
