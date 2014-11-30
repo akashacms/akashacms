@@ -61,6 +61,28 @@ $(function() {
         });
     }*/
     
+    if ($(".ak-adddir-form").length > 0) {
+    	$("ak-adddir-form").submit(function(event) {
+    		event.preventDefault();
+    		$.ajax({
+    			url: "/..admin/adddir",
+    			type: "POST",
+    			data: {
+                    urlpath: $("#ak-adddir-urlpath").attr("value"),
+                    dirname: $("#ak-adddir-add-dirname").length > 0 ? $("#ak-adddir-add-dirname").text() : "",
+                    pathname: $("#ak-adddir-pathname-input").length > 0 ? $("#ak-adddir-pathname-input").val() : "",
+    			},
+                dataType: "json",
+                success: function(json) {
+                    window.location = json.newlocation;
+                },
+                error: function(xhr, status, errorThrown) {
+                    $("#ak-adddir-message-area").text("ERROR "+ xhr.responseText);
+                }
+    		});
+    	});
+    }
+    
     if ($(".ak-editor-addedit-form").length > 0) {
     
     	if ($(".ak-editor-addedit-form[id='ak-editor-edit-form']").length > 0) {

@@ -60,7 +60,7 @@ var useDomain = function(req, res, next) {
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
-function logErrors(err, req, res, next) {
+/*function logErrors(err, req, res, next) {
 	logger.trace(req.method +' '+ req.url);
 	logger.trace(util.inspect(url.parse(req.url, true)));
 	logger.trace(util.inspect(req.params));
@@ -68,7 +68,7 @@ function logErrors(err, req, res, next) {
   next(err);
 }
 
-app.use(logErrors);
+app.use(logErrors);*/
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 //  Not Needed: app.use(cookieParser());
