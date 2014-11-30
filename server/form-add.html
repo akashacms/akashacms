@@ -1,21 +1,26 @@
 <span class="ak-editor-span-add">
 <span id="ak-editor-message-area"></span>
-<form method="POST" id="ak-editor-add-form" class="ak-editor-addedit-form" action="/..admin/add">
+<form role="form" method="POST" id="ak-editor-add-form" class="ak-editor-addedit-form" action="/..admin/add">
     <input type=hidden name=urlpath id="ak-editor-urlpath" value="">
-    <label for="pathname-input">File Name:</label><br/>
-    <span id="ak-editor-add-dirname"></span>
-    <input type="text" name="pathname" id="ak-editor-pathname-input" size="50">
-	<select name="fnextension" id="ak-editor-fnextension">
-		<option selected>.html.md</option> 
-		<option>.html.ejs.md</option>
-		<option>.html.ejs</option>
-	</select>
+    <div class="form-group">
+		<label for="pathname-input">File Name:</label><br/>
+		<span class="form-control-static" id="ak-editor-add-dirname"></span>
+		<input type="text" class="form-control" name="pathname" id="ak-editor-pathname-input" size="50">
+		<select class="form-control" name="fnextension" id="ak-editor-fnextension">
+			<option selected>.html.md</option> 
+			<option>.html.ejs.md</option>
+			<option>.html.ejs</option>
+		</select>
+	</div>
     <br/>
-    <label for="metadata">Metadata:</label><br/>
-    <div id="ak-editor-metadata-input"></div>
-    <label for="content">Content:</label><br/>
-    <div id="ak-editor-content-input"></div>
+    <div class="form-group">
+		<label for="metadata">Metadata:</label><br/>
+		<div id="ak-editor-metadata-input"></div>
+    </div>
+    <div class="form-group">
+		<label for="content">Content:</label><br/>
+		<div id="ak-editor-content-input"></div>
+    </div>
     <button type="submit" name=action value="Submit" class="btn btn-primary">Submit</button>
-    <input type=reset>
 </form>
 </span>
