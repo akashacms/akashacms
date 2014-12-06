@@ -181,10 +181,12 @@ module.exports.partialSync = function(theoptions, name, locals, callback) {
 
 module.exports.renderFile = function(options, fileName, callback) {
     renderer.config(module.exports, options);
+	// logger.trace('renderFile before readDocument '+ fileName);
     fileCache.readDocument(options, fileName, function(err, entry) {
     	if (err) callback(err);
 		else if (!entry) callback(new Error('File '+fileName+' not found'));
 		else {
+			// logger.trace('renderFile before rendering '+ fileName);
 			if (fileCache.supportedForHtml(entry.path)) {
 				process2html(options, entry, callback);
 			} else if (entry.path.match(/\.css\.less$/)) {
@@ -437,6 +439,36 @@ var process_and_render_files = function(config, done) {
     
 };
 
+module.exports.dirPathForDocument = function(config, urlpath, done) {
+	var docEntry = module.exports.findDocumentForUrlpath(config, urlpath);
+	if (docEntry) {
+		done(undefined, {
+			path: path.dirname(docEntry.path),
+			dirpath: path.dirname(docEntry.fullpath)
+		});
+	} else {
+		var dirpath = path.join(config.root_docs[0], urlpath);
+		fs.stat(dirpath, function(err, stats) {
+			if (err) done(err);
+			else {
+				if (stats.isDirectory()) {
+					done(undefined, {
+						path: urlpath,
+						dirpath: dirpath
+					});
+				} else if (stats.isFile()) {
+					done(undefined, {
+						path: urlpath,
+						dirpath: path.dirname(dirpath)
+					});
+				} else {
+					done(new Error("directory not found for "+ urlpath));
+				}
+			}
+		});
+	}
+};
+
 module.exports.oembedRender = function(arg, callback) {
     return renderer.oembedRender(arg, callback);
 };
@@ -567,13 +599,13 @@ var emitter = module.exports.emitter = new events.EventEmitter();
 var dispatcher = function() {
     // Convert our arguments into an array to simplify working on the args
     var args = Array.prototype.slice.call(arguments);
-    logger.trace(util.inspect(args));
+    // logger.trace(util.inspect(args));
     // Arg1: eventName - MUST BE A STRING
     var eventName = args.shift();
-    logger.trace(eventName +' '+ util.inspect(args));
+    // logger.trace(eventName +' '+ util.inspect(args));
     if (typeof eventName !== 'string') { throw new Error('eventName must be a string'); }
     var handlers = emitter.listeners(eventName); // list of handler functions 
-    logger.trace(util.inspect(handlers));
+    // logger.trace(util.inspect(handlers));
     
     // Last argument: Optional callback function
     // If no callback is supplied, we provide one that if there's an error throws it
