@@ -13,7 +13,7 @@ module.exports.config = function(akasha, config) {
     config.root_assets.push(path.join(__dirname, 'assets'));
     
     if (config.mahabhuta) {
-        config.mahabhuta.push(function(akasha, config, $, metadata, done) {
+        config.mahabhuta.push(function($, metadata, done) {
             if (typeof metadata.pagetitle !== "undefined") {
                 /*akasha.partialSync(config, 'ak_titletag.html.ejs', {
                   title: data.pagetitle !== "undefined" ? data.pagetitle : data.title
@@ -114,7 +114,7 @@ module.exports.config = function(akasha, config) {
             done();
         });
             
-        config.mahabhuta.push(function(akasha, config, $, metadata, done) {
+        config.mahabhuta.push(function($, metadata, done) {
             // <partial file-name="file-name.html.whatever" data-attr-1=val data-attr-2=val/>
             var partials = [];
             $('partial').each(function(i, elem) { partials.push(elem); });
@@ -147,7 +147,7 @@ module.exports.config = function(akasha, config) {
             });
         });
         
-        config.mahabhuta.push(function(akasha, config, $, metadata, done) {
+        config.mahabhuta.push(function($, metadata, done) {
         	// <footnote href="http:..." name="..." title="..." rel="nofollow">Description</footnote>
         	var footnoteCount = 0;
             var footnotes = [];
@@ -198,7 +198,7 @@ module.exports.config = function(akasha, config) {
         	});
         });
         
-        config.mahabhuta.push(function(akasha, config, $, metadata, done) {
+        config.mahabhuta.push(function($, metadata, done) {
             var links = [];
             $('a').each(function(i, elem) { links.push(elem); });
             async.eachSeries(links,
