@@ -1,10 +1,12 @@
 
-var fs      = require('fs');
-var path    = require('path');
-var mime    = require('mime');
-var async   = require('async');
-var util    = require('util');
-var cheerio = require('cheerio');
+var fs        = require('fs');
+var path      = require('path');
+var mime      = require('mime');
+var async     = require('async');
+var util      = require('util');
+var url       = require('url');
+var mahabhuta = require('../lib/mahabhuta');
+var cheerio   = require('cheerio');
 
 var akasha, config, logger;
 
@@ -20,7 +22,8 @@ var templateList = [
 	{ name: "txtAddForm", fname: path.join(__dirname, "form-add.html") },
 	{ name: "dirAddForm", fname: path.join(__dirname, "form-adddir.html") },
 	{ name: "txtDeleteForm", fname: path.join(__dirname, "form-delete.html") },
-	{ name: "toolbar", fname: path.join(__dirname, "toolbar.html") }
+	{ name: "toolbar", fname: path.join(__dirname, "toolbar.html") },
+	{ name: "viewPage", fname: path.join(__dirname, "viewer-page.html") }
 ];
 
 var templates = [];
@@ -45,9 +48,286 @@ exports.readFiles = function(cb) {
 }
 
 var findTemplate = function(nm) {
-	logger.trace('nm='+ nm +' template='+ util.inspect(templates[nm]));
+	// logger.trace('nm='+ nm +' template='+ util.inspect(templates[nm]));
 	return templates[nm];
-}
+};
+
+exports.serveHtml = function(req, res, next) {
+	res.status(200).end(req.$.html());
+};
+
+exports.baseTemplate = function(req, res, next) {
+	req.$ = newCheerio(findTemplate("baseHtml"));
+	next();
+};
+
+exports.setupTemplate = function(templateName) {
+	return function(req, res, next) {
+		req.$ = newCheerio(findTemplate("baseHtml"));
+		req.$('body').append(findTemplate(templateName));
+		next();
+	};
+};
+
+var doCheckDirectory = function(req, res, next, basepath) {
+	var urlpath = req.params[0];
+	var fname = path.join(basepath, urlpath);
+	var requrl = url.parse(req.url);
+	logger.trace('doCheckDirectory '+ urlpath +' '+ fname);
+	fs.stat(fname, function(err, status) {
+		if (err) {
+			res.status(404).end("file "+ fname +" not found "+ err);
+		} else {
+			if (status.isDirectory()) {
+				res.redirect(path.join(requrl.pathname, "index.html"));
+			} else {
+				next();
+			}
+		}
+	});
+};
+
+exports.checkEditorAssetsDirectory = function(req, res, next) {
+	doCheckDirectory(req, res, next, path.join(__dirname, "assets"));
+};
+
+exports.checkDirectory = function(req, res, next) {
+	doCheckDirectory(req, res, next, config.root_out);
+};
+
+var mkBreadcrumbTrail = function(urlpath, done) {
+	var ret = '<li><button type="button" class="btn btn-primary" autocomplete="off" ak-path="/"><span class="glyphicon glyphicon-home" aria-hidden="true"></span>HOME</button></li>';
+	var cmps = urlpath.split('/');
+	if (cmps.length > 0) {
+		var path = '';
+		logger.trace(util.inspect(cmps));
+		async.eachSeries(cmps,
+			function(cmp, next) {
+				logger.trace(cmp);
+				if (cmp.length > 0) {
+					mahabhuta.process1('<li><button type="button" class="btn btn-primary" autocomplete="off" ak-path=""></button></li>',
+						function($, done) {
+							path += '/'+ cmp;
+							$('button').attr('ak-path', path);
+							$('button').text(cmp);
+							done();
+						},
+						function(err, html) {
+							if (err) next(err);
+							else {
+								logger.trace(html);
+								ret += html;
+								next();
+							}
+						});
+				} else next();
+			},
+			function(err) {
+				if (err) done(err);
+				else done(undefined, ret);
+			});
+	} else {
+		done(undefined, ret);
+	}
+};
+
+exports.breadcrumbTrail = function(req, res, next) {
+	if (req.$('#ak-editor-breadcrumbs').length > 0) {
+		var urlpath = req.params[0];
+		mkBreadcrumbTrail(urlpath, function(err, bdt) {
+			if (err) {
+				req.$('#ak-editor-breadcrumbs').empty();
+				next();
+			} else {
+				req.$('#ak-editor-breadcrumbs').append('<ol class="breadcrumb"></ol>');
+				req.$('#ak-editor-breadcrumbs ol.breadcrumb').append(bdt);
+				next();
+			} 
+		});
+	} else next();
+};
+
+exports.apiBreadcrumbTrail = function(req, res, next) {
+	var urlpath = req.params[0];
+	mkBreadcrumbTrail(urlpath, function(err, bdt) {
+		if (err) res.status(404).end("bad path "+ urlpath);
+		else {
+			logger.trace('apiBreadcrumbTrail '+ urlpath +' '+ bdt);
+			res.status(200).json({ html: bdt });
+		}
+	});
+};
+
+var mkSidebarFiles = function(urlpath, done) {
+	akasha.dirPathForDocument(config, urlpath, function(err, dirpathInfo) {
+		if (err) {
+			done(err);
+		} else {
+			fs.readdir(dirpathInfo.dirpath, function(err, files) {
+				if (err) {
+					done(err);
+				} else {
+					var ret = '';
+					
+					async.eachSeries(files,
+						function(file, next) {
+							// logger.trace('mkSidebarFiles file='+ file);
+							var akpath = dirpathInfo.path.match(/^\//) ? dirpathInfo.path : '/'+ dirpathInfo.path;
+							mahabhuta.process('<span class="label label-default " ak-path=""><span class="glyphicon" aria-hidden="true"></span><span class="ak-label-text"></span></span><br>',
+								undefined, [
+								function($, metadata, done) {
+									var stats = fs.statSync(path.join(dirpathInfo.dirpath, file));
+									if (stats.isDirectory()) {
+										if (file === "." || file === "..") {
+											done();
+										} else {
+											$('span.glyphicon').addClass('glyphicon-folder-close');
+											$('span.label').addClass('folder');
+											akpath += akpath.match(/\/$/) ? file : '/'+ file;
+											$('span.label').attr('ak-path', akpath);
+											$('span.ak-label-text').text(file);
+											done();
+										}
+									} else if (file.match(/\.(png|jpg|jpeg|gif)$/i)) {
+										$('span.glyphicon').addClass('glyphicon-picture');
+										$('span.label').addClass('image');
+										akpath += akpath.match(/\/$/) ? file : '/'+ file;
+										$('span.label').attr('ak-path', akpath);
+										$('span.ak-label-text').text(file);
+										done();
+									} else if (file.match(/\.(zip|gz)$/i)) {
+										$('span.glyphicon').addClass('glyphicon-compressed');
+										$('span.label').addClass('compressed');
+										// akpath += akpath.match(/\/$/) ? file : '/'+ file;
+										$('span.label').attr('ak-path', akpath);
+										$('span.ak-label-text').text(file);
+										done();
+									} else if (file.match(/\.(mov|mp4|avi|mkv)$/i)) {
+										$('span.glyphicon').addClass('glyphicon-film');
+										$('span.label').addClass('movie');
+										// akpath += akpath.match(/\/$/) ? file : '/'+ file;
+										$('span.label').attr('ak-path', akpath);
+										$('span.ak-label-text').text(file);
+										done();
+									} else if (file.match(/\.(doc|pdf)$/i)) {
+										$('span.glyphicon').addClass('glyphicon-book');
+										$('span.label').addClass('document');
+										// akpath += akpath.match(/\/$/) ? file : '/'+ file;
+										$('span.label').attr('ak-path', akpath);
+										$('span.ak-label-text').text(file);
+										done();
+									} else if (file.match(/\.(html.md|html.ejs.md|html.ejs|php.md|php.ejs.md|php.ejs)$/i)) {
+										$('span.glyphicon').addClass('glyphicon-pencil');
+										$('span.label').addClass('editable');
+										akpath += akpath.match(/\/$/) ? file : '/'+ file;
+										$('span.label').attr('ak-path', akpath);
+										$('span.ak-label-text').text(file);
+										done();
+									} else {
+										$('span.glyphicon').addClass('glyphicon-file');
+										$('span.label').addClass('unknown-file');
+										// akpath += akpath.match(/\/$/) ? file : '/'+ file;
+										$('span.label').attr('ak-path', akpath);
+										$('span.ak-label-text').text(file);
+										done();
+									}
+								} ],
+								function(err, html) {
+									if (err) next(err);
+									else {
+										// logger.trace(html);
+										ret += html;
+										next();
+									}
+								});
+						},
+						function(err) {
+							if (err) done(err);
+							else done(undefined, ret);
+						});
+					
+					/*for (var i = 0; i < files.length; i++) {
+						var fn = files[i];
+						var glyph;
+						var akpath = dirpathInfo.path.match(/^\//) ? dirpathInfo.path : '/'+ dirpathInfo.path;
+						var stats = fs.statSync(path.join(dirpathInfo.dirpath, fn));
+						if (stats.isDirectory()) {
+							glyph = '<span class="glyphicon glyphicon-folder-close" aria-hidden="true"></span>';
+							type  = 'folder';
+							akpath += akpath.match(/\/$/) ? fn : '/'+ fn;
+						} else if (fn.match(/\.([pP][nN][gG]|[jJ][pP][gG]|[jJ][pP][eE][gG]|[gG][iI][fF])$/)) {
+							glyph = '<span class="glyphicon glyphicon-picture" aria-hidden="true"></span>';
+							type  = 'image';
+							akpath += akpath.match(/\/$/) ? fn : '/'+ fn;
+						} else if (fn.match(/\.([zZ][iI][pP]|[gG][zZ])$/)) {
+							glyph = '<span class="glyphicon glyphicon-compressed" aria-hidden="true"></span>';
+							type  = 'compressed';
+						} else if (fn.match(/\.([mM][oO][vV]|[mM][pP]4|[aA][vV][iI]|[mM][kK][vV])$/)) {
+							glyph = '<span class="glyphicon glyphicon-film" aria-hidden="true"></span>';
+							type  = 'movie';
+						} else if (fn.match(/\.([dD][oO][cC]|[pP][dD][fF])$/)) {
+							glyph = '<span class="glyphicon glyphicon-book" aria-hidden="true"></span>';
+							type  = 'document';
+							// TBD: .html.md .html.ejs.md .html.ejs .php.md .php.ejs.md .php.ejs .php .js .css
+						} else {
+							glyph = '<span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>';
+							type  = 'download';
+						}
+						ret += '<span class="label label-default '+ type +'" ak-path="'+ akpath +'">'+ glyph + fn +'</span><br>';
+					}
+					done(undefined, ret);*/
+				}
+			});
+		}
+	});
+};
+
+exports.sidebarFilez = function(req, res, next) {
+	if (req.$("#ak-editor-files-sidebar").length > 0) {
+		var urlpath = req.params[0];
+		mkSidebarFiles(urlpath, function(err, list) {
+			if (err) res.status(500).end(err);
+			else {
+				req.$("#ak-editor-files-sidebar").append(list);
+				next();
+			}
+		});
+	} else next();
+};
+
+exports.apiSidebarFilesList = function(req, res, next) {
+	var urlpath = req.params[0];
+	mkSidebarFiles(urlpath, function(err, list) {
+		logger.trace('apiSidebarFilesList '+ urlpath +' '+ list);
+		if (err) res.status(500).end(err);
+		else res.status(200).json({ html: list });
+	});
+};
+
+exports.apiImageViewer = function(req, res, next) {
+	var urlpath = req.params[0];
+	mahabhuta.process1('<img src="" class="img-responsive">', 
+		function($, done) {
+			$('img').attr("src", urlpath);
+			done();
+		}, 
+		function(err, html) {
+			res.status(200).json({ html: html });
+		});
+};
+
+exports.apiPageViewer = function(req, res, next) {
+	var urlpath = req.params[0];
+	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
+	mahabhuta.process1(findTemplate("viewPage"), 
+		function($, done) {
+			$('iframe').attr("src", docEntry.renderedFileName);
+			done();
+		}, 
+		function(err, html) {
+			res.status(200).json({ html: html });
+		});
+};
 
 exports.editPage = function(req, res) {
 	var urlpath = req.params[0];
@@ -114,6 +394,7 @@ exports.fullBuild = function(req, res) {
 
 exports.docData = function(req, res) {
 	var urlpath = req.params[0];
+	logger.trace('docData call '+ urlpath);
 	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
 	if (docEntry) {
 		logger.trace('docData result '+ urlpath);
@@ -123,6 +404,7 @@ exports.docData = function(req, res) {
 			content: docEntry.frontmatter.text
 		});
 	} else {
+		logger.trace("file "+ urlpath +" doesn't exist");
 		res.status(404).end("file "+ urlpath +" doesn't exist");
 	}
 };
@@ -234,7 +516,7 @@ exports.postAddDir = function(req, res) {
 
 exports.streamFile = function(req, res, requrl, fname) {
     logger.info('streamFile '+ fname /*+' '+ util.inspect(requrl)*/);
-    if (requrl.pathname.match(/\.html$/)) {
+    /*if (requrl.pathname.match(/\.html$/)) {
         fs.readFile(fname, { encoding: 'utf8' }, function(err, buf) {
             if (err) {
                 res.status(404).end("file "+ fname +" not readable "+ err);
@@ -254,7 +536,7 @@ exports.streamFile = function(req, res, requrl, fname) {
                 /*$('body').append(
                     '<script src="/..admin/js/editor.js"></script>'
                    +'<script src="/..admin/vendor/ace-1.1.7/ace.js" type="text/javascript" charset="utf-8"></script>'
-                );*/
+                );* /
                 $('html head').append(
                     '<link rel="stylesheet" href="/..admin/css/editor.css" type="text/css"/>'
                 );
@@ -266,7 +548,7 @@ exports.streamFile = function(req, res, requrl, fname) {
                 res.end(ht);
             }
         });
-    } else {
+    } else {*/
         fs.stat(fname, function(err, status) {
             if (err) {
                 res.status(404).end("file "+ fname +" not found "+err);
@@ -285,12 +567,13 @@ exports.streamFile = function(req, res, requrl, fname) {
                 readStream.pipe(res);
             }
         });
-    }
+    /*} */
 };
 
 var prepareDocEditForm = function(urlpath, metadata, content) {
     var $ = newCheerio(findTemplate("txtEditForm"));
     $('#ak-editor-urlpath').attr('value', urlpath);
+    doBreadcrumb($, urlpath, '/..admin/editPage');
     // $('#ak-editor-metadata-input').append(metadata ? metadata : "");
     // $('#ak-editor-content-input').append(content ? content : "");
     return $.html();
@@ -299,12 +582,13 @@ var prepareDocEditForm = function(urlpath, metadata, content) {
 var prepareDirCreateForm = function(urlpath) {
 	// logger.trace('prepareDirCreateForm urlpath='+ urlpath);
 	var t = findTemplate("dirAddForm");
-	logger.trace(t);
+	// logger.trace(t);
     var $ = newCheerio(t);
     $('#ak-adddir-urlpath').attr('value', urlpath);
     $('#ak-adddir-dirname').attr('value', path.dirname(urlpath));
     $('#ak-adddir-add-dirname').append(path.dirname(urlpath));
-    logger.trace($.html());
+    doBreadcrumb($, urlpath, '/..admin/addnewdir');
+    // logger.trace($.html());
     return $.html();
 };
 
@@ -314,6 +598,7 @@ var prepareDocCreateForm = function(urlpath, dirname /*, fname, metadata, conten
     $('#ak-editor-urlpath').attr('value', urlpath);
     $('#ak-editor-add-dirname').append(dirname);
     $('#ak-editor-pathname-input').attr('value', "");
+    doBreadcrumb($, urlpath, '/..admin/addnewpage');
     // $('#ak-editor-metadata-input').append(metadata ? metadata : "");
     // $('#ak-editor-content-input').append(content ? content : "");
     return $.html();
@@ -330,6 +615,7 @@ var prepareIndexCreateForm = function(dirname) {
        +'<span id="ak-editor-add-dirname">/index.html.md</span>'
     );
     $('#ak-editor-metadata-input').append("layout: index-page.html.ejs\ntitle: \n");
+    doBreadcrumb($, urlpath, '/..admin/addindexpage');
     // $('#ak-editor-content-input').append(content ? content : "");
     return $.html();
 };
@@ -337,6 +623,7 @@ var prepareIndexCreateForm = function(dirname) {
 var prepareDocDeleteForm = function(urlpath) {
     var $ = newCheerio(findTemplate("txtDeleteForm"));
     $('#ak-editor-urlpath').attr('value', urlpath);
+    doBreadcrumb($, urlpath, '/..admin/deletepage');
     return $.html();
 };
 

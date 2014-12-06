@@ -18,10 +18,33 @@
 <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
 
 <!-- load Editor -->
-<link rel="stylesheet" href="/..admin/css/editor.css">
-<script src="/..admin/js/editor.js"></script>
-<script src="/..admin/vendor/ace-1.1.7/ace.js" type="text/javascript" charset="utf-8"></script>
+<link rel="stylesheet" href="/..assets/css/editor.css">
+<script src="/..assets/js/editor.js"></script>
+<script src="/..assets/vendor/ace-1.1.7/ace.js" type="text/javascript" charset="utf-8"></script>
 </head>
 <body class="container-fluid">
+<div class="row"><span id="ak-editor-breadcrumbs" class="col-md-12"></span></div>
+<div class="row"><span id="ak-editor-messages" class="col-md-12 well">
+<button type="button" class="btn btn-default"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></button>
+</span>
+</div>
+<div id="ak-editor-main-area" class="row">
+<div id="ak-editor-files-sidebar-area" class="col-md-3 well">
+
+	<div id="ak-edit-sidebar-buttons" class="btn-group" role="group">
+		<button id="ak-sidebar-new-file-button" type="button" class="btn btn-default">
+			<span class="glyphicon glyphicon-plus" aria-hidden="true"></span> New File
+		</button>
+		<button id="ak-sidebar-new-directory-button" type="button" class="btn btn-default">
+			<span class="glyphicon glyphicon-plus" aria-hidden="true"></span> New Directory
+		</button>
+		<button id="ak-sidebar-new-directory-button" type="button" class="btn btn-default">
+			<span class="glyphicon glyphicon-cloud-upload" aria-hidden="true"></span> Upload File
+		</button>
+	</div><br>
+<div id="ak-editor-files-sidebar"></div>
+</div>
+<div id="ak-editor-editor-area" class="col-md-9"></div>
+</div>
 </body>
 </html>

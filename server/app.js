@@ -73,39 +73,104 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 //  Not Needed: app.use(cookieParser());
 
-app.get(/^\/\.\.admin\/editpage(\/.*)/, useDomain, routes.editPage);
-app.get(/^\/\.\.admin\/addnewdir(\/.*)/, useDomain, routes.addNewDir);
-app.get(/^\/\.\.admin\/addnewpage(\/.*)/, useDomain, routes.addNewPage);
-app.get(/^\/\.\.admin\/addindexpage(\/.*)/, useDomain, routes.addIndexPage);
-app.get(/^\/\.\.admin\/deletepage(\/.*)/, useDomain, routes.deletePage);
-app.get(/^\/\.\.admin\/fullbuild(\/.*)/, useDomain, routes.fullBuild);
-app.get(/^\/\.\.admin\/docData(\/.*)/, useDomain, routes.docData);
+app.get(/^\/\.\.admin\/editpage(\/.*)/,
+	useDomain,
+	routes.setupTemplate("txtEditForm"),
+	routes.breadcrumbTrail,
+	routes.editPage);
+app.get(/^\/\.\.admin\/addnewdir(\/.*)/,
+	useDomain,
+	routes.checkDirectory,
+	routes.setupTemplate("dirAddForm"),
+	routes.addNewDir);
+app.get(/^\/\.\.admin\/addnewpage(\/.*)/,
+	useDomain,
+	routes.checkDirectory,
+	routes.setupTemplate("txtAddForm"),
+	routes.addNewPage);
+app.get(/^\/\.\.admin\/addindexpage(\/.*)/,
+	useDomain,
+	routes.checkDirectory,
+	routes.setupTemplate("txtAddForm"),
+	routes.addIndexPage);
+app.get(/^\/\.\.admin\/deletepage(\/.*)/,
+	useDomain,
+	routes.checkDirectory,
+	routes.setupTemplate("txtDeleteForm"),
+	routes.deletePage);
+app.get(/^\/\.\.admin\/fullbuild(\/.*)/,
+	useDomain,
+	routes.checkDirectory,
+	routes.fullBuild);
 
-app.get(/^\/\.\.admin(\/.*)/, useDomain, function(req, res) {
-	// logger.trace(req.method +' '+ req.url);
-	// logger.trace(util.inspect(url.parse(req.url, true)));
-	// logger.trace(util.inspect(req.params));
-	var requrl = url.parse(req.params[0], true);
-	routes.streamFile(req, res, requrl, path.join(__dirname, 'assets', requrl.pathname));
-});
-
-app.get(/(\/.*)/, useDomain, function(req, res) {
-	var requrl = url.parse(req.url, true);
-	var fname  = path.join(config.root_out, requrl.pathname);
-	// logger.trace(req.method +' url='+ req.url +' fname='+ fname);
-	// logger.trace(util.inspect(url.parse(req.url, true)));
-	fs.stat(fname, function(err, status) {
-		if (err) {
-			res.status(404).send("file "+ fname +" not found "+ err);
-		} else {
-			if (status.isDirectory()) {
-				res.redirect(path.join(requrl.pathname, 'index.html'));
-			} else {
-				routes.streamFile(req, res, requrl, fname);
-			}
-		}
+app.get(/^\/\.\.assets(\/.*)/, 
+	useDomain,
+	routes.checkEditorAssetsDirectory,
+	function(req, res) {
+		logger.trace(req.method +' '+ req.url);
+		logger.trace(util.inspect(url.parse(req.url, true)));
+		// logger.trace(util.inspect(req.params));
+		var requrl = url.parse(req.params[0], true);
+		routes.streamFile(req, res, requrl, path.join(__dirname, 'assets', requrl.pathname));
 	});
-});
+
+
+app.get(/^\/\.\.api\/breadcrumbTrail(\/.*)/,
+	useDomain,
+	routes.apiBreadcrumbTrail);
+
+app.get(/^\/\.\.api\/sidebarFilesList(\/.*)/,
+	useDomain,
+	routes.apiSidebarFilesList);
+
+app.get(/^\/\.\.api\/docData(\/.*)/,
+	useDomain,
+	// routes.checkDirectory,
+	routes.docData);
+	
+app.get(/^\/\.\.api\/imageViewer(\/.*)/,
+	useDomain,
+	routes.apiImageViewer);
+	
+app.get(/^\/\.\.api\/pageViewer(\/.*)/,
+	useDomain,
+	routes.apiPageViewer);
+	
+app.get(/^(\/.+)/, 
+	useDomain,
+	function(req, res) {
+		logger.trace(req.method +' '+ req.url);
+		logger.trace(util.inspect(url.parse(req.url, true)));
+		// logger.trace(util.inspect(req.params));
+		var requrl = url.parse(req.params[0], true);
+		routes.streamFile(req, res, requrl, path.join(config.root_out, requrl.pathname));
+	});
+
+app.get(/^(\/)/, 
+	useDomain,
+	// routes.checkDirectory,
+	routes.baseTemplate,
+	routes.breadcrumbTrail,
+	routes.sidebarFilez,
+	routes.serveHtml
+	/*,
+	function(req, res) {
+		var requrl = url.parse(req.url, true);
+		var fname  = path.join(config.root_out, requrl.pathname);
+		// logger.trace(req.method +' url='+ req.url +' fname='+ fname);
+		// logger.trace(util.inspect(url.parse(req.url, true)));
+		fs.stat(fname, function(err, status) {
+			if (err) {
+				res.status(404).send("file "+ fname +" not found "+ err);
+			} else {
+				if (status.isDirectory()) {
+					res.redirect(path.join(requrl.pathname, 'index.html'));
+				} else {
+					routes.streamFile(req, res, requrl, fname);
+				}
+			}
+		});
+	}*/);
 
 app.post("/..admin/edit", useDomain, routes.postEdit);
 app.post("/..admin/add", useDomain, routes.postAdd);

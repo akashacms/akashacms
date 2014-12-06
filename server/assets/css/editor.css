@@ -1,3 +1,4 @@
+html, body { height: 100% }
 
 #ak-editor-toolbar {
     width: 100%;
@@ -23,4 +24,25 @@
 #ak-editor-content-input {
     width: 100%;
     height: 400px;
+}
+
+#ak-editor-files-sidebar a {
+	color: white;
+}
+
+#ak-editor-editor-area {
+	height: 100%;
+}
+
+#ak-editor-editor-area iframe {
+    width: 100%;
+	height: 700px;
+}
+
+#ak-editor-editor-area #ak-page-editor-frame {
+	display: none; /* hide by default */
+}
+
+#ak-editor-messages button {
+	float: right;
 }
