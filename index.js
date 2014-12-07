@@ -33,9 +33,11 @@ var filewalker = require('filewalker');
 var log4js     = require('log4js');
 var logger;
 
+var config;
 
-module.exports.config = function(config) {
-
+module.exports.config = function(_config) {
+	config = _config;
+	
 	// Set up logging support
 	
 	if (config.log4js) {
@@ -91,7 +93,7 @@ module.exports.config = function(config) {
     var builtin = path.join(__dirname, 'builtin');
     require(path.join(builtin, 'index')).config(module.exports, config);
     
-    logger.trace(util.inspect(config));
+    // logger.trace(util.inspect(config));
     
     return module.exports;
 };
@@ -299,6 +301,54 @@ var mkDirPath = function(options, dirPath, done) {
     }
 };
 
+var config2renderopts = function(config, entry) {
+	
+	// Start with a base object that will be passed into the template
+	var renderopts = { };
+	// Copy data from frontmatter
+	for (var yprop in entry.frontmatter.yaml) {
+		renderopts[yprop] = entry.frontmatter.yaml[yprop];
+	}
+	renderopts.content = "";
+	renderopts.documentPath = entry.path; 
+	// Copy in any data or functions passed to us
+	if ('data' in config) {
+		for (var prop in config.data) {
+			renderopts[prop] = config.data[prop];
+		}
+	}
+	if ('funcs' in config) {
+		for (var fprop in config.funcs) {
+			renderopts[fprop] = config.funcs[fprop];
+		}
+	}
+	renderopts.root_url = config.root_url;
+	if (! renderopts.rendered_date) {
+		renderopts.rendered_date = entry.stat.mtime;
+	}
+	
+	if (!renderopts.publicationDate) {
+		var dateSet = false;
+		if (entry.frontmatter.yaml && entry.frontmatter.yaml.publDate) {
+			var parsed = Date.parse(entry.frontmatter.yaml.publDate);
+			if (! isNaN(parsed)) {
+			  renderopts.publicationDate = new Date(parsed);
+			}
+			dateSet = true;
+		}
+		if (! dateSet && entry.stat && entry.stat.mtime) {
+			renderopts.publicationDate = entry.stat.mtime;
+		}
+		if (!renderopts.publicationDate) {
+			renderopts.publicationDate = new Date();
+		}
+	}
+	
+	renderopts.rendered_url = path.join(config.root_url, entry.renderedFileName); 
+	
+	return renderopts;
+};
+
 /**
  * For files that are processed into an HTML, run the processing.
  **/
@@ -307,29 +357,15 @@ var process2html = function(options, entry, done) {
     if (! fileCache.supportedForHtml(entry.path)) {
         done(new Error('UNKNOWN template engine for ' + entry.path));
     } else {
-        // Start with a base object that will be passed into the template
-        var renderopts = { };
-        // Copy in any data or functions passed to us
-        if ('data' in options) {
-            for (var prop in options.data) {
-                renderopts[prop] = options.data[prop];
-            }
-        }
-        if ('funcs' in options) {
-            for (var fprop in options.funcs) {
-                renderopts[fprop] = options.funcs[fprop];
-            }
-        }
-        renderopts.root_url = options.root_url;
-        if (! renderopts.rendered_date) {
-            renderopts.rendered_date = entry.stat.mtime;
-        }
+        var renderopts = config2renderopts(options, entry);
         
         logger.trace('process2html #2 '+ entry.path); //  +' '+ util.log(util.inspect(renderopts)));
-        renderer.render(module.exports, options, entry, /*entry.path*/ undefined, renderopts, /*"",*/ function(err, rendered) {
+        renderer.render(module.exports, options, entry, undefined, renderopts, function(err, rendered) {
             logger.trace('***** DONE RENDER ' + entry.path); // util.inspect(rendered));
-            if (err) done('Rendering '+ entry.path +' failed with '+ err);
-            else {
+            if (err) {
+            	logger.trace('Rendering '+ entry.path +' failed with '+ err);
+            	done('Rendering '+ entry.path +' failed with '+ err);
+            } else {
                 var renderTo = path.join(options.root_out, rendered.fname);
                 dispatcher('file-rendered', options, entry.path, renderTo, rendered, function(err) {
                     // TBD - the callback needs to send a new rendering 
