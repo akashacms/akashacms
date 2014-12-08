@@ -16,14 +16,29 @@ html, body { height: 100% }
     margin: 5px;
 }
 
+#newFileModal #ak-edit-editor-pathname-inputs #ak-editor-add-dirname {
+	width: 100%;
+	float: left;
+}
+
+#newFileModal #ak-edit-editor-pathname-inputs #ak-editor-pathname-input {
+	width: 66%;
+	float: left;
+}
+
+#newFileModal #ak-edit-editor-pathname-inputs #ak-editor-fnextension {
+	width: 33%;
+	float: left;
+}
+
 #ak-editor-metadata-input {
     width: 100%;
-    height: 200px;
+    height: 150px;
 }
 
 #ak-editor-content-input {
     width: 100%;
-    height: 400px;
+    height: 350px;
 }
 
 #ak-editor-files-sidebar a {
@@ -43,6 +58,10 @@ html, body { height: 100% }
 	display: none; /* hide by default */
 }
 
-#ak-editor-messages button {
+#ak-editor-messages-area #ak-editor-messages {
+	float: left;
+}
+
+#ak-editor-messages-area button {
 	float: right;
 }
