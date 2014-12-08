@@ -42,12 +42,15 @@ $(function() {
 					messages.display("ERROR "+ xhr.responseText);
 				}
 			});
+		},
+		akpath: function() {
+			return $("#ak-editor-breadcrumbs").attr("ak-path");
 		}
     };
     
     var messages = {
     	setup: function() {
-    		$("#ak-editor-messages button").on('click', function(event) {
+    		$("#ak-editor-messages-area button").on('click', function(event) {
     			messages.clear();
     			messages.hide();
     		});
@@ -62,10 +65,10 @@ $(function() {
 			$("#ak-editor-messages").empty();
 		},
 		hide: function() {
-			$("#ak-editor-messages").hide();
+			$("#ak-editor-messages-area").hide();
 		},
 		show: function() {
-			$("#ak-editor-messages").show();
+			$("#ak-editor-messages-area").show();
 		}
     };
     
@@ -120,31 +123,6 @@ $(function() {
 			$(document).ready(editviewer.resizer);
 			$(window).resize(editviewer.resizer);
     	},
-    	setupPageEditor: function(akpath) {
-    		if ($("#ak-page-editor-frame").length > 0) {
-    			$("#ak-page-editor-frame").hide();
-    			$("#ak-edit-view-button").on('click', function(event) {
-    				editviewer.showPageViewer();
-    			});
-    			$("#ak-edit-edit-button").on('click', function(event) {
-    				editviewer.showPageEditor(akpath);
-    			});
-    			$("#ak-edit-delete-button").on('click', function(event) {
-    				// TBD editviewer.showPageEditor();
-    			});
-    			
-				if ($("#ak-editor-metadata-input").length > 0) {
-					editviewer.metaeditor = ace.edit("ak-editor-metadata-input");
-					editviewer.metaeditor.setTheme("ace/theme/monokai");
-					editviewer.metaeditor.getSession().setMode("ace/mode/yaml");
-				}
-				if ($("#ak-editor-content-input").length > 0) {
-					editviewer.contenteditor = ace.edit("ak-editor-content-input");
-					editviewer.contenteditor.setTheme("ace/theme/monokai");
-					editviewer.contenteditor.getSession().setMode("ace/mode/markdown");
-				}
-    		}
-    	},
     	clear: function() {
 			$("#ak-editor-editor-area").empty();
     	},
@@ -172,8 +150,6 @@ $(function() {
 				success: function(json) {
 					editviewer.clear();
 					$("#ak-editor-editor-area").append(json.html);
-					editviewer.setupPageEditor(akpath);
-					buttons.setupDeleteFileButtons();
 				},
 				error: function(xhr, status, errorThrown) {
 					messages.display("ERROR "+ xhr.responseText);
@@ -183,25 +159,6 @@ $(function() {
 		showPageViewer: function() {
 			$("#ak-editor-editor-area iframe").show();
 			$("#ak-editor-editor-area #ak-page-editor-frame").hide();
-		},
-		showPageEditor: function(akpath) {
-			$("#ak-editor-editor-area iframe").hide();
-			$("#ak-editor-editor-area #ak-page-editor-frame").show();
-			if ($("#ak-editor-editor-area #ak-page-editor-frame").hasClass("uninitialized")) {
-				$.ajax({
-					url: "/..api/docData"+ akpath,
-					type: "GET",
-					dataType: "json",
-					success: function(json) {
-						editviewer.metaeditor.setValue(json.metadata);
-						editviewer.contenteditor.setValue(json.content);
-						$("#ak-editor-editor-area #ak-page-editor-frame").removeClass("uninitialized");
-					},
-					error: function(xhr, status, errorThrown) {
-						messages.display("ERROR "+ xhr.responseText);
-					}
-				});
-			}
 		},
 		resizer: function() {
 			var height = $("ak-editor-main-area").height();
@@ -215,24 +172,55 @@ $(function() {
     
     var editorModal = {
     	setup: function() {
-			if ($("#ak-editor-metadata-input").length > 0) {
-				editorModal.metaeditor = ace.edit("ak-editor-metadata-input");
-				editorModal.metaeditor.setTheme("ace/theme/monokai");
-				editorModal.metaeditor.getSession().setMode("ace/mode/yaml");
+			if ($("#ak-editor-new-metadata-input").length > 0) {
+				editorModal.metaeditorNew = ace.edit("ak-editor-new-metadata-input");
+				editorModal.metaeditorNew.setTheme("ace/theme/monokai");
+				editorModal.metaeditorNew.getSession().setMode("ace/mode/yaml");
 			}
-			if ($("#ak-editor-content-input").length > 0) {
-				editorModal.contenteditor = ace.edit("ak-editor-content-input");
-				editorModal.contenteditor.setTheme("ace/theme/monokai");
-				editorModal.contenteditor.getSession().setMode("ace/mode/markdown");
+			if ($("#ak-editor-new-content-input").length > 0) {
+				editorModal.contenteditorNew = ace.edit("ak-editor-new-content-input");
+				editorModal.contenteditorNew.setTheme("ace/theme/monokai");
+				editorModal.contenteditorNew.getSession().setMode("ace/mode/markdown");
 			}
+
+			if ($("#ak-editor-edit-metadata-input").length > 0) {
+				editorModal.metaeditorEdit = ace.edit("ak-editor-edit-metadata-input");
+				editorModal.metaeditorEdit.setTheme("ace/theme/monokai");
+				editorModal.metaeditorEdit.getSession().setMode("ace/mode/yaml");
+			}
+			if ($("#ak-editor-edit-content-input").length > 0) {
+				editorModal.contenteditorEdit = ace.edit("ak-editor-edit-content-input");
+				editorModal.contenteditorEdit.setTheme("ace/theme/monokai");
+				editorModal.contenteditorEdit.getSession().setMode("ace/mode/markdown");
+			}
+
     		$("#newFileModal").on('show.bs.modal', editorModal.initializeFileCreateModal);
 			$("#newFileSave").on('click', editorModal.saveNewFile);
+    		$("#editFileModal").on('show.bs.modal', editorModal.initializeFileEditModal);
+			$("#editFileSave").on('click', editorModal.saveEditedFile);
     	},
 		initializeFileCreateModal: function() {
-			$("#ak-editor-add-dirname").text($("#ak-editor-breadcrumbs").attr("ak-path"));
+			$("#ak-editor-add-dirname").text(breadcrumbs.akpath());
 			$("#ak-editor-pathname-input").val("");
-			editorModal.metaeditor.setValue("", 0);
-			editorModal.contenteditor.setValue("", 0);
+			editorModal.metaeditorNew.setValue("", 0);
+			editorModal.contenteditorNew.setValue("", 0);
+		},
+		initializeFileEditModal: function() {
+			console.log('initializeFileEditModal '+ breadcrumbs.akpath());
+			$("#ak-editor-edit-dirname").text(breadcrumbs.akpath());
+			$.ajax({
+				url: "/..api/docData"+ breadcrumbs.akpath(),
+				type: "GET",
+				dataType: "json",
+				success: function(json) {
+					console.log('initializeFileEditModal success');
+					editorModal.metaeditorEdit.setValue(json.metadata);
+					editorModal.contenteditorEdit.setValue(json.content);
+				},
+				error: function(xhr, status, errorThrown) {
+					messages.display("ERROR "+ status +" "+ errorThrown);
+				}
+			});
 		},
 		saveNewFile: function() {
 			$("#newFileModal").modal('hide');
@@ -240,9 +228,33 @@ $(function() {
                 url: "/..api/saveNewFile",
                 type: "POST",
                 data: {
-                    metadata: editorModal.metaeditor.getValue(),
-                    content: editorModal.contenteditor.getValue(),
-                    urlpath: $("#ak-editor-urlpath").attr("value"),
+                    metadata: editorModal.metaeditorNew.getValue(),
+                    content: editorModal.contenteditorNew.getValue(),
+                    urlpath: breadcrumbs.akpath(),
+                    dirname: $("#ak-editor-add-dirname").text(),
+                    pathname: $("#ak-editor-pathname-input").val(),
+                    fnextension: $("#ak-editor-fnextension").val()
+                },
+                dataType: "json",
+                success: function(json) {
+                    editviewer.page(json.akpath);
+                    sidebar.update(json.akpath);
+                    breadcrumbs.update(json.akpath);
+                },
+                error: function(xhr, status, errorThrown) {
+                    messages.display("ERROR "+ xhr.responseText);
+                }
+            });
+		},
+		saveEditedFile: function() {
+			$("#editFileModal").modal('hide');
+            $.ajax({
+                url: "/..api/saveEditedFile",
+                type: "POST",
+                data: {
+                    metadata: editorModal.metaeditorEdit.getValue(),
+                    content: editorModal.contenteditorEdit.getValue(),
+                    urlpath: breadcrumbs.akpath(),
                     dirname: $("#ak-editor-add-dirname").text(),
                     pathname: $("#ak-editor-pathname-input").val(),
                     fnextension: $("#ak-editor-fnextension").val()
@@ -263,6 +275,7 @@ $(function() {
     var buttons = {
     	setup: function() {
     		$("#newDirectorySave").on('click', buttons.addNewDirectory);
+    		buttons.setupDeleteFileButtons();
     	},
     	addNewDirectory: function(event) {
 			$("#newDirectoryModal").modal('hide');
@@ -270,7 +283,7 @@ $(function() {
 				url: "/..api/addnewdir",
 				type: "POST",
 				data: {
-					urlpath: $("#ak-editor-breadcrumbs").attr("ak-path"),
+					urlpath: breadcrumbs.akpath(),
 					pathname: $('#ak-adddir-pathname-input').val(),
 				},
 				dataType: "json",
@@ -289,15 +302,16 @@ $(function() {
     		$("#deleteFileConfirm").on('click', buttons.deleteFileConfirm);
 		},
 		initializeDeleteFileModal: function(event) {
-			$("#ak-delete-file-name").text($("#ak-editor-breadcrumbs").attr("ak-path"));
+			$("#ak-delete-file-name").text(breadcrumbs.akpath());
 		},
 		deleteFileConfirm: function(event) {
+			console.log('deleteFileConfirm '+ breadcrumbs.akpath());
 			$("#deleteFileModal").modal('hide');
 			$.ajax({
 				url: "/..api/deleteFileConfirm",
 				type: "POST",
 				data: {
-					urlpath: $("#ak-editor-breadcrumbs").attr("ak-path")
+					urlpath: breadcrumbs.akpath()
 				},
 				dataType: "json",
 				success: function(json) {

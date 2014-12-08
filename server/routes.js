@@ -364,6 +364,40 @@ exports.apiPostAddNewFile = function(req, res) {
 	});
 };
 
+exports.apiPostAddEditedFile = function(req, res) {
+	logger.trace('in /..api/saveEditedFile' + util.inspect(req.body));
+	var docEntry = akasha.findDocumentForUrlpath(config, req.body.urlpath);
+	if (docEntry) {
+		// logger.trace('found docEntry for urlpath '+ body.urlpath +' '+ util.inspect(docEntry));
+		akasha.updateDocumentData(config, docEntry,
+				 trimtxt(req.body.metadata), trimtxt(req.body.content),
+				 function(err) {
+			logger.trace("Inside updateDocumentData");
+			if (err) {
+				// Need to send an error message instead
+				logger.error("Could not update "+ docEntry.fullpath +" because "+ err);
+				res.status(404).end("Could not update "+ docEntry.fullpath +" because "+ err);
+			} else {
+				logger.trace('before renderFile '+ docEntry.path);
+				akasha.renderFile(config, docEntry.path, function(err) {
+					if (err) {
+						logger.error("Could not render "+ docEntry.fullpath +" because "+ err);
+						res.status(404).end("Could not render "+ docEntry.fullpath +" because "+ err);
+					} else {
+						res.status(200).json({
+							akpath: req.body.urlpath
+						});
+					}
+				});
+			}
+		});
+	} else {
+		// Need to send an error message instead
+		logger.error("No docEntry found for "+ req.body.urlpath);
+		res.status(404).end("No docEntry found for "+ req.body.urlpath);
+	}
+};
+
 exports.apiDeleteFileConfirm = function(req, res) {
 	logger.trace('in /..api/deleteFileConfirm ' + util.inspect(req.body));
 	
@@ -391,48 +425,12 @@ exports.apiDeleteFileConfirm = function(req, res) {
 			}
 		});
 	} else {
-		logger.error("Could not delete "+ body.urlpath +" because it doesn't exist");
-		res.status(404).end("Could not delete "+ body.urlpath +" because it doesn't exist");
+		logger.error("Could not delete "+ req.body.urlpath +" because it doesn't exist");
+		res.status(404).end("Could not delete "+ req.body.urlpath +" because it doesn't exist");
 	}
 };
 
 ////////////////////// OLD FUNCTIONS TO BE REPLACED MAYBE
-
-exports.editPage = function(req, res) {
-	var urlpath = req.params[0];
-	// logger.trace(util.inspect(matches));
-	// logger.trace('urlpath '+ urlpath);
-	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
-	if (docEntry) {
-		var $ = newCheerio(findTemplate("baseHtml"));
-		$('body').append(prepareDocEditForm(
-					urlpath,
-					docEntry.frontmatter.yamltext,
-					docEntry.frontmatter.text));
-		logger.trace($.html());
-		res.end($.html());
-	} else {
-		res.status(404).end("file "+ urlpath +" doesn't exist");
-	}
-};
-
-/*exports.addNewDir = function(req, res) {
-	var urlpath = req.params[0];
-	var $ = newCheerio(findTemplate("baseHtml"));
-	$('body').append(prepareDirCreateForm(urlpath));
-	logger.trace($.html());
-	res.end($.html());
-};*/
-
-/* exports.addNewPage = function(req, res) {
-	var urlpath = req.params[0];
-	var $ = newCheerio(findTemplate("baseHtml"));
-	$('body').append(prepareDocCreateForm(
-					urlpath,
-					path.dirname(urlpath)));
-	logger.trace($.html());
-	res.end($.html());
-}; */
 
 exports.addIndexPage = function(req, res) {
 	var urlpath = req.params[0];
@@ -441,14 +439,6 @@ exports.addIndexPage = function(req, res) {
 	logger.trace($.html());
 	res.end($.html());
 };
-
-/* exports.deletePage = function(req, res) {
-	var urlpath = req.params[0];
-	var $ = newCheerio(findTemplate("baseHtml"));
-	$('body').append(prepareDocDeleteForm(urlpath));
-	logger.trace($.html());
-	res.end($.html());
-}; */
 
 exports.fullBuild = function(req, res) {
 	var urlpath = req.params[0];
@@ -477,111 +467,6 @@ exports.docData = function(req, res) {
 		res.status(404).end("file "+ urlpath +" doesn't exist");
 	}
 };
-
-exports.postEdit = function(req, res) {
-	logger.trace("in postEdit");
-	var docEntry = akasha.findDocumentForUrlpath(config, req.body.urlpath);
-	if (docEntry) {
-		// logger.trace('found docEntry for urlpath '+ body.urlpath +' '+ util.inspect(docEntry));
-		akasha.updateDocumentData(config, docEntry,
-				 trimtxt(req.body.metadata), trimtxt(req.body.content),
-				 function(err) {
-			logger.trace("Inside updateDocumentData");
-			if (err) {
-				// Need to send an error message instead
-				res.status(404).end("Could not update "+ docEntry.fullpath +" because "+ err);
-			} else {
-				logger.trace('before renderFile '+ docEntry.path);
-				akasha.renderFile(config, docEntry.path, function(err) {
-					if (err) {
-						res.status(404).end("Could not render "+ docEntry.fullpath +" because "+ err);
-					} else {
-						res.status(200).json({
-							newlocation: req.body.urlpath
-						});
-					}
-				});
-			}
-		});
-	} else {
-		// Need to send an error message instead
-		res.status(404).end("No docEntry found for "+ req.body.urlpath);
-	}
-};
-
-/* exports.postAdd = function(req, res) {
-	logger.trace('in /..admin/add');
-	// var fname = path.join(config.root_docs[0], path.dirname(body.urlpath), body.pathname.trim());
-	var fname = path.join(req.body.dirname, req.body.pathname.trim());
-	if (req.body.fnextension) fname += req.body.fnextension;
-	// logger.trace('fname='+ fname);
-	akasha.createDocument(config, config.root_docs[0],
-		fname,
-		trimtxt(req.body.metadata), trimtxt(req.body.content), function(err, docEntry) {
-			if (err) {
-				// Need to send an error message instead
-				res.status(500).end("Error while creating "+ fname +" "+ err);
-				logger.error('FAIL received from createDocument because '+ err);
-			} else {
-				// logger.trace(util.inspect(docEntry));
-				akasha.renderFile(config, docEntry.path, function(err) {
-					if (err) {
-						res.status(404).end("Could not render "+ docEntry.fullpath +" because "+ err);
-					} else {
-						// redirect(res, path.join(path.dirname(body.urlpath), path.basename(docEntry.renderedFileName)));
-						res.status(200).json({
-							newlocation: path.join(req.body.dirname, path.basename(docEntry.renderedFileName))
-						});
-					}
-				});
-			}
-	});
-}; */
-
-/* exports.postDelete = function(req, res) {
-	var docEntry = akasha.findDocumentForUrlpath(config, req.body.urlpath);
-	if (docEntry) {
-		// logger.trace(util.inspect(docEntry));
-		// logger.trace('deleting docEntry '+ docEntry.path);
-		akasha.deleteDocumentForUrlpath(config, docEntry.path, function(err) {
-			if (err) {
-				res.status(404).end("Could not delete "+ req.body.urlpath +" because "+ err);
-			} else {
-				// logger.trace('deleting '+ path.join(config.root_out, req.body.urlpath));
-				fs.unlink(path.join(config.root_out, req.body.urlpath), function(err2) {
-					if (err2) {
-						res.status(404).end("Could not delete "+ path.join(config.root_out, req.body.urlpath) +" because "+ err);
-					} else {
-						res.status(200).redirect(path.join(path.dirname(req.body.urlpath), "index.html"));
-					}
-				});
-			}
-		});
-	} else {
-		res.status(404).end("Could not delete "+ body.urlpath +" because it doesn't exist");
-	}
-}; */
-
-/*exports.postAddDir = function(req, res) {
-	var dirnm = path.join(config.root_docs[0], req.body.dirname, req.body.pathname);
-	fs.mkdir(dirnm, function(err) {
-		if (err) {
-			res.status(404).end("Could not create directory "+ dirnm +" because "+ err);
-		} else {
-			var dirnm2 = path.join(config.root_out, req.body.dirname, req.body.pathname);
-			fs.mkdir(dirnm2, function(err) {
-				if (err) {
-					res.status(404).end("Could not create directory "+ dirnm2 +" because "+ err);
-				} else {
-					// Now what?
-					// Need to make the user create dirnm/index.html
-					res.status(200).redirect(path.join('/..admin/addindexpage', req.body.dirname, req.body.pathname));
-				}
-			});
-		}
-	});
-};*/
-
 
 exports.streamFile = function(req, res, requrl, fname) {
     logger.info('streamFile '+ fname /*+' '+ util.inspect(requrl)*/);

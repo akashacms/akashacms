@@ -73,11 +73,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 //  Not Needed: app.use(cookieParser());
 
-app.get(/^\/\.\.admin\/editpage(\/.*)/,
-	useDomain,
-	routes.setupTemplate("txtEditForm"),
-	routes.breadcrumbTrail,
-	routes.editPage);
 app.get(/^\/\.\.admin\/addindexpage(\/.*)/,
 	useDomain,
 	routes.checkDirectory,
@@ -129,6 +124,10 @@ app.post(/^\/\.\.api\/saveNewFile/,
 	useDomain,
 	routes.apiPostAddNewFile);
 
+app.post(/^\/\.\.api\/saveEditedFile/,
+	useDomain,
+	routes.apiPostAddEditedFile);
+
 app.post(/^\/\.\.api\/deleteFileConfirm/,
 	useDomain,
 	routes.apiDeleteFileConfirm);
@@ -169,6 +168,5 @@ app.get(/^(\/)/,
 		});
 	}*/);
 
-app.post("/..admin/edit", useDomain, routes.postEdit);
 
 
