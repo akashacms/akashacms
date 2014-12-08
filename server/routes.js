@@ -141,6 +141,7 @@ exports.breadcrumbTrail = function(req, res, next) {
 			} else {
 				req.$('#ak-editor-breadcrumbs').append('<ol class="breadcrumb"></ol>');
 				req.$('#ak-editor-breadcrumbs ol.breadcrumb').append(bdt);
+				req.$('#ak-editor-breadcrumbs').attr("ak-path", urlpath);
 				next();
 			} 
 		});
@@ -153,7 +154,10 @@ exports.apiBreadcrumbTrail = function(req, res, next) {
 		if (err) res.status(404).end("bad path "+ urlpath);
 		else {
 			logger.trace('apiBreadcrumbTrail '+ urlpath +' '+ bdt);
-			res.status(200).json({ html: bdt });
+			res.status(200).json({ 
+				akpath: urlpath,
+				html: bdt
+			});
 		}
 	});
 };
@@ -245,37 +249,6 @@ var mkSidebarFiles = function(urlpath, done) {
 							if (err) done(err);
 							else done(undefined, ret);
 						});
-					
-					/*for (var i = 0; i < files.length; i++) {
-						var fn = files[i];
-						var glyph;
-						var akpath = dirpathInfo.path.match(/^\//) ? dirpathInfo.path : '/'+ dirpathInfo.path;
-						var stats = fs.statSync(path.join(dirpathInfo.dirpath, fn));
-						if (stats.isDirectory()) {
-							glyph = '<span class="glyphicon glyphicon-folder-close" aria-hidden="true"></span>';
-							type  = 'folder';
-							akpath += akpath.match(/\/$/) ? fn : '/'+ fn;
-						} else if (fn.match(/\.([pP][nN][gG]|[jJ][pP][gG]|[jJ][pP][eE][gG]|[gG][iI][fF])$/)) {
-							glyph = '<span class="glyphicon glyphicon-picture" aria-hidden="true"></span>';
-							type  = 'image';
-							akpath += akpath.match(/\/$/) ? fn : '/'+ fn;
-						} else if (fn.match(/\.([zZ][iI][pP]|[gG][zZ])$/)) {
-							glyph = '<span class="glyphicon glyphicon-compressed" aria-hidden="true"></span>';
-							type  = 'compressed';
-						} else if (fn.match(/\.([mM][oO][vV]|[mM][pP]4|[aA][vV][iI]|[mM][kK][vV])$/)) {
-							glyph = '<span class="glyphicon glyphicon-film" aria-hidden="true"></span>';
-							type  = 'movie';
-						} else if (fn.match(/\.([dD][oO][cC]|[pP][dD][fF])$/)) {
-							glyph = '<span class="glyphicon glyphicon-book" aria-hidden="true"></span>';
-							type  = 'document';
-							// TBD: .html.md .html.ejs.md .html.ejs .php.md .php.ejs.md .php.ejs .php .js .css
-						} else {
-							glyph = '<span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>';
-							type  = 'download';
-						}
-						ret += '<span class="label label-default '+ type +'" ak-path="'+ akpath +'">'+ glyph + fn +'</span><br>';
-					}
-					done(undefined, ret);*/
 				}
 			});
 		}
@@ -289,6 +262,7 @@ exports.sidebarFilez = function(req, res, next) {
 			if (err) res.status(500).end(err);
 			else {
 				req.$("#ak-editor-files-sidebar").append(list);
+				req.$("#ak-editor-files-sidebar").attr("ak-path", urlpath);
 				next();
 			}
 		});
@@ -300,7 +274,10 @@ exports.apiSidebarFilesList = function(req, res, next) {
 	mkSidebarFiles(urlpath, function(err, list) {
 		logger.trace('apiSidebarFilesList '+ urlpath +' '+ list);
 		if (err) res.status(500).end(err);
-		else res.status(200).json({ html: list });
+		else res.status(200).json({ 
+			akpath: urlpath,
+			html: list
+		});
 	});
 };
 
@@ -329,6 +306,98 @@ exports.apiPageViewer = function(req, res, next) {
 		});
 };
 
+exports.apiPostAddNewDir = function(req, res) {
+	logger.trace(util.inspect(req.body));
+	var dirnm = path.join(config.root_docs[0], req.body.urlpath, req.body.pathname);
+	logger.trace('apiPostAddNewDir '+ dirnm);
+	fs.mkdir(dirnm, function(err) {
+		if (err) {
+			logger.error("Could not create directory "+ dirnm +" because "+ err);
+			res.status(404).end("Could not create directory "+ dirnm +" because "+ err);
+		} else {
+			var dirnm2 = path.join(config.root_out, req.body.urlpath, req.body.pathname);
+			logger.trace('apiPostAddNewDir #2 '+ dirnm2);
+			fs.mkdir(dirnm2, function(err) {
+				if (err) {
+					logger.error("Could not create directory "+ dirnm2 +" because "+ err);
+					res.status(404).end("Could not create directory "+ dirnm2 +" because "+ err);
+				} else {
+					// Now what?
+					// Need to make the user create dirnm/index.html
+					res.status(200).json({
+						akpath: path.join(req.body.urlpath, req.body.pathname)
+					});
+					// res.status(200).redirect(path.join('/..admin/addindexpage', req.body.dirname, req.body.pathname));
+				}
+			});
+		}
+	});
+};
+
+exports.apiPostAddNewFile = function(req, res) {
+	logger.trace('in /..api/saveNewFile' + util.inspect(req.body));
+	// var fname = path.join(config.root_docs[0], path.dirname(body.urlpath), body.pathname.trim());
+	var fname = path.join(req.body.dirname, req.body.pathname.trim());
+	if (req.body.fnextension) fname += req.body.fnextension;
+	// logger.trace('fname='+ fname);
+	akasha.createDocument(config, config.root_docs[0],
+		fname,
+		trimtxt(req.body.metadata), trimtxt(req.body.content), function(err, docEntry) {
+			if (err) {
+				// Need to send an error message instead
+				res.status(500).end("Error while creating "+ fname +" "+ err);
+				logger.error('FAIL received from createDocument because '+ err);
+			} else {
+				// logger.trace(util.inspect(docEntry));
+				akasha.renderFile(config, docEntry.path, function(err) {
+					if (err) {
+						logger.error("Could not render "+ docEntry.fullpath +" because "+ err);
+						res.status(404).end("Could not render "+ docEntry.fullpath +" because "+ err);
+					} else {
+						// redirect(res, path.join(path.dirname(body.urlpath), path.basename(docEntry.renderedFileName)));
+						res.status(200).json({
+							akpath: '/'+ docEntry.path
+						});
+					}
+				});
+			}
+	});
+};
+
+exports.apiDeleteFileConfirm = function(req, res) {
+	logger.trace('in /..api/deleteFileConfirm ' + util.inspect(req.body));
+	
+	var docEntry = akasha.findDocumentForUrlpath(config, req.body.urlpath);
+	if (docEntry) {
+		// logger.trace(util.inspect(docEntry));
+		// logger.trace('deleting docEntry '+ docEntry.path);
+		akasha.deleteDocumentForUrlpath(config, docEntry.path, function(err) {
+			if (err) {
+				logger.error("Could not delete "+ req.body.urlpath +" because "+ err);
+				res.status(404).end("Could not delete "+ req.body.urlpath +" because "+ err);
+			} else {
+				// logger.trace('deleting '+ path.join(config.root_out, docEntry.renderedFileName));
+				fs.unlink(path.join(config.root_out, docEntry.renderedFileName), function(err2) {
+					if (err2) {
+						logger.error("Could not delete "+ path.join(config.root_out, docEntry.renderedFileName) +" because "+ err2);
+						res.status(404).end("Could not delete "+ path.join(config.root_out, docEntry.renderedFileName) +" because "+ err2);
+					} else {
+						// logger.trace('redirecting to '+ path.dirname(req.body.urlpath));
+						res.status(200).json({
+							akpath: path.dirname(req.body.urlpath)
+						});
+					}
+				});
+			}
+		});
+	} else {
+		logger.error("Could not delete "+ body.urlpath +" because it doesn't exist");
+		res.status(404).end("Could not delete "+ body.urlpath +" because it doesn't exist");
+	}
+};
+
+////////////////////// OLD FUNCTIONS TO BE REPLACED MAYBE
+
 exports.editPage = function(req, res) {
 	var urlpath = req.params[0];
 	// logger.trace(util.inspect(matches));
@@ -347,15 +416,15 @@ exports.editPage = function(req, res) {
 	}
 };
 
-exports.addNewDir = function(req, res) {
+/*exports.addNewDir = function(req, res) {
 	var urlpath = req.params[0];
 	var $ = newCheerio(findTemplate("baseHtml"));
 	$('body').append(prepareDirCreateForm(urlpath));
 	logger.trace($.html());
 	res.end($.html());
-};
+};*/
 
-exports.addNewPage = function(req, res) {
+/* exports.addNewPage = function(req, res) {
 	var urlpath = req.params[0];
 	var $ = newCheerio(findTemplate("baseHtml"));
 	$('body').append(prepareDocCreateForm(
@@ -363,7 +432,7 @@ exports.addNewPage = function(req, res) {
 					path.dirname(urlpath)));
 	logger.trace($.html());
 	res.end($.html());
-};
+}; */
 
 exports.addIndexPage = function(req, res) {
 	var urlpath = req.params[0];
@@ -373,13 +442,13 @@ exports.addIndexPage = function(req, res) {
 	res.end($.html());
 };
 
-exports.deletePage = function(req, res) {
+/* exports.deletePage = function(req, res) {
 	var urlpath = req.params[0];
 	var $ = newCheerio(findTemplate("baseHtml"));
 	$('body').append(prepareDocDeleteForm(urlpath));
 	logger.trace($.html());
 	res.end($.html());
-};
+}; */
 
 exports.fullBuild = function(req, res) {
 	var urlpath = req.params[0];
@@ -440,7 +509,7 @@ exports.postEdit = function(req, res) {
 	}
 };
 
-exports.postAdd = function(req, res) {
+/* exports.postAdd = function(req, res) {
 	logger.trace('in /..admin/add');
 	// var fname = path.join(config.root_docs[0], path.dirname(body.urlpath), body.pathname.trim());
 	var fname = path.join(req.body.dirname, req.body.pathname.trim());
@@ -467,9 +536,9 @@ exports.postAdd = function(req, res) {
 				});
 			}
 	});
-};
+}; */
 
-exports.postDelete = function(req, res) {
+/* exports.postDelete = function(req, res) {
 	var docEntry = akasha.findDocumentForUrlpath(config, req.body.urlpath);
 	if (docEntry) {
 		// logger.trace(util.inspect(docEntry));
@@ -491,9 +560,9 @@ exports.postDelete = function(req, res) {
 	} else {
 		res.status(404).end("Could not delete "+ body.urlpath +" because it doesn't exist");
 	}
-};
+}; */
 
-exports.postAddDir = function(req, res) {
+/*exports.postAddDir = function(req, res) {
 	var dirnm = path.join(config.root_docs[0], req.body.dirname, req.body.pathname);
 	fs.mkdir(dirnm, function(err) {
 		if (err) {
@@ -511,7 +580,7 @@ exports.postAddDir = function(req, res) {
 			});
 		}
 	});
-};
+};*/
 
 
 exports.streamFile = function(req, res, requrl, fname) {

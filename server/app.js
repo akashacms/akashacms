@@ -78,26 +78,11 @@ app.get(/^\/\.\.admin\/editpage(\/.*)/,
 	routes.setupTemplate("txtEditForm"),
 	routes.breadcrumbTrail,
 	routes.editPage);
-app.get(/^\/\.\.admin\/addnewdir(\/.*)/,
-	useDomain,
-	routes.checkDirectory,
-	routes.setupTemplate("dirAddForm"),
-	routes.addNewDir);
-app.get(/^\/\.\.admin\/addnewpage(\/.*)/,
-	useDomain,
-	routes.checkDirectory,
-	routes.setupTemplate("txtAddForm"),
-	routes.addNewPage);
 app.get(/^\/\.\.admin\/addindexpage(\/.*)/,
 	useDomain,
 	routes.checkDirectory,
 	routes.setupTemplate("txtAddForm"),
 	routes.addIndexPage);
-app.get(/^\/\.\.admin\/deletepage(\/.*)/,
-	useDomain,
-	routes.checkDirectory,
-	routes.setupTemplate("txtDeleteForm"),
-	routes.deletePage);
 app.get(/^\/\.\.admin\/fullbuild(\/.*)/,
 	useDomain,
 	routes.checkDirectory,
@@ -136,6 +121,18 @@ app.get(/^\/\.\.api\/pageViewer(\/.*)/,
 	useDomain,
 	routes.apiPageViewer);
 	
+app.post(/^\/\.\.api\/addnewdir/,
+	useDomain,
+	routes.apiPostAddNewDir);
+
+app.post(/^\/\.\.api\/saveNewFile/,
+	useDomain,
+	routes.apiPostAddNewFile);
+
+app.post(/^\/\.\.api\/deleteFileConfirm/,
+	useDomain,
+	routes.apiDeleteFileConfirm);
+
 app.get(/^(\/.+)/, 
 	useDomain,
 	function(req, res) {
@@ -173,8 +170,5 @@ app.get(/^(\/)/,
 	}*/);
 
 app.post("/..admin/edit", useDomain, routes.postEdit);
-app.post("/..admin/add", useDomain, routes.postAdd);
-app.post("/..admin/delete", useDomain, routes.postDelete);
-app.post("/..admin/adddir", useDomain, routes.postAddDir);
 
 
