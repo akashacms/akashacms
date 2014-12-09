@@ -247,7 +247,7 @@ var mkSidebarFiles = function(urlpath, done) {
 						},
 						function(err) {
 							if (err) done(err);
-							else done(undefined, ret);
+							else done(undefined, ret, dirpathInfo.dirname);
 						});
 				}
 			});
@@ -258,11 +258,12 @@ var mkSidebarFiles = function(urlpath, done) {
 exports.sidebarFilez = function(req, res, next) {
 	if (req.$("#ak-editor-files-sidebar").length > 0) {
 		var urlpath = req.params[0];
-		mkSidebarFiles(urlpath, function(err, list) {
+		mkSidebarFiles(urlpath, function(err, list, dirpath) {
 			if (err) res.status(500).end(err);
 			else {
 				req.$("#ak-editor-files-sidebar").append(list);
 				req.$("#ak-editor-files-sidebar").attr("ak-path", urlpath);
+				req.$("#ak-editor-files-sidebar").attr("dirpath", dirpath);
 				next();
 			}
 		});
@@ -271,11 +272,12 @@ exports.sidebarFilez = function(req, res, next) {
 
 exports.apiSidebarFilesList = function(req, res, next) {
 	var urlpath = req.params[0];
-	mkSidebarFiles(urlpath, function(err, list) {
+	mkSidebarFiles(urlpath, function(err, list, dirpath) {
 		logger.trace('apiSidebarFilesList '+ urlpath +' '+ list);
 		if (err) res.status(500).end(err);
 		else res.status(200).json({ 
 			akpath: urlpath,
+			dirpath: dirpath,
 			html: list
 		});
 	});

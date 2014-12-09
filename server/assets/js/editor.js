@@ -106,12 +106,19 @@ $(function() {
 					$("#ak-editor-files-sidebar").empty();
 					$("#ak-editor-files-sidebar").append(json.html);
 					$("#ak-editor-files-sidebar").attr("ak-path", json.akpath);
+					$("#ak-editor-files-sidebar").attr("dirpath", json.dirpath);
 					sidebar.setup();
 				},
 				error: function(xhr, status, errorThrown) {
 					messages.display("ERROR "+ xhr.responseText);
 				}
 			});
+		},
+		akpath: function() {
+			return $("#ak-editor-files-sidebar").attr("ak-path");
+		},
+		dirpath: function() {
+			return $("#ak-editor-files-sidebar").attr("dirpath");
 		}
     };
     
@@ -200,7 +207,7 @@ $(function() {
 			$("#editFileSave").on('click', editorModal.saveEditedFile);
     	},
 		initializeFileCreateModal: function() {
-			$("#ak-editor-add-dirname").text(breadcrumbs.akpath());
+			$("#ak-editor-add-dirname").text(sidebar.dirpath());
 			$("#ak-editor-pathname-input").val("");
 			editorModal.metaeditorNew.setValue("", 0);
 			editorModal.contenteditorNew.setValue("", 0);
