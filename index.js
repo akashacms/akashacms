@@ -480,6 +480,7 @@ module.exports.dirPathForDocument = function(config, urlpath, done) {
 	if (docEntry) {
 		done(undefined, {
 			path: path.dirname(docEntry.path),
+			dirname: path.dirname(docEntry.path) === "." ? "/" : path.dirname(docEntry.path),
 			dirpath: path.dirname(docEntry.fullpath)
 		});
 	} else {
@@ -490,11 +491,13 @@ module.exports.dirPathForDocument = function(config, urlpath, done) {
 				if (stats.isDirectory()) {
 					done(undefined, {
 						path: urlpath,
+						dirname: path.dirname(urlpath) === "." ? "/" : path.dirname(urlpath),
 						dirpath: dirpath
 					});
 				} else if (stats.isFile()) {
 					done(undefined, {
 						path: urlpath,
+						dirname: path.dirname(urlpath) === "." ? "/" : path.dirname(urlpath),
 						dirpath: path.dirname(dirpath)
 					});
 				} else {
