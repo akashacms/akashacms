@@ -182,6 +182,9 @@ module.exports.partialSync = function(theoptions, name, locals, callback) {
 };
 
 module.exports.renderFile = function(options, fileName, callback) {
+    if (fileName.charAt(0) === '/') {
+        fileName = fileName.substr(1);
+    }
     renderer.config(module.exports, options);
 	// logger.trace('renderFile before readDocument '+ fileName);
     fileCache.readDocument(options, fileName, function(err, entry) {
