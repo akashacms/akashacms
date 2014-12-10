@@ -54,14 +54,17 @@ html, body { height: 100% }
 	height: 700px;
 }
 
-#ak-editor-editor-area #ak-page-editor-frame {
-	display: none; /* hide by default */
-}
-
 #ak-editor-messages-area #ak-editor-messages {
 	float: left;
 }
 
 #ak-editor-messages-area button {
 	float: right;
+}
+
+#editFileModal #ak-edit-modal-link-page-area,
+#editFileModal #ak-edit-modal-find-image-area,
+#editFileModal #ak-edit-modal-upload-file-area,
+#editFileModal #ak-edit-modal-link-file-area {
+	display: none; /* hide by default */
 }
