@@ -195,7 +195,7 @@ program
     .action(function(fileName) {
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
-        akasha.readDocument(config, fileName, function(err, entry) {
+        akasha.readDocumentEntry(config, fileName, function(err, entry) {
         	if (err) throw err;
         	else {        	
 				var text = fs.readFileSync(entry.fullpath, "utf-8");
