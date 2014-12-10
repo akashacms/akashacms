@@ -5,12 +5,6 @@ $(function() {
     	setup: function() {
 			if ($("#ak-editor-breadcrumbs").length > 0) {
 				$("#ak-editor-breadcrumbs button").on('click', function(event) {
-					/*
-					DONE decide which directory to load
-					DONE rejigger breadcrumbs for that directory
-					DONE rejigger sidebar for that directory
-					if viewing something - close that view
-					if the result needs to view something, then cause it to view */
 			
 					console.log('ak-editor-breadcrumbs button click');
 			
@@ -87,12 +81,7 @@ $(function() {
 					editviewer.clear();
 					breadcrumbs.update(akpath);
 					sidebar.update(akpath);
-				
-					if ($(this).hasClass("image")) {
-						editviewer.image(akpath);
-					} else if ($(this).hasClass("editable")) {
-						editviewer.page(akpath);
-					}
+					editviewer.fileView(akpath);
 				});
 			}
 		},
@@ -133,10 +122,10 @@ $(function() {
     	clear: function() {
 			$("#ak-editor-editor-area").empty();
     	},
-    	image: function(akpath) {
-			console.log("/..api/imageViewer"+ akpath);
+    	fileView: function(akpath) {
+			console.log("/..api/fileViewer"+ akpath);
 			$.ajax({
-				url: "/..api/imageViewer"+ akpath,
+				url: "/..api/fileViewer"+ akpath,
 				type: "GET",
 				dataType: "json",
 				success: function(json) {
@@ -148,25 +137,6 @@ $(function() {
 				}
 			});
     	},
-    	page: function(akpath) {
-			console.log("/..api/pageViewer"+ akpath);
-			$.ajax({
-				url: "/..api/pageViewer"+ akpath,
-				type: "GET",
-				dataType: "json",
-				success: function(json) {
-					editviewer.clear();
-					$("#ak-editor-editor-area").append(json.html);
-				},
-				error: function(xhr, status, errorThrown) {
-					messages.display("ERROR "+ xhr.responseText);
-				}
-			});
-		},
-		showPageViewer: function() {
-			$("#ak-editor-editor-area iframe").show();
-			$("#ak-editor-editor-area #ak-page-editor-frame").hide();
-		},
 		resizer: function() {
 			var height = $("ak-editor-main-area").height();
 			$("#ak-editor-editor-area").height(height);
@@ -244,7 +214,7 @@ $(function() {
                 },
                 dataType: "json",
                 success: function(json) {
-                    editviewer.page(json.akpath);
+                    editviewer.fileView(json.akpath);
                     sidebar.update(json.akpath);
                     breadcrumbs.update(json.akpath);
                 },
@@ -268,7 +238,7 @@ $(function() {
                 },
                 dataType: "json",
                 success: function(json) {
-                    editviewer.page(json.akpath);
+                    editviewer.fileView(json.akpath);
                     sidebar.update(json.akpath);
                     breadcrumbs.update(json.akpath);
                 },
@@ -283,6 +253,8 @@ $(function() {
     	setup: function() {
     		$("#newDirectorySave").on('click', buttons.addNewDirectory);
     		buttons.setupDeleteFileButtons();
+    		$("#uploadFileModal").on('show.bs.modal', buttons.initializeUploadFileModal);
+        	$("#uploadFileModal form :button").on('click', buttons.uploadFileModal);
     	},
     	addNewDirectory: function(event) {
 			$("#newDirectoryModal").modal('hide');
@@ -290,7 +262,7 @@ $(function() {
 				url: "/..api/addnewdir",
 				type: "POST",
 				data: {
-					urlpath: breadcrumbs.akpath(),
+					urlpath: sidebar.dirpath(),
 					pathname: $('#ak-adddir-pathname-input').val(),
 				},
 				dataType: "json",
@@ -331,6 +303,30 @@ $(function() {
 					messages.display("ERROR "+ xhr.responseText);
 				}
 			});
+		},
+		initializeUploadFileModal: function(event) {
+			$("#ak-editor-upload-urlpath").val(sidebar.akpath());
+			$("#ak-editor-upload-dirpath").val(sidebar.dirpath());
+		},
+		uploadFileModal: function(event) {
+			$("#uploadFileModal").modal('hide');
+            $.ajax({
+                url: "/..api/uploadFiles",
+                type: "POST",
+                data: new FormData($('#uploadFileModal form')[0]),
+                cache: false,
+				contentType: false,
+				processData: false,
+                success: function(json) {
+					breadcrumbs.update(json.akpath);
+					sidebar.update(json.akpath);
+					// TBD make sure editviewer shows the file
+					editviewer.fileView(json.akpath);
+                },
+                error: function(xhr, status, errorThrown) {
+                    messages.display("ERROR "+ xhr.responseText);
+                }
+            });
 		}
     };
     

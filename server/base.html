@@ -40,7 +40,7 @@
 		<button id="ak-sidebar-new-directory-button" type="button" class="btn btn-default" data-toggle="modal" data-target="#newDirectoryModal">
 			<span class="glyphicon glyphicon-plus" aria-hidden="true"></span> New Directory
 		</button>
-		<button id="ak-sidebar-new-directory-button" type="button" class="btn btn-default">
+		<button id="ak-sidebar-new-directory-button" type="button" class="btn btn-default" data-toggle="modal" data-target="#uploadFileModal">
 			<span class="glyphicon glyphicon-cloud-upload" aria-hidden="true"></span> Upload File
 		</button>
 	</div><br>
@@ -131,30 +131,44 @@
       </div>
       <div class="modal-body">
       
-		<label for="pathname-input">Editing File Name:</label><br/>
-		<span class="form-control-static" id="ak-editor-edit-dirname"></span><br>
+      	<div id="ak-edit-modal-edit-area">
+			<label for="pathname-input">Editing File Name:</label><br/>
+			<span class="form-control-static" id="ak-editor-edit-dirname"></span><br>
 		
-		<span class="label label-default">Metadata</span>
-		<div id="ak-editor-edit-metadata-input"></div>
+			<span class="label label-default">Metadata</span>
+			<div id="ak-editor-edit-metadata-input"></div>
 	
-		<div id="ak-edit-editor-buttons" class="btn-group" role="group">
-			<button id="ak-edit-linkto-page-button" type="button" class="btn btn-default">
-				<span class="glyphicon glyphicon-random" aria-hidden="true"></span> Link To Page
-			</button>
-			<button id="ak-edit-image-button" type="button" class="btn btn-default">
-				<span class="glyphicon glyphicon-picture" aria-hidden="true"></span> Find Image
-			</button>
-			<button id="ak-edit-upload-document-button" type="button" class="btn btn-default">
-				<span class="glyphicon glyphicon-cloud-upload" aria-hidden="true"></span> Upload document
-			</button>
-			<button id="ak-edit-linkto-document-button" type="button" class="btn btn-default">
-				<span class="glyphicon glyphicon-book" aria-hidden="true"></span> Link to document (PDF etc)
-			</button>
-		</div><br>
+			<div id="ak-edit-editor-buttons" class="btn-group" role="group">
+				<button id="ak-edit-linkto-page-button" type="button" class="btn btn-default">
+					<span class="glyphicon glyphicon-random" aria-hidden="true"></span> Link To Page
+				</button>
+				<button id="ak-edit-image-button" type="button" class="btn btn-default">
+					<span class="glyphicon glyphicon-picture" aria-hidden="true"></span> Find Image
+				</button>
+				<button id="ak-edit-upload-document-button" type="button" class="btn btn-default">
+					<span class="glyphicon glyphicon-cloud-upload" aria-hidden="true"></span> Upload document
+				</button>
+				<button id="ak-edit-linkto-document-button" type="button" class="btn btn-default">
+					<span class="glyphicon glyphicon-book" aria-hidden="true"></span> Link to document (PDF etc)
+				</button>
+			</div><br>
 	
-		<span class="label label-default">Content</span>
-		<div id="ak-editor-edit-content-input"></div>
+			<span class="label label-default">Content</span>
+			<div id="ak-editor-edit-content-input"></div>
+		</div>
+		
+		<div id="ak-edit-modal-link-page-area">
+		</div>
       
+		<div id="ak-edit-modal-find-image-area">
+		</div>
+
+		<div id="ak-edit-modal-upload-file-area">
+		</div>
+		
+		<div id="ak-edit-modal-link-file-area">
+		</div>
+		
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -184,6 +198,30 @@
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
+
+
+
+<div class="modal fade" id="uploadFileModal" tabindex="-1" role="dialog" aria-labelledby="uploadFileModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Cancel</span></button>
+        <h4 class="modal-title" id="uploadFileModalLabel">Upload Files</h4>
+      </div>
+      <div class="modal-body">
+      
+		  <form action="/..api/uploadFiles" enctype="multipart/form-data" method="post">
+		  	<input type=hidden name=urlpath id="ak-editor-upload-urlpath" value="">
+		  	<input type=hidden name=dirpath id="ak-editor-upload-dirpath" value="">
+			<input type="file" name="upload">
+			<input type="button" value="Upload">
+		  </form>
+
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
 
 
 

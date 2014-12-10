@@ -7,6 +7,7 @@ var util      = require('util');
 var url       = require('url');
 var mahabhuta = require('../lib/mahabhuta');
 var cheerio   = require('cheerio');
+var formidable = require('formidable');
 
 var akasha, config, logger;
 
@@ -23,6 +24,7 @@ var templateList = [
 	{ name: "dirAddForm", fname: path.join(__dirname, "form-adddir.html") },
 	{ name: "txtDeleteForm", fname: path.join(__dirname, "form-delete.html") },
 	{ name: "toolbar", fname: path.join(__dirname, "toolbar.html") },
+	{ name: "viewImage", fname: path.join(__dirname, "viewer-image.html") },
 	{ name: "viewPage", fname: path.join(__dirname, "viewer-page.html") }
 ];
 
@@ -100,10 +102,10 @@ var mkBreadcrumbTrail = function(urlpath, done) {
 	var cmps = urlpath.split('/');
 	if (cmps.length > 0) {
 		var path = '';
-		logger.trace(util.inspect(cmps));
+		// logger.trace(util.inspect(cmps));
 		async.eachSeries(cmps,
 			function(cmp, next) {
-				logger.trace(cmp);
+				// logger.trace(cmp);
 				if (cmp.length > 0) {
 					mahabhuta.process1('<li><button type="button" class="btn btn-primary" autocomplete="off" ak-path=""></button></li>',
 						function($, done) {
@@ -115,7 +117,7 @@ var mkBreadcrumbTrail = function(urlpath, done) {
 						function(err, html) {
 							if (err) next(err);
 							else {
-								logger.trace(html);
+								// logger.trace(html);
 								ret += html;
 								next();
 							}
@@ -153,7 +155,7 @@ exports.apiBreadcrumbTrail = function(req, res, next) {
 	mkBreadcrumbTrail(urlpath, function(err, bdt) {
 		if (err) res.status(404).end("bad path "+ urlpath);
 		else {
-			logger.trace('apiBreadcrumbTrail '+ urlpath +' '+ bdt);
+			// logger.trace('apiBreadcrumbTrail '+ urlpath +' '+ bdt);
 			res.status(200).json({ 
 				akpath: urlpath,
 				html: bdt
@@ -162,11 +164,20 @@ exports.apiBreadcrumbTrail = function(req, res, next) {
 	});
 };
 
+var fileMatchImage = function(file) {
+	return file.match(/\.(png|jpg|jpeg|gif)$/i);
+};
+
+var fileMatchRenderable = function(file) {
+	return file.match(/\.(html.md|html.ejs.md|html.ejs|php.md|php.ejs.md|php.ejs)$/i);
+};
+
 var mkSidebarFiles = function(urlpath, done) {
 	akasha.dirPathForDocument(config, urlpath, function(err, dirpathInfo) {
 		if (err) {
 			done(err);
 		} else {
+			// logger.trace('urlpath='+ urlpath +' dirpathInfo='+ util.inspect(dirpathInfo));
 			fs.readdir(dirpathInfo.dirpath, function(err, files) {
 				if (err) {
 					done(err);
@@ -175,67 +186,59 @@ var mkSidebarFiles = function(urlpath, done) {
 					
 					async.eachSeries(files,
 						function(file, next) {
-							// logger.trace('mkSidebarFiles file='+ file);
-							var akpath = dirpathInfo.path.match(/^\//) ? dirpathInfo.path : '/'+ dirpathInfo.path;
-							mahabhuta.process('<span class="label label-default " ak-path=""><span class="glyphicon" aria-hidden="true"></span><span class="ak-label-text"></span></span><br>',
-								undefined, [
-								function($, metadata, done) {
-									var stats = fs.statSync(path.join(dirpathInfo.dirpath, file));
-									if (stats.isDirectory()) {
-										if (file === "." || file === "..") {
+							// logger.trace('mkSidebarFiles path='+ dirpathInfo.dirpath +' file='+ file);
+							mahabhuta.process1('<span class="label label-default " ak-path=""><span class="glyphicon" aria-hidden="true"></span><span class="ak-label-text"></span></span><br>',
+								function($, done) {
+									fs.stat(path.join(dirpathInfo.dirpath, file), function(err, stats) {
+										if (stats.isDirectory()) {
+											if (file === "." || file === "..") {
+												done();
+											} else {
+												$('span.glyphicon').addClass('glyphicon-folder-close');
+												$('span.label').addClass('folder');
+												$('span.label').attr('ak-path', path.join(dirpathInfo.path, file));
+												$('span.ak-label-text').text(file);
+												done();
+											}
+										} else if (fileMatchImage(file)) {
+											$('span.glyphicon').addClass('glyphicon-picture');
+											$('span.label').addClass('image');
+											$('span.label').attr('ak-path', path.join(dirpathInfo.path, file));
+											$('span.ak-label-text').text(file);
+											done();
+										} else if (file.match(/\.(zip|gz)$/i)) {
+											$('span.glyphicon').addClass('glyphicon-compressed');
+											$('span.label').addClass('compressed');
+											$('span.label').attr('ak-path', dirpathInfo.dirname);
+											$('span.ak-label-text').text(file);
+											done();
+										} else if (file.match(/\.(mov|mp4|avi|mkv)$/i)) {
+											$('span.glyphicon').addClass('glyphicon-film');
+											$('span.label').addClass('movie');
+											$('span.label').attr('ak-path', dirpathInfo.dirname);
+											$('span.ak-label-text').text(file);
+											done();
+										} else if (file.match(/\.(doc|pdf)$/i)) {
+											$('span.glyphicon').addClass('glyphicon-book');
+											$('span.label').addClass('document');
+											$('span.label').attr('ak-path', dirpathInfo.dirname);
+											$('span.ak-label-text').text(file);
+											done();
+										} else if (fileMatchRenderable(file)) {
+											$('span.glyphicon').addClass('glyphicon-pencil');
+											$('span.label').addClass('editable');
+											$('span.label').attr('ak-path', path.join(dirpathInfo.path, file));
+											$('span.ak-label-text').text(file);
 											done();
 										} else {
-											$('span.glyphicon').addClass('glyphicon-folder-close');
-											$('span.label').addClass('folder');
-											akpath += akpath.match(/\/$/) ? file : '/'+ file;
-											$('span.label').attr('ak-path', akpath);
+											$('span.glyphicon').addClass('glyphicon-file');
+											$('span.label').addClass('unknown-file');
+											$('span.label').attr('ak-path', dirpathInfo.dirname);
 											$('span.ak-label-text').text(file);
 											done();
 										}
-									} else if (file.match(/\.(png|jpg|jpeg|gif)$/i)) {
-										$('span.glyphicon').addClass('glyphicon-picture');
-										$('span.label').addClass('image');
-										akpath += akpath.match(/\/$/) ? file : '/'+ file;
-										$('span.label').attr('ak-path', akpath);
-										$('span.ak-label-text').text(file);
-										done();
-									} else if (file.match(/\.(zip|gz)$/i)) {
-										$('span.glyphicon').addClass('glyphicon-compressed');
-										$('span.label').addClass('compressed');
-										// akpath += akpath.match(/\/$/) ? file : '/'+ file;
-										$('span.label').attr('ak-path', akpath);
-										$('span.ak-label-text').text(file);
-										done();
-									} else if (file.match(/\.(mov|mp4|avi|mkv)$/i)) {
-										$('span.glyphicon').addClass('glyphicon-film');
-										$('span.label').addClass('movie');
-										// akpath += akpath.match(/\/$/) ? file : '/'+ file;
-										$('span.label').attr('ak-path', akpath);
-										$('span.ak-label-text').text(file);
-										done();
-									} else if (file.match(/\.(doc|pdf)$/i)) {
-										$('span.glyphicon').addClass('glyphicon-book');
-										$('span.label').addClass('document');
-										// akpath += akpath.match(/\/$/) ? file : '/'+ file;
-										$('span.label').attr('ak-path', akpath);
-										$('span.ak-label-text').text(file);
-										done();
-									} else if (file.match(/\.(html.md|html.ejs.md|html.ejs|php.md|php.ejs.md|php.ejs)$/i)) {
-										$('span.glyphicon').addClass('glyphicon-pencil');
-										$('span.label').addClass('editable');
-										akpath += akpath.match(/\/$/) ? file : '/'+ file;
-										$('span.label').attr('ak-path', akpath);
-										$('span.ak-label-text').text(file);
-										done();
-									} else {
-										$('span.glyphicon').addClass('glyphicon-file');
-										$('span.label').addClass('unknown-file');
-										// akpath += akpath.match(/\/$/) ? file : '/'+ file;
-										$('span.label').attr('ak-path', akpath);
-										$('span.ak-label-text').text(file);
-										done();
-									}
-								} ],
+									});
+								},
 								function(err, html) {
 									if (err) next(err);
 									else {
@@ -272,9 +275,10 @@ exports.sidebarFilez = function(req, res, next) {
 
 exports.apiSidebarFilesList = function(req, res, next) {
 	var urlpath = req.params[0];
+	logger.trace('apiSidebarFilesList '+ urlpath);
 	mkSidebarFiles(urlpath, function(err, list, dirpath) {
-		logger.trace('apiSidebarFilesList '+ urlpath +' '+ list);
-		if (err) res.status(500).end(err);
+		// logger.trace('apiSidebarFilesList '+ urlpath +' '+ list);
+		if (err) res.status(500).end(err.toString());
 		else res.status(200).json({ 
 			akpath: urlpath,
 			dirpath: dirpath,
@@ -283,29 +287,39 @@ exports.apiSidebarFilesList = function(req, res, next) {
 	});
 };
 
-exports.apiImageViewer = function(req, res, next) {
+exports.apiFileViewer = function(req, res, next) {
 	var urlpath = req.params[0];
-	mahabhuta.process1('<img src="" class="img-responsive">', 
-		function($, done) {
-			$('img').attr("src", urlpath);
-			done();
-		}, 
-		function(err, html) {
-			res.status(200).json({ html: html });
+	logger.trace('apiFileViewer '+ urlpath);
+	if (fileMatchImage(urlpath)) { // exports.apiImageViewer(req, res, next);
+		var urlpath = req.params[0];
+		mahabhuta.process1(findTemplate('viewImage'), 
+			function($, done) {
+				$('img').attr("src", urlpath);
+				done();
+			}, 
+			function(err, html) {
+				res.status(200).json({ html: html });
+			});
+	} else if (fileMatchRenderable(urlpath)) { // exports.apiPageViewer(req, res, next);
+		var urlpath = req.params[0];
+		var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
+		mahabhuta.process1(findTemplate("viewPage"), 
+			function($, done) {
+				$('iframe').attr("src", docEntry.renderedFileName);
+				done();
+			}, 
+			function(err, html) {
+				res.status(200).json({ html: html });
+			});
+	} else {
+		fs.stat(path.join(config.root_docs[0], urlpath), function(err, stats) {
+			if (stats && stats.isDirectory()) {
+				res.status(200).json({ html: "" });
+			} else {
+				res.status(404).end('unknown viewer for '+ urlpath);
+			}
 		});
-};
-
-exports.apiPageViewer = function(req, res, next) {
-	var urlpath = req.params[0];
-	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
-	mahabhuta.process1(findTemplate("viewPage"), 
-		function($, done) {
-			$('iframe').attr("src", docEntry.renderedFileName);
-			done();
-		}, 
-		function(err, html) {
-			res.status(200).json({ html: html });
-		});
+	}
 };
 
 exports.apiPostAddNewDir = function(req, res) {
@@ -406,19 +420,19 @@ exports.apiDeleteFileConfirm = function(req, res) {
 	var docEntry = akasha.findDocumentForUrlpath(config, req.body.urlpath);
 	if (docEntry) {
 		// logger.trace(util.inspect(docEntry));
-		// logger.trace('deleting docEntry '+ docEntry.path);
+		logger.trace('deleting docEntry '+ docEntry.path);
 		akasha.deleteDocumentForUrlpath(config, docEntry.path, function(err) {
 			if (err) {
 				logger.error("Could not delete "+ req.body.urlpath +" because "+ err);
 				res.status(404).end("Could not delete "+ req.body.urlpath +" because "+ err);
 			} else {
-				// logger.trace('deleting '+ path.join(config.root_out, docEntry.renderedFileName));
+				logger.trace('deleting '+ path.join(config.root_out, docEntry.renderedFileName));
 				fs.unlink(path.join(config.root_out, docEntry.renderedFileName), function(err2) {
 					if (err2) {
 						logger.error("Could not delete "+ path.join(config.root_out, docEntry.renderedFileName) +" because "+ err2);
 						res.status(404).end("Could not delete "+ path.join(config.root_out, docEntry.renderedFileName) +" because "+ err2);
 					} else {
-						// logger.trace('redirecting to '+ path.dirname(req.body.urlpath));
+						logger.trace('redirecting to '+ path.dirname(req.body.urlpath));
 						res.status(200).json({
 							akpath: path.dirname(req.body.urlpath)
 						});
@@ -428,8 +442,80 @@ exports.apiDeleteFileConfirm = function(req, res) {
 		});
 	} else {
 		logger.error("Could not delete "+ req.body.urlpath +" because it doesn't exist");
+		/* fs.unlink(path.join(config.root_docs[0], req.body.urlpath), function(err2) {
+			if (!err2) {
+				fs.unlink(path.join(config.root_out, req.body.urlpath), function(err4) {
+					if (err4) logger.error('unlink '+ path.join(config.root_out, req.body.urlpath) +": "+ err4);
+					else {
+						res.status(200).json({
+							akpath: path.dirname(req.body.urlpath)
+						});
+					}
+				});
+			} else {
+				logger.error('unlink '+ path.join(config.root_docs[0], req.body.urlpath) +": "+ err2);
+			}
+		}); */
 		res.status(404).end("Could not delete "+ req.body.urlpath +" because it doesn't exist");
 	}
+};
+
+exports.apiUploadFiles = function(req, res) {
+	logger.trace('in /..api/uploadFiles ');
+	
+	// TBD send response properly
+	var form = new formidable.IncomingForm();
+	var files = [];
+	var fields = [];
+	
+	var akpath, dirpath;
+	
+	form
+		.on('field', function(field, value) {
+			// logger.trace('field='+ field +' value='+ value);
+			fields[field] = value;
+			if (field === 'urlpath') akpath = value;
+			else if (field === 'dirpath') dirpath = value;
+		})
+		.on('file', function(field, file) {
+			logger.trace('field='+ field +' file='+ file);
+			files.push(file);
+		})
+		.on('end', function() {
+			logger.trace('received fields:\n\n '+util.inspect(fields));
+			logger.trace('received files:\n\n '+util.inspect(files));
+			var fname = path.join(config.root_docs[0], dirpath, files[0].name);
+			fs.copy(files[0].path, fname, function(err) {  
+				if (err) {
+					logger.error(err);
+					res.status(404).end(err);
+				} else {
+					logger.trace("success!");
+					fs.copy(files[0].path, path.join(config.root_out, dirpath, files[0].name),
+					function(err) {
+						if (err) {
+							logger.error(err);
+							res.status(404).end(err);
+						} else {
+							logger.trace('success #2');
+							akasha.renderFile(config, path.join(dirpath, files[0].name), function(err) {
+								if (err) {
+									logger.error(err);
+									res.status(404).end(err);
+								} else {
+									logger.trace('success #3');
+									res.status(200).json({
+										akpath: path.join(dirpath, files[0].name),
+										dirpath: dirpath
+									});
+								}
+							});
+						}
+					});
+				}
+			});
+		});
+	form.parse(req);
 };
 
 ////////////////////// OLD FUNCTIONS TO BE REPLACED MAYBE
