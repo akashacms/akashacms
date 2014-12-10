@@ -108,13 +108,9 @@ app.get(/^\/\.\.api\/docData(\/.*)/,
 	// routes.checkDirectory,
 	routes.docData);
 	
-app.get(/^\/\.\.api\/imageViewer(\/.*)/,
+app.get(/^\/\.\.api\/fileViewer(\/.*)/,
 	useDomain,
-	routes.apiImageViewer);
-	
-app.get(/^\/\.\.api\/pageViewer(\/.*)/,
-	useDomain,
-	routes.apiPageViewer);
+	routes.apiFileViewer);
 	
 app.post(/^\/\.\.api\/addnewdir/,
 	useDomain,
@@ -132,6 +128,10 @@ app.post(/^\/\.\.api\/deleteFileConfirm/,
 	useDomain,
 	routes.apiDeleteFileConfirm);
 
+app.post(/^\/\.\.api\/uploadFiles/,
+	useDomain,
+	routes.apiUploadFiles);
+
 app.get(/^(\/.+)/, 
 	useDomain,
 	function(req, res) {
@@ -139,7 +139,24 @@ app.get(/^(\/.+)/,
 		logger.trace(util.inspect(url.parse(req.url, true)));
 		// logger.trace(util.inspect(req.params));
 		var requrl = url.parse(req.params[0], true);
-		routes.streamFile(req, res, requrl, path.join(config.root_out, requrl.pathname));
+		var fname = path.join(config.root_out, requrl.pathname);
+		fs.stat(fname, function(err, stats) {
+			if (stats) {
+				// logger.trace('streaming '+ fname +' for '+ requrl.pathname);
+				routes.streamFile(req, res, requrl, fname);
+			} else {
+				akasha.readDocumentEntry(config, requrl.pathname, function(err, entry) {
+					if (err) {
+						logger.error('not found '+ err);
+						res.status(404).end(err);
+					} else {
+						// logger.trace('streaming entry '+ entry.renderedFileName +' for '+ requrl.pathname);
+						// logger.trace(util.inspect(entry));
+						routes.streamFile(req, res, requrl, entry.renderedFileName);
+					}
+				});     	
+			}
+		});
 	});
 
 app.get(/^(\/)/, 
