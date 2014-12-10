@@ -482,8 +482,8 @@ module.exports.dirPathForDocument = function(config, urlpath, done) {
 	var docEntry = module.exports.findDocumentForUrlpath(config, urlpath);
 	if (docEntry) {
 		done(undefined, {
-			path: path.dirname(docEntry.path),
-			dirname: path.dirname(docEntry.path) === "." ? "/" : path.dirname(docEntry.path),
+			path: '/'+ path.dirname(docEntry.path),
+			dirname: path.dirname(docEntry.path) === "." ? "/" : '/'+ path.dirname(docEntry.path),
 			dirpath: path.dirname(docEntry.fullpath)
 		});
 	} else {
