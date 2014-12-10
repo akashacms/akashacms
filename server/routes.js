@@ -25,7 +25,10 @@ var templateList = [
 	{ name: "txtDeleteForm", fname: path.join(__dirname, "form-delete.html") },
 	{ name: "toolbar", fname: path.join(__dirname, "toolbar.html") },
 	{ name: "viewImage", fname: path.join(__dirname, "viewer-image.html") },
-	{ name: "viewPage", fname: path.join(__dirname, "viewer-page.html") }
+	{ name: "viewPage", fname: path.join(__dirname, "viewer-page.html") },
+	{ name: "viewDefault", fname: path.join(__dirname, "viewer-default.html") },
+	{ name: "viewerButtons", fname: path.join(__dirname, "viewer-buttons.html") },
+	{ name: "viewerFileDetails", fname: path.join(__dirname, "viewer-file-details.html") }
 ];
 
 var templates = [];
@@ -209,19 +212,19 @@ var mkSidebarFiles = function(urlpath, done) {
 										} else if (file.match(/\.(zip|gz)$/i)) {
 											$('span.glyphicon').addClass('glyphicon-compressed');
 											$('span.label').addClass('compressed');
-											$('span.label').attr('ak-path', dirpathInfo.dirname);
+											$('span.label').attr('ak-path', path.join(dirpathInfo.path, file));
 											$('span.ak-label-text').text(file);
 											done();
 										} else if (file.match(/\.(mov|mp4|avi|mkv)$/i)) {
 											$('span.glyphicon').addClass('glyphicon-film');
 											$('span.label').addClass('movie');
-											$('span.label').attr('ak-path', dirpathInfo.dirname);
+											$('span.label').attr('ak-path', path.join(dirpathInfo.path, file));
 											$('span.ak-label-text').text(file);
 											done();
 										} else if (file.match(/\.(doc|pdf)$/i)) {
 											$('span.glyphicon').addClass('glyphicon-book');
 											$('span.label').addClass('document');
-											$('span.label').attr('ak-path', dirpathInfo.dirname);
+											$('span.label').attr('ak-path', path.join(dirpathInfo.path, file));
 											$('span.ak-label-text').text(file);
 											done();
 										} else if (fileMatchRenderable(file)) {
@@ -233,7 +236,7 @@ var mkSidebarFiles = function(urlpath, done) {
 										} else {
 											$('span.glyphicon').addClass('glyphicon-file');
 											$('span.label').addClass('unknown-file');
-											$('span.label').attr('ak-path', dirpathInfo.dirname);
+											$('span.label').attr('ak-path', path.join(dirpathInfo.path, file));
 											$('span.ak-label-text').text(file);
 											done();
 										}
@@ -290,22 +293,38 @@ exports.apiSidebarFilesList = function(req, res, next) {
 exports.apiFileViewer = function(req, res, next) {
 	var urlpath = req.params[0];
 	logger.trace('apiFileViewer '+ urlpath);
+	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
+	// logger.trace(util.inspect(docEntry));
 	if (fileMatchImage(urlpath)) { // exports.apiImageViewer(req, res, next);
-		var urlpath = req.params[0];
 		mahabhuta.process1(findTemplate('viewImage'), 
 			function($, done) {
-				$('img').attr("src", urlpath);
+				$('#ak-image-viewer').prepend(findTemplate('viewerFileDetails'));
+				$('#ak-image-viewer').prepend(findTemplate('viewerButtons'));
+				$('img#ak-image-display').attr("src", urlpath);
+				$('#file-name a').text(docEntry.path);
+				$('#file-name a').attr('href', path.join('/..api/download', urlpath));
+				$('#file-size').text(docEntry.stat.size +' bytes');
+				// $('#file-date').text(docEntry.stat.mtime);
+				$("#file-type").text("image");
+				$("#content-type").text(mime.lookup(docEntry.path));
+				$("#ak-edit-edit-button").remove();
 				done();
 			}, 
 			function(err, html) {
 				res.status(200).json({ html: html });
 			});
 	} else if (fileMatchRenderable(urlpath)) { // exports.apiPageViewer(req, res, next);
-		var urlpath = req.params[0];
-		var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
 		mahabhuta.process1(findTemplate("viewPage"), 
 			function($, done) {
-				$('iframe').attr("src", docEntry.renderedFileName);
+				$('#ak-page-viewer').prepend(findTemplate('viewerFileDetails'));
+				$('#ak-page-viewer').prepend(findTemplate('viewerButtons'));
+				$('iframe#ak-page-display').attr("src", docEntry.renderedFileName);
+				$('#file-name a').text(docEntry.path);
+				$('#file-name a').attr('href', path.join('/..api/download', urlpath));
+				$('#file-size').text(docEntry.stat.size +' bytes');
+				// $('#file-date').text(docEntry.stat.mtime);
+				$("#file-type").text("renderable");
+				$("#content-type").text(mime.lookup(docEntry.path));
 				done();
 			}, 
 			function(err, html) {
@@ -316,9 +335,53 @@ exports.apiFileViewer = function(req, res, next) {
 			if (stats && stats.isDirectory()) {
 				res.status(200).json({ html: "" });
 			} else {
-				res.status(404).end('unknown viewer for '+ urlpath);
+				mahabhuta.process1(findTemplate('viewDefault'), 
+					function($, done) {
+						$('#ak-default-viewer').prepend(findTemplate('viewerFileDetails'));
+						$('#ak-default-viewer').prepend(findTemplate('viewerButtons'));
+						$('#file-name a').text(docEntry.path);
+						$('#file-name a').attr('href', path.join('/..api/download', urlpath));
+						$('#file-size').text(docEntry.stat.size +' bytes');
+						// $('#file-date').text(docEntry.stat.mtime);
+						$("#file-type").text("default");
+						$("#content-type").text(mime.lookup(docEntry.path));
+						$("#ak-edit-edit-button").remove();
+						done();
+					}, 
+					function(err, html) {
+						res.status(200).json({ html: html });
+					});
 			}
 		});
+	}
+};
+
+exports.apiDownloadFile = function(req, res) {
+	var urlpath = req.params[0];
+	logger.trace('apiDownloadFile '+ urlpath);
+	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
+	if (docEntry) {
+		var fname = docEntry.fullpath;
+		fs.stat(fname, function(err, status) {
+			if (status) {
+				var m = mime.lookup(fname);
+				logger.trace(fname +' '+ m +' '+ status.size);
+				res.status(200);
+				res.set({
+					'Content-Type':  m,
+					'Content-Length': status.size
+				});
+				var readStream = fs.createReadStream(fname);
+				readStream.on('error', function(err) { res.end(); });
+				readStream.pipe(res);
+			} else {
+				logger.error(err);
+				res.status(404).end(err);
+			}
+		});
+	} else {
+		logger.error("No docEntry found for "+ urlpath);
+		res.status(404).end("No docEntry found for "+ urlpath);
 	}
 };
 

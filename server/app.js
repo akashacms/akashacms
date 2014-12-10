@@ -94,6 +94,9 @@ app.get(/^\/\.\.assets(\/.*)/,
 		routes.streamFile(req, res, requrl, path.join(__dirname, 'assets', requrl.pathname));
 	});
 
+app.get(/^\/\.\.api\/download(\/.*)/,
+	useDomain,
+	routes.apiDownloadFile);
 
 app.get(/^\/\.\.api\/breadcrumbTrail(\/.*)/,
 	useDomain,
