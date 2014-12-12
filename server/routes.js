@@ -28,7 +28,9 @@ var templateList = [
 	{ name: "viewPage", fname: path.join(__dirname, "viewer-page.html") },
 	{ name: "viewDefault", fname: path.join(__dirname, "viewer-default.html") },
 	{ name: "viewerButtons", fname: path.join(__dirname, "viewer-buttons.html") },
-	{ name: "viewerFileDetails", fname: path.join(__dirname, "viewer-file-details.html") }
+	{ name: "viewerFileDetails", fname: path.join(__dirname, "viewer-file-details.html") },
+	{ name: "linkviewImage", fname: path.join(__dirname, "linkview-image.html") },
+	{ name: "linkviewRenderable", fname: path.join(__dirname, "linkview-renderable.html") }
 ];
 
 var templates = [];
@@ -353,6 +355,48 @@ exports.apiFileViewer = function(req, res, next) {
 					});
 			}
 		});
+	}
+};
+
+exports.apiShowViewerModalEditorLinkPage = function(req, res) {
+	var urlpath = req.params[0];
+	logger.trace('apiShowViewerModalEditorLinkPage '+ urlpath);
+	if (fileMatchImage(urlpath)) {
+		mahabhuta.process1(findTemplate('linkviewImage'), 
+			function($, done) {
+				$("#image-url").text(urlpath);
+				$("#markdown-link").text('![Alt text]('+ urlpath +' "Optional title")');
+				$("#html-link").text('<img src="'+ urlpath +'">');
+				$("#image-show img").attr('src', urlpath);
+				done();
+			}, 
+			function(err, html) {
+				res.status(200).json({ html: html });
+			});
+	} else if (fileMatchRenderable(urlpath)) {
+		var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
+		if (docEntry) urlpath = '/'+ docEntry.renderedFileName;
+		mahabhuta.process1(findTemplate('linkviewRenderable'), 
+			function($, done) {
+				$("#image-url").text(urlpath);
+				$("#markdown-link").text('[link text]('+ urlpath +' "Optional title")');
+				$("#html-link").text('<a href="'+ urlpath +'">link text</a>');
+				done();
+			}, 
+			function(err, html) {
+				res.status(200).json({ html: html });
+			});
+	} else {
+		mahabhuta.process1(findTemplate('linkviewRenderable'), 
+			function($, done) {
+				$("#image-url").text(urlpath);
+				$("#markdown-link").text('[link text]('+ urlpath +' "Optional title")');
+				$("#html-link").text('<a href="'+ urlpath +'">link text</a>');
+				done();
+			}, 
+			function(err, html) {
+				res.status(200).json({ html: html });
+			});
 	}
 };
 

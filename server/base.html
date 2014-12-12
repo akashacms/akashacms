@@ -127,46 +127,94 @@
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-        <h4 class="modal-title" id="editFileModalLabel">Edit File</h4>
+        <h4 class="modal-title" id="editFileModalLabel">Edit File <span class="form-control-static" id="ak-editor-edit-dirname"></span></h4>
       </div>
       <div class="modal-body">
       
-      	<div id="ak-edit-modal-edit-area">
-			<label for="pathname-input">Editing File Name:</label><br/>
-			<span class="form-control-static" id="ak-editor-edit-dirname"></span><br>
-		
-			<span class="label label-default">Metadata</span>
-			<div id="ak-editor-edit-metadata-input"></div>
-	
-			<div id="ak-edit-editor-buttons" class="btn-group" role="group">
-				<button id="ak-edit-linkto-page-button" type="button" class="btn btn-default">
-					<span class="glyphicon glyphicon-random" aria-hidden="true"></span> Link To Page
-				</button>
-				<button id="ak-edit-image-button" type="button" class="btn btn-default">
-					<span class="glyphicon glyphicon-picture" aria-hidden="true"></span> Find Image
-				</button>
-				<button id="ak-edit-upload-document-button" type="button" class="btn btn-default">
-					<span class="glyphicon glyphicon-cloud-upload" aria-hidden="true"></span> Upload document
-				</button>
-				<button id="ak-edit-linkto-document-button" type="button" class="btn btn-default">
-					<span class="glyphicon glyphicon-book" aria-hidden="true"></span> Link to document (PDF etc)
-				</button>
-			</div><br>
-	
-			<span class="label label-default">Content</span>
-			<div id="ak-editor-edit-content-input"></div>
-		</div>
-		
-		<div id="ak-edit-modal-link-page-area">
-		</div>
-      
-		<div id="ak-edit-modal-find-image-area">
-		</div>
+			
+      	<div id="ak-edit-modal-edit-area" class="panel-group" role="tablist" aria-multiselectable="true">
+      			
+		  <div class="panel panel-default">
+			<div class="panel-heading" role="tab" id="metadata-edit-header">
+			  <h4 class="panel-title">
+				<a class="collapsed" data-toggle="collapse" data-parent="#ak-edit-modal-edit-area" href="#metadata-edit-collapse" aria-expanded="true" aria-controls="metadata-edit-collapse">Edit Metadata</a>
+			  </h4>
+			</div>
+      		<div id="metadata-edit-collapse" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="metadata-edit-header">
+      		  <div class="panel-body">
+      		  	<div id="ak-editor-edit-metadata-input"></div>
+      		  </div>
+      		 </div>
+      	  </div>
+      	
+		  <div class="panel panel-default">
+			<div class="panel-heading" role="tab" id="content-edit-header">
+			  <h4 class="panel-title">
+				<a data-toggle="collapse" data-parent="#ak-edit-modal-edit-area" href="#content-edit-collapse" aria-expanded="true" aria-controls="content-edit-collapse">Edit Content</a>
+			  </h4>
+			</div>
+      		<div id="content-edit-collapse" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="content-edit-header">
+      		  <div class="panel-body">
+      		  
+      		    <div role="tabpanel">
 
-		<div id="ak-edit-modal-upload-file-area">
-		</div>
-		
-		<div id="ak-edit-modal-link-file-area">
+				  <!-- Nav tabs -->
+				  <ul id="ak-editor-nav-tabs" class="nav nav-pills nav-justified" role="tablist">
+					<li role="presentation" class="active">
+						<a href="#ak-editor-edit-content-input" aria-controls="ak-editor-edit-content-input" role="tab" data-toggle="tab">Edit</a>
+					</li>
+					<li role="presentation">
+						<a id="modal-tab-link-page" href="#modal-link-page-area" aria-controls="modal-link-page-area" role="tab" data-toggle="tab">Link to Page / File / Image</a>
+					</li>
+					<li role="presentation">
+						<a id="modal-tab-upload-file" href="#modal-upload-file-area" aria-controls="modal-upload-file-area" role="tab" data-toggle="tab">Upload File</a>
+					</li>
+				  </ul>
+				  
+				  <!-- Tab panes -->
+				  <div class="tab-content">
+      		  		<div role="tabpanel" class="tab-pane active" id="ak-editor-edit-content-input"></div>
+					<div role="tabpanel" class="tab-pane" id="modal-link-page-area">
+						<div class="row">
+						<span id="modal-breadcrumbs-link-page" class="col-md-12 uninitialized pane-breadcrumbs-container" ak-path="">
+						<ol class="breadcrumb"></ol>
+						</span>
+						</div>
+						<div class="row">
+							<div id="modal-sidebar-area-link-page" class="col-md-3 well uninitialized pane-sidebar-container">
+								<div id="modal-sidebar-link-page" class="pane-sidebar"></div>
+							</div>
+							<div id="modal-sidebar-link-page-info-area" class="col-md-9 pane-info-area"></div>
+						</div>
+					</div>
+					<div role="tabpanel" class="tab-pane" id="modal-upload-file-area">
+						<div class="row">
+						<span id="modal-breadcrumbs-upload-file" class="col-md-12 uninitialized pane-breadcrumbs-container" ak-path="">
+						<ol class="breadcrumb"></ol>
+						</span>
+						</div>
+						<div class="row">
+							<div id="modal-sidebar-area-upload-file" class="col-md-3 well uninitialized pane-sidebar-container">
+								<div id="modal-sidebar-upload-file" class="pane-sidebar"></div>
+							</div>
+							<div id="modal-sidebar-upload-file-info-area" class="col-md-9 pane-info-area">
+							
+							  <form action="/..api/uploadFiles" enctype="multipart/form-data" method="post">
+								<input type=hidden name=urlpath class="modal-upload-urlpath" value="">
+								<input type=hidden name=dirpath class="modal-upload-dirpath" value="">
+								<input type="file" name="upload">
+								<input type="button" value="Upload">
+							  </form>
+							
+							</div>
+						</div>
+					</div>
+      		  	  </div>
+			    </div>      		  	
+      		  </div>
+      		 </div>
+      	  </div>
+      	
 		</div>
 		
       </div>

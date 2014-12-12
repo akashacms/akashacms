@@ -115,6 +115,10 @@ app.get(/^\/\.\.api\/fileViewer(\/.*)/,
 	useDomain,
 	routes.apiFileViewer);
 	
+app.get(/^\/\.\.api\/showViewerModalEditorLinkPage(\/.*)/,
+	useDomain,
+	routes.apiShowViewerModalEditorLinkPage);
+	
 app.post(/^\/\.\.api\/addnewdir/,
 	useDomain,
 	routes.apiPostAddNewDir);
@@ -135,6 +139,7 @@ app.post(/^\/\.\.api\/uploadFiles/,
 	useDomain,
 	routes.apiUploadFiles);
 
+	
 app.get(/^(\/.+)/, 
 	useDomain,
 	function(req, res) {

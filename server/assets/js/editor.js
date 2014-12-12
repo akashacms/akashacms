@@ -175,6 +175,22 @@ $(function() {
 			$("#newFileSave").on('click', editorModal.saveNewFile);
     		$("#editFileModal").on('show.bs.modal', editorModal.initializeFileEditModal);
 			$("#editFileSave").on('click', editorModal.saveEditedFile);
+			
+			$('#editFileModal #ak-editor-nav-tabs a').click(function (e) {
+			  e.preventDefault()
+			  $(this).tab('show')
+			});
+			
+			$("#editFileModal #ak-editor-nav-tabs #modal-tab-link-page").on('shown.bs.tab', function (e) {
+				console.log("#editFileModal #modal-link-page-area shown.bs.tab");
+				editorModal.initModalEditorTabs();
+			});
+			$("#editFileModal #modal-tab-upload-file").on('shown.bs.tab', function (e) {
+				console.log("#editFileModal #modal-tab-upload-file shown.bs.tab");
+				editorModal.initModalFileUploadTab();
+			});
+			
+        	$("#editFileModal #modal-upload-file-area form :button").on('click', editorModal.uploadFile);
     	},
 		initializeFileCreateModal: function() {
 			$("#ak-editor-add-dirname").text(sidebar.dirpath());
@@ -241,6 +257,149 @@ $(function() {
                     editviewer.fileView(json.akpath);
                     sidebar.update(json.akpath);
                     breadcrumbs.update(json.akpath);
+                },
+                error: function(xhr, status, errorThrown) {
+                    messages.display("ERROR "+ xhr.responseText);
+                }
+            });
+		},
+		initModalEditorTabs: function() {
+			if ($("#editFileModal #modal-link-page-area #modal-breadcrumbs-link-page").hasClass("uninitialized")) {
+				console.log("#editFileModal #modal-link-page-area #modal-breadcrumbs-link-page uninitialized");
+				editorModal.updateModalEditorBreadcrumbsWidget("/", "#modal-link-page-area");
+				editorModal.updateModalEditorSidebarWidget("/", "#modal-link-page-area");
+			}
+			if ($("#editFileModal #modal-upload-file-area #modal-breadcrumbs-upload-file").hasClass("uninitialized")) {
+				console.log("#editFileModal #modal-upload-file-area #modal-breadcrumbs-upload-file uninitialized");
+				editorModal.updateModalEditorBreadcrumbsWidget("/", "#modal-upload-file-area");
+				editorModal.updateModalEditorSidebarWidget("/", "#modal-upload-file-area");
+			}
+		},
+		updateModalEditorBreadcrumbsWidget: function(akpath, selector) {
+			console.log("updateModalEditorUploadFileBreadcrumbs /..api/breadcrumbTrail"+ akpath);
+			$.ajax({
+				url: "/..api/breadcrumbTrail"+ akpath,
+				type: "GET",
+				dataType: "json",
+				success: function(json) {
+					$("#editFileModal "+ selector +" .pane-breadcrumbs-container ol")
+						.empty()
+						.append(json.html);
+					$("#editFileModal "+ selector +" .pane-breadcrumbs-container")
+						.attr("ak-path", json.akpath)
+						.removeClass("uninitialized");
+					
+					editorModal.setupButtonsModalEditorBreadcrumbsWidget(json.akpath, selector);
+				},
+				error: function(xhr, status, errorThrown) {
+					messages.display("ERROR "+ xhr.responseText);
+				}
+			});
+			
+		},
+		setupButtonsModalEditorBreadcrumbsWidget: function(akpath, selector) {
+			$("#editFileModal "+ selector +" .pane-breadcrumbs-container button").on('click', function(event) {
+				console.log(selector +' breadcrumbs button click');
+
+				event.preventDefault();
+				
+				var akpath = $(this).attr('ak-path');
+				console.log(akpath);
+	
+				editorModal.clearViewerModalEditor(selector);
+				editorModal.updateModalEditorBreadcrumbsWidget(akpath, selector);
+				editorModal.updateModalEditorSidebarWidget(akpath, selector);
+			});
+		},
+		updateModalEditorSidebarWidget: function(akpath, selector) {
+			console.log("updateModalEditorSidebarWidget /..api/sidebarFilesList"+ akpath);
+			$.ajax({
+				url: "/..api/sidebarFilesList"+ akpath,
+				type: "GET",
+				dataType: "json",
+				success: function(json) {
+					$("#editFileModal "+ selector +" .pane-sidebar")
+						.empty()
+						.append(json.html)
+						.attr("ak-path", json.akpath)
+						.attr("dirpath", json.dirpath)
+						.removeClass("uninitialized");
+					
+					editorModal.setupButtonsModalEditorSidebarWidget(json.akpath, selector);
+				},
+				error: function(xhr, status, errorThrown) {
+					messages.display("ERROR "+ xhr.responseText);
+				}
+			});
+		},
+		setupButtonsModalEditorSidebarWidget: function(akpath, selector) {
+			$('#editFileModal '+ selector +' span.label').on('click', function(event) {
+	
+				console.log(selector +' sidebar click');
+		
+				event.preventDefault();
+				var akpath = $(this).attr('ak-path');
+	
+				console.log(akpath);
+		
+				editorModal.clearViewerModalEditor(selector);
+				editorModal.updateModalEditorBreadcrumbsWidget(akpath, selector);
+				editorModal.updateModalEditorSidebarWidget(akpath, selector);
+				editorModal.showViewerModalEditor(akpath, selector);
+			});
+		},
+		akpathModalEditorSidebar: function(selector) {
+			return $("#editFileModal "+ selector +" .pane-sidebar").attr("ak-path");
+		},
+		dirpathModalEditorSidebar: function(selector) {
+			return $("#editFileModal "+ selector +" .pane-sidebar").attr("dirpath");
+		},
+		clearViewerModalEditor: function(selector) {
+			if (selector === "#modal-link-page-area") {
+				$("#editFileModal "+ selector +" .pane-info-area").empty();
+			} else if (selector === "#modal-upload-file-area") {
+				// nothing to clear
+			}
+		},
+		showViewerModalEditor: function(akpath, selector) {
+			if (selector === "#modal-link-page-area") {
+				console.log("/..api/showViewerModalEditorLinkPage"+ akpath);
+				$.ajax({
+					url: "/..api/showViewerModalEditorLinkPage"+ akpath,
+					type: "GET",
+					dataType: "json",
+					success: function(json) {
+						editorModal.clearViewerModalEditor("#modal-link-page-area");
+						$("#editFileModal #modal-sidebar-link-page-info-area").append(json.html);
+					},
+					error: function(xhr, status, errorThrown) {
+						messages.display("ERROR "+ xhr.responseText);
+					}
+				});
+			} else if (selector === "#modal-upload-file-area") {
+				// nothing to show 
+			}
+		},
+		initModalFileUploadTab: function(event) {
+			$("#editFileModal #modal-upload-file-area .modal-upload-urlpath")
+				.val(editorModal.akpathModalEditorSidebar("#modal-upload-file-area"));
+			$("#editFileModal #modal-upload-file-area .modal-upload-dirpath")
+				.val(editorModal.dirpathModalEditorSidebar("#modal-upload-file-area"));
+		},
+		uploadFile: function(event) {
+            $.ajax({
+                url: "/..api/uploadFiles",
+                type: "POST",
+                data: new FormData($('#editFileModal #modal-upload-file-area form')[0]),
+                cache: false,
+				contentType: false,
+				processData: false,
+                success: function(json) {
+					editorModal.updateModalEditorBreadcrumbsWidget(json.akpath, "#modal-upload-file-area");
+					editorModal.updateModalEditorBreadcrumbsWidget(json.akpath, "#modal-link-page-area");
+					editorModal.updateModalEditorSidebarWidget(json.akpath, "#modal-upload-file-area");
+					editorModal.updateModalEditorSidebarWidget(json.akpath, "#modal-link-page-area");
+					$('#editFileModal #modal-tab-link-page').tab('show');
                 },
                 error: function(xhr, status, errorThrown) {
                     messages.display("ERROR "+ xhr.responseText);
@@ -336,46 +495,5 @@ $(function() {
     messages.setup();
     buttons.setup();
     editorModal.setup();
-    
-    
-    if ($(".ak-editor-addedit-form").length > 0) {
-    
-    	if ($(".ak-editor-addedit-form[id='ak-editor-edit-form']").length > 0) {
-			$.ajax({
-				url: "/..api/docData"+ $("#ak-editor-urlpath").attr("value"),
-				type: "GET",
-				dataType: "json",
-				success: function(json) {
-					Yeditor.setValue(json.metadata);
-					Ceditor.setValue(json.content);
-				},
-				error: function(xhr, status, errorThrown) {
-					$("#ak-editor-message-area").text("ERROR "+ status +" "+ errorThrown);
-				}
-			});
-    	}
-    
-        $(".ak-editor-addedit-form").submit(function(event) {
-            event.preventDefault();
-            $.ajax({
-                url: $(this).attr('id') === "ak-editor-edit-form" ? "/..admin/edit" : "/..admin/add",
-                type: "POST",
-                data: {
-                    metadata: Yeditor.getValue(),
-                    content: Ceditor.getValue(),
-                    urlpath: $("#ak-editor-urlpath").attr("value"),
-                    dirname: $("#ak-editor-add-dirname").length > 0 ? $("#ak-editor-add-dirname").text() : "",
-                    pathname: $("#ak-editor-pathname-input").length > 0 ? $("#ak-editor-pathname-input").val() : "",
-                    fnextension: $("#ak-editor-fnextension").length > 0 ? $("#ak-editor-fnextension").val()	: ""
-                },
-                dataType: "json",
-                success: function(json) {
-                    window.location = json.newlocation;
-                },
-                error: function(xhr, status, errorThrown) {
-                    $("#ak-editor-message-area").text("ERROR "+ xhr.responseText);
-                }
-            });
-        });
-    }
+
 });
