@@ -73,11 +73,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 //  Not Needed: app.use(cookieParser());
 
-app.get(/^\/\.\.admin\/addindexpage(\/.*)/,
-	useDomain,
-	routes.checkDirectory,
-	routes.setupTemplate("txtAddForm"),
-	routes.addIndexPage);
 app.get(/^\/\.\.admin\/fullbuild(\/.*)/,
 	useDomain,
 	routes.checkDirectory,
@@ -98,24 +93,24 @@ app.get(/^\/\.\.api\/download(\/.*)/,
 	useDomain,
 	routes.apiDownloadFile);
 
-app.get(/^\/\.\.api\/breadcrumbTrail(\/.*)/,
+app.get(/^\/\.\.api\/breadcrumbTrail/, // (\/.*)/,
 	useDomain,
 	routes.apiBreadcrumbTrail);
 
-app.get(/^\/\.\.api\/sidebarFilesList(\/.*)/,
+app.get(/^\/\.\.api\/sidebarFilesList/, // (\/.*)/,
 	useDomain,
 	routes.apiSidebarFilesList);
 
-app.get(/^\/\.\.api\/docData(\/.*)/,
+app.get(/^\/\.\.api\/docData/, // (\/.*)/,
 	useDomain,
 	// routes.checkDirectory,
 	routes.docData);
 	
-app.get(/^\/\.\.api\/fileViewer(\/.*)/,
+app.get(/^\/\.\.api\/fileViewer/, // (\/.*)/,
 	useDomain,
 	routes.apiFileViewer);
 	
-app.get(/^\/\.\.api\/showViewerModalEditorLinkPage(\/.*)/,
+app.get(/^\/\.\.api\/showViewerModalEditorLinkPage/, // (\/.*)/,
 	useDomain,
 	routes.apiShowViewerModalEditorLinkPage);
 	
@@ -143,20 +138,21 @@ app.post(/^\/\.\.api\/uploadFiles/,
 app.get(/^(\/.+)/, 
 	useDomain,
 	function(req, res) {
-		logger.trace(req.method +' '+ req.url);
+		logger.trace(req.method +' '+ req.url +' path='+ unescape(req.path));
 		logger.trace(util.inspect(url.parse(req.url, true)));
 		// logger.trace(util.inspect(req.params));
-		var requrl = url.parse(req.params[0], true);
-		var fname = path.join(config.root_out, requrl.pathname);
+		// var requrl = url.parse(req.params[0], true);
+		var requrl;
+		var fname = path.join(config.root_out, unescape(req.path));
 		fs.stat(fname, function(err, stats) {
 			if (stats) {
 				// logger.trace('streaming '+ fname +' for '+ requrl.pathname);
 				routes.streamFile(req, res, requrl, fname);
 			} else {
-				akasha.readDocumentEntry(config, requrl.pathname, function(err, entry) {
+				akasha.readDocumentEntry(config, unescape(req.path), function(err, entry) {
 					if (err) {
 						logger.error('not found '+ err);
-						res.status(404).end(err);
+						res.status(404).end(err.toString());
 					} else {
 						// logger.trace('streaming entry '+ entry.renderedFileName +' for '+ requrl.pathname);
 						// logger.trace(util.inspect(entry));
