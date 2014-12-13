@@ -494,7 +494,7 @@ module.exports.dirPathForDocument = function(config, urlpath, done) {
 				if (stats.isDirectory()) {
 					done(undefined, {
 						path: urlpath,
-						dirname: path.dirname(urlpath) === "." ? "/" : path.dirname(urlpath),
+						dirname: urlpath === "." ? "/" : urlpath,
 						dirpath: dirpath
 					});
 				} else if (stats.isFile()) {
