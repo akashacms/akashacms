@@ -34,13 +34,13 @@
 <div id="ak-editor-files-sidebar-area" class="col-md-3 well">
 
 	<div id="ak-edit-sidebar-buttons" class="btn-group" role="group" ak-path="">
-		<button id="ak-sidebar-new-file-button" type="button" class="btn btn-default" data-toggle="modal" data-target="#newFileModal">
+		<button id="ak-sidebar-new-file-button" type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#editFileModal" data-mode="create">
 			<span class="glyphicon glyphicon-plus" aria-hidden="true"></span> New File
 		</button>
-		<button id="ak-sidebar-new-directory-button" type="button" class="btn btn-default" data-toggle="modal" data-target="#newDirectoryModal">
+		<button id="ak-sidebar-new-directory-button" type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#newDirectoryModal">
 			<span class="glyphicon glyphicon-plus" aria-hidden="true"></span> New Directory
 		</button>
-		<button id="ak-sidebar-new-directory-button" type="button" class="btn btn-default" data-toggle="modal" data-target="#uploadFileModal">
+		<button id="ak-sidebar-new-directory-button" type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#uploadFileModal">
 			<span class="glyphicon glyphicon-cloud-upload" aria-hidden="true"></span> Upload File
 		</button>
 	</div><br>
@@ -54,7 +54,7 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <button type="button" class="close btn-sm" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
         <h4 class="modal-title" id="newDirectoryModalLabel">Create new Directory</h4>
       </div>
       <div class="modal-body">
@@ -63,14 +63,15 @@
 		<input class="form-control" type="text" name="pathname" id="ak-adddir-pathname-input" size="50">
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" id="newDirectorySave">Save changes</button>
+        <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary btn-sm" id="newDirectorySave">Save changes</button>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
 
 
+<!--
 <div class="modal fade" id="newFileModal" tabindex="-1" role="dialog" aria-labelledby="newFileModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -117,10 +118,10 @@
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
         <button type="button" class="btn btn-primary" id="newFileSave">Save changes</button>
       </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
-
+    </div>< !-- /.modal-content -- >
+  </div>< !-- /.modal-dialog -- >
+</div>< !-- /.modal -- >
+-->
 
 <div class="modal fade" id="editFileModal" tabindex="-1" role="dialog" aria-labelledby="editFileModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
@@ -134,6 +135,17 @@
 			
       	<div id="ak-edit-modal-edit-area" class="panel-group" role="tablist" aria-multiselectable="true">
       			
+		  <div id="ak-edit-editor-pathname-inputs">
+			<label for="pathname-input">New File Name:</label>
+			<span class="form-control-static" id="ak-editor-add-dirname"></span><br>
+			<input type="text" class="form-control" name="pathname" id="ak-editor-pathname-input" size="30">
+			<select class="form-control" name="fnextension" id="ak-editor-fnextension">
+				<option selected>.html.md</option> 
+				<option>.html.ejs.md</option>
+				<option>.html.ejs</option>
+			</select>
+		  </div>
+	
 		  <div class="panel panel-default">
 			<div class="panel-heading" role="tab" id="metadata-edit-header">
 			  <h4 class="panel-title">
@@ -164,10 +176,10 @@
 						<a href="#ak-editor-edit-content-input" aria-controls="ak-editor-edit-content-input" role="tab" data-toggle="tab">Edit</a>
 					</li>
 					<li role="presentation">
-						<a id="modal-tab-link-page" href="#modal-link-page-area" aria-controls="modal-link-page-area" role="tab" data-toggle="tab">Link to Page / File / Image</a>
+						<a id="modal-tab-link-page" class="modal-editor-tab" href="#modal-link-page-area" aria-controls="modal-link-page-area" role="tab" data-toggle="tab">Link to Page / File / Image</a>
 					</li>
 					<li role="presentation">
-						<a id="modal-tab-upload-file" href="#modal-upload-file-area" aria-controls="modal-upload-file-area" role="tab" data-toggle="tab">Upload File</a>
+						<a id="modal-tab-upload-file" class="modal-editor-tab" href="#modal-upload-file-area" aria-controls="modal-upload-file-area" role="tab" data-toggle="tab">Upload File</a>
 					</li>
 				  </ul>
 				  

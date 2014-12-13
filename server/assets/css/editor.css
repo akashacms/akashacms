@@ -16,17 +16,21 @@ html, body { height: 100% }
     margin: 5px;
 }
 
-#newFileModal #ak-edit-editor-pathname-inputs #ak-editor-add-dirname {
+#editFileModal #ak-edit-editor-pathname-inputs {
+	height: 100;
+}
+
+#editFileModal #ak-edit-editor-pathname-inputs #ak-editor-add-dirname {
 	width: 100%;
 	float: left;
 }
 
-#newFileModal #ak-edit-editor-pathname-inputs #ak-editor-pathname-input {
+#editFileModal #ak-edit-editor-pathname-inputs #ak-editor-pathname-input {
 	width: 66%;
 	float: left;
 }
 
-#newFileModal #ak-edit-editor-pathname-inputs #ak-editor-fnextension {
+#editFileModal #ak-edit-editor-pathname-inputs #ak-editor-fnextension {
 	width: 33%;
 	float: left;
 }

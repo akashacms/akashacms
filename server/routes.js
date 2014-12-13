@@ -156,7 +156,8 @@ exports.breadcrumbTrail = function(req, res, next) {
 };
 
 exports.apiBreadcrumbTrail = function(req, res, next) {
-	var urlpath = req.params[0];
+	var urlpath = req.query.akpath; // req.params[0];
+	logger.trace('apiBreadcrumbTrail origUrl='+ req.originalUrl +' urlpath='+ urlpath);
 	mkBreadcrumbTrail(urlpath, function(err, bdt) {
 		if (err) res.status(404).end("bad path "+ urlpath);
 		else {
@@ -182,7 +183,7 @@ var mkSidebarFiles = function(urlpath, done) {
 		if (err) {
 			done(err);
 		} else {
-			// logger.trace('urlpath='+ urlpath +' dirpathInfo='+ util.inspect(dirpathInfo));
+			logger.trace('urlpath='+ urlpath +' dirpathInfo='+ util.inspect(dirpathInfo));
 			fs.readdir(dirpathInfo.dirpath, function(err, files) {
 				if (err) {
 					done(err);
@@ -191,7 +192,7 @@ var mkSidebarFiles = function(urlpath, done) {
 					
 					async.eachSeries(files,
 						function(file, next) {
-							// logger.trace('mkSidebarFiles path='+ dirpathInfo.dirpath +' file='+ file);
+							logger.trace('mkSidebarFiles path='+ dirpathInfo.dirpath +' file='+ file);
 							mahabhuta.process1('<span class="label label-default " ak-path=""><span class="glyphicon" aria-hidden="true"></span><span class="ak-label-text"></span></span><br>',
 								function($, done) {
 									fs.stat(path.join(dirpathInfo.dirpath, file), function(err, stats) {
@@ -279,10 +280,10 @@ exports.sidebarFilez = function(req, res, next) {
 };
 
 exports.apiSidebarFilesList = function(req, res, next) {
-	var urlpath = req.params[0];
-	logger.trace('apiSidebarFilesList '+ urlpath);
+	var urlpath = req.query.akpath; // req.params[0];
+	logger.trace('apiSidebarFilesList origUrl='+ req.originalUrl +' urlpath='+ urlpath);
 	mkSidebarFiles(urlpath, function(err, list, dirpath) {
-		// logger.trace('apiSidebarFilesList '+ urlpath +' '+ list);
+		logger.trace('apiSidebarFilesList urlpath='+ urlpath +' dirpath='+ dirpath +' '+ list);
 		if (err) res.status(500).end(err.toString());
 		else res.status(200).json({ 
 			akpath: urlpath,
@@ -293,8 +294,8 @@ exports.apiSidebarFilesList = function(req, res, next) {
 };
 
 exports.apiFileViewer = function(req, res, next) {
-	var urlpath = req.params[0];
-	logger.trace('apiFileViewer '+ urlpath);
+	var urlpath = req.query.akpath; // req.params[0];
+	logger.trace('apiFileViewer origUrl='+ req.originalUrl +' urlpath='+ urlpath);
 	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
 	// logger.trace(util.inspect(docEntry));
 	if (fileMatchImage(urlpath)) { // exports.apiImageViewer(req, res, next);
@@ -359,7 +360,8 @@ exports.apiFileViewer = function(req, res, next) {
 };
 
 exports.apiShowViewerModalEditorLinkPage = function(req, res) {
-	var urlpath = req.params[0];
+	var urlpath = req.query.akpath; // req.params[0];
+	logger.trace('apiFileViewer origUrl='+ req.originalUrl +' urlpath='+ urlpath);
 	logger.trace('apiShowViewerModalEditorLinkPage '+ urlpath);
 	if (fileMatchImage(urlpath)) {
 		mahabhuta.process1(findTemplate('linkviewImage'), 
@@ -647,7 +649,7 @@ exports.fullBuild = function(req, res) {
 };
 
 exports.docData = function(req, res) {
-	var urlpath = req.params[0];
+	var urlpath = req.query.akpath; // req.params[0];
 	logger.trace('docData call '+ urlpath);
 	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
 	if (docEntry) {
