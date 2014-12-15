@@ -23,8 +23,7 @@ var url        = require('url');
 var find       = require('./lib/find');
 var renderer   = require('./lib/renderer2');
 var mahabhuta  = require('./lib/mahabhuta');
-var fs         = require('fs');
-var FS         = require('meta-fs');
+var fs         = require('fs-extra');
 var path       = require('path');
 var fileCache  = require('./lib/fileCache');
 var smap       = require('sightmap');
@@ -105,11 +104,11 @@ module.exports.getLogger = function(category) {
 module.exports.process = function(options, callback) {
     var cleanDir = function(done) {
         logger.info('removing ' + options.root_out);
-        FS.remove(options.root_out, function(err) {
+        fs.remove(options.root_out, function(err) {
             if (err) done(err);
             else {
                 logger.info('making empty ' + options.root_out);
-                FS.mkdir_p(options.root_out, function(err) {
+                fs.mkdirs(options.root_out, function(err) {
                     if (err) done(err);
                     else done();
                 });
@@ -121,7 +120,7 @@ module.exports.process = function(options, callback) {
         async.forEachSeries(options.root_assets,
             function(assetdir, done) {
                 logger.info('copy assetdir ' + assetdir + ' to ' + options.root_out);
-                FS.copy(assetdir, options.root_out, function(err) {
+                fs.copy(assetdir, options.root_out, function(err) {
                     if (err) done(err);
                     else done();
                 });
@@ -410,7 +409,7 @@ var copy_to_outdir = function(options, entry, done) {
     var renderTo = path.join(options.root_out, entry.path);
     mkDirPath(options, path.dirname(entry.path), function(err) {
         if (err) done(err); 
-        else FS.copy(entry.fullpath, renderTo, function(msg) {
+        else fs.copy(entry.fullpath, renderTo, function(msg) {
             fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
                 if (err) done(err);
                 else done();
