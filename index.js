@@ -171,13 +171,13 @@ module.exports.process = function(options, callback) {
     });
 };
 
-module.exports.partial = function(config, name, locals, callback) {
-    renderer.partial(config, name, locals, callback);
+module.exports.partial = function(name, locals, callback) {
+    renderer.partial(name, locals, callback);
 };
 
-module.exports.partialSync = function(theoptions, name, locals, callback) {
+module.exports.partialSync = function(name, locals, callback) {
     logger.trace('akasha exports.partialSync '+ name);
-    return renderer.partialSync(theoptions, name, locals, callback);
+    return renderer.partialSync(name, locals, callback);
 };
 
 module.exports.renderFile = function(options, fileName, callback) {

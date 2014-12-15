@@ -21,11 +21,11 @@ module.exports.config = function(akasha, config) {
                   
                 });*/
                 $('ak-page-title').replaceWith(
-                    akasha.partialSync(config, "ak_titletag.html.ejs", { title: metadata.pagetitle })
+                    akasha.partialSync("ak_titletag.html.ejs", { title: metadata.pagetitle })
                 );
             } else if (typeof metadata.title !== "undefined") {
                 $('ak-page-title').replaceWith(
-                    akasha.partialSync(config, "ak_titletag.html.ejs", { title: metadata.title })
+                    akasha.partialSync("ak_titletag.html.ejs", { title: metadata.title })
                 );
             }
             
@@ -33,7 +33,7 @@ module.exports.config = function(akasha, config) {
             $('ak-header-metatags').replaceWith(config.funcs.akDoHeaderMeta(metadata));
             
             if (typeof metadata.rendered_url !== "undefined") {
-                var ru = akasha.partialSync(config, "ak_linkreltag.html.ejs", {
+                var ru = akasha.partialSync("ak_linkreltag.html.ejs", {
                         relationship: "canonical",
                         url: metadata.rendered_url
                     });
@@ -45,7 +45,7 @@ module.exports.config = function(akasha, config) {
             
             if (typeof config.headerScripts !== "undefined") {
                 $('ak-stylesheets').replaceWith(
-                   akasha.partialSync(config, "ak_stylesheets.html.ejs", { headerScripts: config.headerScripts })
+                   akasha.partialSync("ak_stylesheets.html.ejs", { headerScripts: config.headerScripts })
                 );
             }
             else {
@@ -54,7 +54,7 @@ module.exports.config = function(akasha, config) {
             
             if (typeof config.googleSiteVerification !== "undefined")
                 $('ak-siteverification').replaceWith(
-                    akasha.partialSync(config, "ak_siteverification.html.ejs", 
+                    akasha.partialSync("ak_siteverification.html.ejs", 
                         { googleSiteVerification: config.googleSiteVerification })
                 );
             else
@@ -62,7 +62,7 @@ module.exports.config = function(akasha, config) {
             
             if (typeof config.headerScripts !== "undefined" && typeof config.headerScripts.javaScriptTop !== "undefined")
                 $('ak-headerJavaScript').replaceWith(
-                    akasha.partialSync(config, "ak_javaScript.html.ejs", 
+                    akasha.partialSync("ak_javaScript.html.ejs", 
                         { javaScripts: config.headerScripts.javaScriptTop })
                     );
             else
@@ -70,7 +70,7 @@ module.exports.config = function(akasha, config) {
             
             if (typeof config.headerScripts !== "undefined" && typeof config.headerScripts.javaScriptBottom !== "undefined")
                 $('ak-footerJavaScript').replaceWith(
-                    akasha.partialSync(config, "ak_javaScript.html.ejs", 
+                    akasha.partialSync("ak_javaScript.html.ejs", 
                         { javaScripts: config.headerScripts.javaScriptBottom })
                 );
             else
@@ -78,7 +78,7 @@ module.exports.config = function(akasha, config) {
             
             if (typeof config.googleAnalyticsAccount !== "undefined" && typeof config.googleAnalyticsDomain !== "undefined") {
                 $('ak-google-analytics').replaceWith(
-                    akasha.partialSync(config, "ak_googleAnalytics.html.ejs", {
+                    akasha.partialSync("ak_googleAnalytics.html.ejs", {
                         googleAnalyticsAccount: config.googleAnalyticsAccount,
                         googleAnalyticsDomain: config.googleAnalyticsDomain
                     })
@@ -89,7 +89,7 @@ module.exports.config = function(akasha, config) {
             
             $('ak-sitemapxml').each(function(i, elem) {
                 $(this).replaceWith(
-                    akasha.partialSync(config, "ak_sitemap.html.ejs", {  })
+                    akasha.partialSync("ak_sitemap.html.ejs", {  })
                 );
             });
 
@@ -101,7 +101,7 @@ module.exports.config = function(akasha, config) {
             if (typeof metadata.teaser !== "undefined" || typeof metadata["ak-teaser"] !== "undefined") {
                 $('ak-teaser').each(function(i, elem) {
                     $(this).replaceWith(
-                        akasha.partialSync(config, "ak_teaser.html.ejs", {
+                        akasha.partialSync("ak_teaser.html.ejs", {
                             teaser: typeof metadata["ak-teaser"] !== "undefined"
                                 ? metadata["ak-teaser"] : metadata.teaser
                         })
@@ -126,7 +126,7 @@ module.exports.config = function(akasha, config) {
                 var data = $(partial).data();
                 for (var dprop in data) { d[dprop] = data[dprop]; }
                 logger.trace('partial tag fname='+ fname +' attrs '+ util.inspect(data));
-                akasha.partial(config, fname, d, function(err, html) {
+                akasha.partial(fname, d, function(err, html) {
                     if (err) {
                         logger.trace('partial ERROR '+ util.inspect(err));
                         next(err);
@@ -159,14 +159,14 @@ module.exports.config = function(akasha, config) {
             	var title = $(footnote).attr('title');
             	var rel   = $(footnote).attr('rel');
             	var text  = $(footnote).text();
-            	akasha.partial(config, "ak_footnoteRef.html.ejs", {
+            	akasha.partial("ak_footnoteRef.html.ejs", {
             		name: name
             	}, function(err, html) {
             		if (err) next(err);
             		else {
             			$(footnote).replaceWith(html);
             			
-            			akasha.partial(config, "ak_footnote.html.ejs", {
+            			akasha.partial("ak_footnote.html.ejs", {
             				count: ++footnoteCount,
             				url: href,
             				title: title,
@@ -313,7 +313,7 @@ module.exports.config = function(akasha, config) {
             data.metadate = data.rendered_date;
         }
         
-        var val = akasha.partialSync(config, "ak_headermeta.html.ejs", data);
+        var val = akasha.partialSync("ak_headermeta.html.ejs", data);
         if (callback) callback(undefined, val);
         return val;
     }
