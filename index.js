@@ -382,7 +382,7 @@ var process2html = function(options, entry, done) {
                                 else {
                                     var atime = entry.stat.atime;
                                     var mtime = entry.stat.mtime;
-                                    if (entry.frontmatter.yaml.publDate) {
+                                    if (entry.frontmatter.yaml && entry.frontmatter.yaml.publDate) {
                                         var parsed = Date.parse(entry.frontmatter.yaml.publDate);
                                         if (isNaN(parsed)) {
                                             logger.info("WARNING WARNING Bad date provided "+ entry.frontmatter.yaml.publDate);
