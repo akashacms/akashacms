@@ -32,6 +32,8 @@ var filewalker = require('filewalker');
 var log4js     = require('log4js');
 var logger;
 
+module.exports.mahabhuta = mahabhuta;
+
 var config;
 
 module.exports.config = function(_config) {
@@ -249,11 +251,11 @@ module.exports.gatherDir = function(options, docroot, done) {
         logger.trace(docroot + ' FILE ' + path + ' ' + fullPath);
         fileCache.readDocument(options, path, function(err, docEntry) {
         	if (!err && docEntry) options.gatheredDocuments.push(docEntry);
-        	if (err) util.log(err);
+        	if (err) logger.error(err);
         });
     })
     .on('error', function(err) {
-        logger.info('gatherDir ERROR '+ docroot +' '+ err);
+        logger.error('gatherDir ERROR '+ docroot +' '+ err);
         done(err);
     })
     .on('done', function() {
@@ -268,14 +270,14 @@ var gather_documents = module.exports.gather_documents = function(options, done)
     async.forEachSeries(options.root_docs,
         function(docroot, cb) {
             module.exports.gatherDir(options, docroot, function(err) {
-                if (err) cb(err); else cb();
+                if (err) { logger.error(err); cb(err); } else cb();
             });
         },
         function(err) {
             var entryCount = 0;
             for (var docNm in options.gatheredDocuments) { entryCount++; }
             logger.info('gather_documents DONE count='+ entryCount +' length='+ options.gatheredDocuments.length);
-            if (err) done(err); else done();
+            if (err) { logger.error(err);  done(err); } else done();
         });
 };
 
@@ -411,8 +413,8 @@ var copy_to_outdir = function(options, entry, done) {
         if (err) done(err); 
         else fs.copy(entry.fullpath, renderTo, function(msg) {
             fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
-                if (err) done(err);
-                else done();
+                /*if (err) done(err);
+                else*/ done();
             });
         });
     });
@@ -453,11 +455,6 @@ var process_and_render_files = function(config, done) {
         function(entry, cb) {
             entryCount++;
             logger.info('FILE '+ entryCount +' '+ entry.path);
-            // support other asynchronous template systems such as
-            // https://github.com/c9/kernel - DONE
-            // https://github.com/akdubya/dustjs
-            // Kernel might be more attractive because of simplicity - DONE
-            // dustjs is more comprehensive however
             if (fileCache.supportedForHtml(entry.path)) {
                 process2html(config, entry, cb);
             } else if (entry.path.match(/\.css\.less$/)) {
