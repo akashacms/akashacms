@@ -1,5 +1,5 @@
 
-var fs        = require('fs');
+var fs        = require('fs-extra');
 var path      = require('path');
 var mime      = require('mime');
 var async     = require('async');
@@ -298,7 +298,7 @@ exports.apiFileViewer = function(req, res, next) {
 	logger.trace('apiFileViewer origUrl='+ req.originalUrl +' urlpath='+ urlpath);
 	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
 	// logger.trace(util.inspect(docEntry));
-	if (fileMatchImage(urlpath)) { // exports.apiImageViewer(req, res, next);
+	if (docEntry && fileMatchImage(urlpath)) { // exports.apiImageViewer(req, res, next);
 		mahabhuta.process1(findTemplate('viewImage'), 
 			function($, done) {
 				$('#ak-image-viewer').prepend(findTemplate('viewerFileDetails'));
@@ -316,7 +316,7 @@ exports.apiFileViewer = function(req, res, next) {
 			function(err, html) {
 				res.status(200).json({ html: html });
 			});
-	} else if (fileMatchRenderable(urlpath)) { // exports.apiPageViewer(req, res, next);
+	} else if (docEntry && fileMatchRenderable(urlpath)) { // exports.apiPageViewer(req, res, next);
 		mahabhuta.process1(findTemplate("viewPage"), 
 			function($, done) {
 				$('#ak-page-viewer').prepend(findTemplate('viewerFileDetails'));
