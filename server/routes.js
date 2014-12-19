@@ -112,8 +112,8 @@ var mkBreadcrumbTrail = function(urlpath, done) {
 			function(cmp, next) {
 				// logger.trace(cmp);
 				if (cmp.length > 0) {
-					mahabhuta.process1('<li><button type="button" class="btn btn-primary" autocomplete="off" ak-path=""></button></li>',
-						function($, done) {
+					mahabhuta.process1('<li><button type="button" class="btn btn-primary" autocomplete="off" ak-path=""></button></li>', { },
+						function($, metadata, done) {
 							path += '/'+ cmp;
 							$('button').attr('ak-path', path);
 							$('button').text(cmp);
@@ -193,8 +193,8 @@ var mkSidebarFiles = function(urlpath, done) {
 					async.eachSeries(files,
 						function(file, next) {
 							logger.trace('mkSidebarFiles path='+ dirpathInfo.dirpath +' file='+ file);
-							mahabhuta.process1('<span class="label label-default " ak-path=""><span class="glyphicon" aria-hidden="true"></span><span class="ak-label-text"></span></span><br>',
-								function($, done) {
+							mahabhuta.process1('<span class="label label-default " ak-path=""><span class="glyphicon" aria-hidden="true"></span><span class="ak-label-text"></span></span><br>', { },
+								function($, metadata, done) {
 									fs.stat(path.join(dirpathInfo.dirpath, file), function(err, stats) {
 										if (stats.isDirectory()) {
 											if (file === "." || file === "..") {
@@ -299,8 +299,8 @@ exports.apiFileViewer = function(req, res, next) {
 	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
 	// logger.trace(util.inspect(docEntry));
 	if (docEntry && fileMatchImage(urlpath)) { // exports.apiImageViewer(req, res, next);
-		mahabhuta.process1(findTemplate('viewImage'), 
-			function($, done) {
+		mahabhuta.process1(findTemplate('viewImage'), { },
+			function($, metadata, done) {
 				$('#ak-image-viewer').prepend(findTemplate('viewerFileDetails'));
 				$('#ak-image-viewer').prepend(findTemplate('viewerButtons'));
 				$('img#ak-image-display').attr("src", urlpath);
@@ -317,8 +317,8 @@ exports.apiFileViewer = function(req, res, next) {
 				res.status(200).json({ html: html });
 			});
 	} else if (docEntry && fileMatchRenderable(urlpath)) { // exports.apiPageViewer(req, res, next);
-		mahabhuta.process1(findTemplate("viewPage"), 
-			function($, done) {
+		mahabhuta.process1(findTemplate("viewPage"), { },
+			function($, metadata, done) {
 				$('#ak-page-viewer').prepend(findTemplate('viewerFileDetails'));
 				$('#ak-page-viewer').prepend(findTemplate('viewerButtons'));
 				$('iframe#ak-page-display').attr("src", docEntry.renderedFileName);
@@ -338,8 +338,8 @@ exports.apiFileViewer = function(req, res, next) {
 			if (stats && stats.isDirectory()) {
 				res.status(200).json({ html: "" });
 			} else {
-				mahabhuta.process1(findTemplate('viewDefault'), 
-					function($, done) {
+				mahabhuta.process1(findTemplate('viewDefault'), { },
+					function($, metadata, done) {
 						$('#ak-default-viewer').prepend(findTemplate('viewerFileDetails'));
 						$('#ak-default-viewer').prepend(findTemplate('viewerButtons'));
 						$('#file-name a').text(docEntry.path);
@@ -364,8 +364,8 @@ exports.apiShowViewerModalEditorLinkPage = function(req, res) {
 	logger.trace('apiFileViewer origUrl='+ req.originalUrl +' urlpath='+ urlpath);
 	logger.trace('apiShowViewerModalEditorLinkPage '+ urlpath);
 	if (fileMatchImage(urlpath)) {
-		mahabhuta.process1(findTemplate('linkviewImage'), 
-			function($, done) {
+		mahabhuta.process1(findTemplate('linkviewImage'), { },
+			function($, metadata, done) {
 				$("#image-url").text(urlpath);
 				$("#markdown-link").text('![Alt text]('+ urlpath +' "Optional title")');
 				$("#html-link").text('<img src="'+ urlpath +'">');
@@ -378,8 +378,8 @@ exports.apiShowViewerModalEditorLinkPage = function(req, res) {
 	} else if (fileMatchRenderable(urlpath)) {
 		var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
 		if (docEntry) urlpath = '/'+ docEntry.renderedFileName;
-		mahabhuta.process1(findTemplate('linkviewRenderable'), 
-			function($, done) {
+		mahabhuta.process1(findTemplate('linkviewRenderable'), { },
+			function($, metadata, done) {
 				$("#image-url").text(urlpath);
 				$("#markdown-link").text('[link text]('+ urlpath +' "Optional title")');
 				$("#html-link").text('<a href="'+ urlpath +'">link text</a>');
@@ -389,8 +389,8 @@ exports.apiShowViewerModalEditorLinkPage = function(req, res) {
 				res.status(200).json({ html: html });
 			});
 	} else {
-		mahabhuta.process1(findTemplate('linkviewRenderable'), 
-			function($, done) {
+		mahabhuta.process1(findTemplate('linkviewRenderable'), { },
+			function($, metadata, done) {
 				$("#image-url").text(urlpath);
 				$("#markdown-link").text('[link text]('+ urlpath +' "Optional title")');
 				$("#html-link").text('<a href="'+ urlpath +'">link text</a>');
