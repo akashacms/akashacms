@@ -27,6 +27,7 @@ var fs         = require('fs-extra');
 var path       = require('path');
 var fileCache  = require('./lib/fileCache');
 var smap       = require('sightmap');
+var RSS        = require('rss');
 // var minify     = require('minify');
 var filewalker = require('filewalker');
 var log4js     = require('log4js');
@@ -178,7 +179,7 @@ module.exports.partial = function(name, locals, callback) {
 };
 
 module.exports.partialSync = function(name, locals, callback) {
-    logger.trace('akasha exports.partialSync '+ name);
+    // logger.trace('akasha exports.partialSync '+ name);
     return renderer.partialSync(name, locals, callback);
 };
 
@@ -617,6 +618,47 @@ module.exports.supportedForHtml = function(fn) {
 
 module.exports.isIndexHtml = function(fn) {
     return fileCache.isIndexHtml(fn);
+};
+
+///////////////// RSS Feed Generation
+
+module.exports.generateRSS = function(config, feedData, items, renderTo, done) {
+
+	// logger.trace('generateRSS '+ renderTo);
+
+	// Construct initial rss object
+	var rss = {};
+    for (var key in config.rss) {
+        if (config.rss.hasOwnProperty(key)) {
+            rss[key] = config.rss[key];
+        }
+    }
+    
+    // Then fill in from feedData
+    for (var key in feedData) {
+        if (feedData.hasOwnProperty(key)) {
+            rss[key] = feedData[key];
+        }
+    }
+    
+    var rssfeed = new RSS(rss);
+    
+    items.forEach(function(item) { rssfeed.item(item); });
+    
+    var xml = rssfeed.xml();
+    var renderOut = path.join(config.root_out, renderTo);
+    // logger.trace(renderOut +' ===> '+ xml);
+    
+	fs.mkdirs(path.dirname(renderOut), function(err) {
+		if (err) logger.error(err);
+		else {
+			fs.writeFile(renderOut, xml, { encoding: 'utf8' },
+				function(err2) {
+					if (err2) { logger.error(err2); done(err2); }
+					else done();
+				});
+		}
+	});
 };
 
 ///////////////// Event handling
