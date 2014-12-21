@@ -138,11 +138,11 @@ module.exports.process = function(options, callback) {
         if (err) throw new Error(err);
         else {
             copyAssets(function(err) {
-                if (err) throw new Error(err);
+                if (err) callback(err);
                 else {
                     gather_documents(options, function(err, data) {
                         // util.log('gather_documents CALLBACK CALLED');
-                        if (err) throw new Error(err);
+                        if (err) callback(err);
                         else {
                             var entryCount = 0;
                             for (var docNm in options.gatheredDocuments) {
@@ -151,14 +151,14 @@ module.exports.process = function(options, callback) {
                             }
                             logger.info('process '+ options.gatheredDocuments.length +' entries count='+entryCount);
                             process_and_render_files(options, function(err) {
-                                if (err) throw new Error(err);
+                                if (err) callback(err);
                                 else {
                                     generate_sitemap(options, function(err) {
-                                        if (err) throw new Error(err);
+                                        if (err) callback(err);
                                         else {
                                             if (options.doMinimize) {
                                                 module.exports.minimize(options, function(err) {
-                                                    if (err) throw new Error(err);
+                                                    if (err) callback(err);
                                                     else callback();
                                                 });
                                             } else callback();
@@ -282,30 +282,6 @@ var gather_documents = module.exports.gather_documents = function(options, done)
         });
 };
 
-/**
- * Make in options.root_out the directory path named in dirPath, recursively.
- **/
-var mkDirPath = function(options, dirPath, done) {
-    var pathname = path.join(options.root_out, dirPath);
-    var stat = fs.existsSync(pathname)
-            ? fs.statSync(pathname)
-            : undefined;
-    if (stat && ! stat.isDirectory()) {
-        throw new Error("Shouldn't get here");
-    } else if (stat) {
-        done();
-    } else {
-        mkDirPath(options, path.dirname(dirPath), function(err) {
-            if (err) done(err);
-            else {
-                fs.mkdir(pathname, 0777, function(err) {
-                    if (err) done(err); else done();
-                });
-            }
-        });
-    }
-};
-
 var config2renderopts = function(config, entry) {
 	
 	// Start with a base object that will be passed into the template
@@ -377,9 +353,8 @@ var process2html = function(options, entry, done) {
                     if (err) done('Rendering file-rendered '+ entry.path +' failed with '+ err);
                     else {
                         logger.info('rendered '+ entry.path +' as '+ renderTo);
-                        var dir2make = path.dirname(rendered.fname);
-                        mkDirPath(options, dir2make, function(err) {
-                            if (err) done('FAILED to make directory '+ dir2make +' failed with '+ err); 
+                        fs.mkdirs(path.dirname(renderTo), function(err) {
+                            if (err) done('FAILED to make directory '+ path.dirname(renderTo) +' failed with '+ err); 
                             else fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
                                 if (err) done(err);
                                 else {
@@ -410,7 +385,7 @@ var process2html = function(options, entry, done) {
 var copy_to_outdir = function(options, entry, done) {
     // for anything not rendered, simply copy it
     var renderTo = path.join(options.root_out, entry.path);
-    mkDirPath(options, path.dirname(entry.path), function(err) {
+    fs.mkdirs(path.dirname(entry.path), function(err) {
         if (err) done(err); 
         else fs.copy(entry.fullpath, renderTo, function(msg) {
             fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
@@ -426,7 +401,7 @@ var render_less = function(options, entry, done) {
         if (err) done(err);
         else {
             var renderTo = path.join(options.root_out, rendered.fname);
-            mkDirPath(options, path.dirname(rendered.fname), function(err) {
+            fs.mkdirs(path.dirname(rendered.fname), function(err) {
                 if (err) done(err);
                 else fs.writeFile(renderTo, rendered.css, 'utf8', function (err) {
                     if (err) done(err);
@@ -551,14 +526,6 @@ module.exports.createDocument = function(config, rootdir, path, metadata, conten
 module.exports.deleteDocumentForUrlpath = function(config, path, cb) {
     fileCache.deleteDocumentForUrlpath(config, path, cb);
 };
-
-/*module.exports.getFileEntry = module.exports.readDocumentEntry = function(theoptions, fileName, done) {
-    fileCache.readDocument(theoptions, fileName, done);
-};*/
-
-/*module.exports.findIndexFile = function(config, dirname, done) {
-    fileCache.findIndex(config, dirname, done);
-};*/
 
 module.exports.findSiblings = function(config, fileName, done) {
     var bnm   = path.basename(fileName);
