@@ -211,13 +211,13 @@ module.exports.process = function(options, callback) {
     });
 };
 
-module.exports.partial = function(name, locals, callback) {
-    renderer.partial(name, locals, callback);
+module.exports.partial = function(name, metadata, callback) {
+    renderer.partial(name, metadata, callback);
 };
 
-module.exports.partialSync = function(name, locals, callback) {
+module.exports.partialSync = function(name, metadata, callback) {
     // logger.trace('akasha exports.partialSync '+ name);
-    return renderer.partialSync(name, locals, callback);
+    return renderer.partialSync(name, metadata, callback);
 };
 
 module.exports.renderFile = function(options, fileName, callback) {

@@ -4,8 +4,10 @@ var url   = require('url');
 var async = require('async');
 
 var logger;
+var akasha;
 
-module.exports.config = function(akasha, config) {
+module.exports.config = function(_akasha, config) {
+	akasha = _akasha;
 	logger = akasha.getLogger("builtin");
 	
     config.root_partials.push(path.join(__dirname, 'partials'));
@@ -28,9 +30,6 @@ module.exports.config = function(akasha, config) {
                     akasha.partialSync("ak_titletag.html.ejs", { title: metadata.title })
                 );
             }
-            
-            // TBD Should reimplement this
-            $('ak-header-metatags').replaceWith(config.funcs.akDoHeaderMeta(metadata));
             
             if (typeof metadata.rendered_url !== "undefined") {
                 var ru = akasha.partialSync("ak_linkreltag.html.ejs", {
@@ -115,6 +114,32 @@ module.exports.config = function(akasha, config) {
         });
         
         config.mahabhuta.push(function($, metadata, dirty, done) {
+            var metas = [];
+            $('ak-header-metatags').each(function(i, elem) { metas.push(elem); });
+            async.eachSeries(metas,
+            function(meta, next) {
+            	akDoHeaderMeta(metadata, function(err, rendered) {
+            		if (err) {
+                        logger.error('ak-header-metatags ERROR '+ util.inspect(err));
+                        next(err);
+                    } else {
+                    	$(meta).replaceWith(rendered);
+                    	next();
+                    }
+            	});
+            },
+            function(err) {
+              if (err) {
+                logger.error('ak-header-metatags Errored with '+ util.inspect(err));
+                done(err);
+              } else {
+                done();
+              }
+            });
+        });
+            
+        
+        config.mahabhuta.push(function($, metadata, dirty, done) {
 			if ($('html head').get(0)) {
 				var rssheadermeta = [];
 				$('rss-header-meta').each(function(i, elem){ rssheadermeta.push(elem); });
@@ -151,7 +176,7 @@ module.exports.config = function(akasha, config) {
                 logger.trace('partial tag fname='+ fname +' attrs '+ util.inspect(data));
                 akasha.partial(fname, d, function(err, html) {
                     if (err) {
-                        logger.trace('partial ERROR '+ util.inspect(err));
+                        logger.error('partial ERROR '+ util.inspect(err));
                         next(err);
                     }
                     else {
@@ -162,11 +187,9 @@ module.exports.config = function(akasha, config) {
             },
             function(err) {
               if (err) {
-                logger.trace('partial Errored with '+ util.inspect(err));
+                logger.error('partial Errored with '+ util.inspect(err));
                 done(err);
-              } else {
-                done();
-              }
+              } else done();
             });
         });
         
@@ -300,44 +323,42 @@ module.exports.config = function(akasha, config) {
         	});
         });
     }
-    
-    config.funcs.akDoHeaderMeta = function(arg, callback) {
-        var data = {};
-        for (var prop in arg) {
-            if (!(prop in data)) data[prop] = arg[prop];
-        }
-        if (typeof data.metaOGtitle === "undefined") {
-            if (typeof data.pagetitle !== "undefined") {
-                    data.metaOGtitle = data.pagetitle;
-            } else if (typeof data.title !== "undefined") {
-                    data.metaOGtitle = data.title;
-            }
-        }
-        if (typeof data.metaOGdescription === "undefined") {
-            if (typeof data.metadescription !== "undefined") {
-                    data.metaOGdescription = data.metadescription;
-            }
-        }
-        if (typeof data.metaDCtitle === "undefined") {
-            if (typeof data.pagetitle !== "undefined") {
-                    data.metaDCtitle = arg.pagetitle;
-            } else if (typeof data.title !== "undefined") {
-                    data.metaDCtitle = data.title;
-            }
-        }
-        if (typeof data.metapagename === "undefined") {
-            if (typeof data.pagetitle !== "undefined") {
-                    data.metapagename = arg.pagetitle;
-            } else if (typeof data.title !== "undefined") {
-                    data.metapagename = data.title;
-            }
-        }
-        if (typeof data.metadate === "undefined") {
-            data.metadate = data.rendered_date;
-        }
-        
-        var val = akasha.partialSync("ak_headermeta.html.ejs", data);
-        if (callback) callback(undefined, val);
-        return val;
-    }
-}
+};
+
+var akDoHeaderMeta = function(arg, done) {
+	var data = {};
+	for (var prop in arg) {
+		if (!(prop in data)) data[prop] = arg[prop];
+	}
+	if (typeof data.metaOGtitle === "undefined") {
+		if (typeof data.pagetitle !== "undefined") {
+				data.metaOGtitle = data.pagetitle;
+		} else if (typeof data.title !== "undefined") {
+				data.metaOGtitle = data.title;
+		}
+	}
+	if (typeof data.metaOGdescription === "undefined") {
+		if (typeof data.metadescription !== "undefined") {
+				data.metaOGdescription = data.metadescription;
+		}
+	}
+	if (typeof data.metaDCtitle === "undefined") {
+		if (typeof data.pagetitle !== "undefined") {
+				data.metaDCtitle = arg.pagetitle;
+		} else if (typeof data.title !== "undefined") {
+				data.metaDCtitle = data.title;
+		}
+	}
+	if (typeof data.metapagename === "undefined") {
+		if (typeof data.pagetitle !== "undefined") {
+				data.metapagename = arg.pagetitle;
+		} else if (typeof data.title !== "undefined") {
+				data.metapagename = data.title;
+		}
+	}
+	if (typeof data.metadate === "undefined") {
+		data.metadate = data.rendered_date;
+	}
+	
+	akasha.partial("ak_headermeta.html.ejs", data, done);
+};
