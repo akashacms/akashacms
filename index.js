@@ -556,12 +556,12 @@ module.exports.findPartialAsync = function(config, fileName, done) {
     find.partialAsync(config, fileName, done);
 };
 
-module.exports.readTemplateEntry = function(config, fileName) {
-    return fileCache.readTemplate(config, fileName);
+module.exports.readTemplateEntry = function(config, fileName, done) {
+    fileCache.readTemplate(config, fileName, done);
 };
 
-module.exports.readPartialEntry = function(config, fileName) {
-    return fileCache.readPartial(config, fileName);
+module.exports.readPartialEntry = function(config, fileName, done) {
+    fileCache.readPartial(config, fileName, done);
 };
 
 module.exports.readDocumentEntry = function(config, fileName, done) {
