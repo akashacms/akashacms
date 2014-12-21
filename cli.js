@@ -125,6 +125,54 @@ program
     });
 
 program
+    .command('findtemplate <fileName>')
+    .description('find a template')
+    .action(function(fileName) {
+        var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
+        akasha.findTemplateAsync(config, fileName, function(err, info) {
+        	if (err) util.log(err);
+        	else util.log(util.inspect(info));
+        });
+    });
+
+program
+    .command('findpartial <fileName>')
+    .description('find a partial')
+    .action(function(fileName) {
+        var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
+        akasha.findPartialAsync(config, fileName, function(err, info) {
+        	if (err) util.log(err);
+        	else util.log(util.inspect(info));
+        });
+    });
+
+program
+    .command('finddocument <fileName>')
+    .description('find a document')
+    .action(function(fileName) {
+        var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
+        akasha.findDocumentAsync(config, fileName, function(err, info) {
+        	if (err) util.log(err);
+        	else util.log(util.inspect(info));
+        });
+    });
+
+program
+    .command('findasset <fileName>')
+    .description('find an asset')
+    .action(function(fileName) {
+        var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
+        akasha.findAssetAsync(config, fileName, function(err, info) {
+        	if (err) util.log(err);
+        	else util.log(util.inspect(info));
+        });
+    });
+
+program
     .command('deploy')
     .description('Deploy the akashacms site using configuration file')
     // .option('-f, --force', 'force')

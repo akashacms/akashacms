@@ -524,8 +524,16 @@ module.exports.oembedRender = function(arg, callback) {
     return renderer.oembedRender(arg, callback);
 };
 
+module.exports.findAssetAsync = function(config, fileName, done) {
+    find.assetFile(config, fileName, done);
+};
+
 module.exports.findDocument = function(config, fileName) {
     return find.document(config, fileName);
+};
+
+module.exports.findDocumentAsync = function(config, fileName, done) {
+    find.documentAsync(config, fileName, done);
 };
 
 module.exports.findDocumentForUrlpath = function(config, urlpath) {
@@ -536,8 +544,16 @@ module.exports.findTemplate = function(config, fileName) {
     return find.template(config, fileName);
 };
 
+module.exports.findTemplateAsync = function(config, fileName, done) {
+    find.templateAsync(config, fileName, done);
+};
+
 module.exports.findPartial = function(config, fileName) {
     return find.partial(config, fileName);
+};
+
+module.exports.findPartialAsync = function(config, fileName, done) {
+    find.partialAsync(config, fileName, done);
 };
 
 module.exports.readTemplateEntry = function(config, fileName) {
