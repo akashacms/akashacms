@@ -13,7 +13,7 @@ module.exports.config = function(akasha, config) {
     config.root_assets.push(path.join(__dirname, 'assets'));
     
     if (config.mahabhuta) {
-        config.mahabhuta.push(function($, metadata, done) {
+        config.mahabhuta.push(function($, metadata, dirty, done) {
             if (typeof metadata.pagetitle !== "undefined") {
                 /*akasha.partialSync(config, 'ak_titletag.html.ejs', {
                   title: data.pagetitle !== "undefined" ? data.pagetitle : data.title
@@ -114,7 +114,7 @@ module.exports.config = function(akasha, config) {
             done();
         });
         
-        config.mahabhuta.push(function($, metadata, done) {
+        config.mahabhuta.push(function($, metadata, dirty, done) {
 			if ($('html head').get(0)) {
 				var rssheadermeta = [];
 				$('rss-header-meta').each(function(i, elem){ rssheadermeta.push(elem); });
@@ -136,12 +136,13 @@ module.exports.config = function(akasha, config) {
 			} else done();               
         });          
                                
-        config.mahabhuta.push(function($, metadata, done) {
+        config.mahabhuta.push(function($, metadata, dirty, done) {
             // <partial file-name="file-name.html.whatever" data-attr-1=val data-attr-2=val/>
             var partials = [];
             $('partial').each(function(i, elem) { partials.push(elem); });
             async.eachSeries(partials,
             function(partial, next) {
+            	dirty();
                 var fname = $(partial).attr("file-name");
                 var d = {};
                 for (var mprop in metadata) { d[mprop] = metadata[mprop]; }
@@ -169,7 +170,7 @@ module.exports.config = function(akasha, config) {
             });
         });
         
-        config.mahabhuta.push(function($, metadata, done) {
+        config.mahabhuta.push(function($, metadata, dirty, done) {
         	// <footnote href="http:..." name="..." title="..." rel="nofollow">Description</footnote>
         	var footnoteCount = 0;
             var footnotes = [];
@@ -220,7 +221,7 @@ module.exports.config = function(akasha, config) {
         	});
         });
         
-        config.mahabhuta.push(function($, metadata, done) {
+        config.mahabhuta.push(function($, metadata, dirty, done) {
             var links = [];
             $('a').each(function(i, elem) { links.push(elem); });
             async.eachSeries(links,
