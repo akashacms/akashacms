@@ -113,7 +113,29 @@ module.exports.config = function(akasha, config) {
             
             done();
         });
-            
+        
+        config.mahabhuta.push(function($, metadata, done) {
+			if ($('html head').get(0)) {
+				var rssheadermeta = [];
+				$('rss-header-meta').each(function(i, elem){ rssheadermeta.push(elem); });
+				async.eachSeries(rssheadermeta,
+				function(rssmeta, next) {
+					var href = $(rssmeta).attr('href');
+					if (href) {
+						$('head').append(
+							'<link rel="alternate" type="application/rss+xml" href="'+href+'" />'
+						);
+					} else logger.error('no href= tag in rss-header-meta ... skipped');
+					$(rssmeta).remove();
+					next();
+				},
+				function(err) {
+					if (err) done(err);
+					else done();
+				});
+			} else done();               
+        });          
+                               
         config.mahabhuta.push(function($, metadata, done) {
             // <partial file-name="file-name.html.whatever" data-attr-1=val data-attr-2=val/>
             var partials = [];
