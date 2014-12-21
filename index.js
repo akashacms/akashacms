@@ -121,12 +121,49 @@ module.exports.process = function(options, callback) {
     
     var copyAssets = function(done) {
         async.forEachSeries(options.root_assets,
-            function(assetdir, done) {
+            function(assetdir, next) {
                 logger.info('copy assetdir ' + assetdir + ' to ' + options.root_out);
-                fs.copy(assetdir, options.root_out, function(err) {
-                    if (err) done(err);
-                    else done();
-                });
+                /*fs.copy(assetdir, options.root_out, function(err) {
+                    if (err) next(err);
+                    else next();
+                });*/
+                
+                filewalker(assetdir)
+                	.on('file', function(fname, stats) {
+                		logger.trace('..... '+ fname);
+                		var fnCopyFrom = path.join(assetdir, fname);
+                		var fnCopyTo   = path.join(options.root_out, fname);
+                		var dirCopyTo  = path.dirname(fnCopyTo);
+                		fs.mkdirs(dirCopyTo, function(err) {
+                			if (err) { logger.error(err); }
+                			else {
+                				fs.copy(fnCopyFrom, fnCopyTo, function(err) {
+                					if (err) logger.error(err);
+                				});
+                				/* 
+								var rd = fs.createReadStream(fnCopyFrom);
+								rd.on("error", function(err) {
+									logger.error(err);
+								});
+								var wr = fs.createWriteStream(fnCopyTo);
+								wr.on("error", function(err) {
+									logger.error(err);
+								});
+								wr.on("close", function(ex) {
+									// done();
+								});
+								rd.pipe(wr);
+                				*/
+                			}
+                		});
+                	})
+                	.on('error', function(err) {
+                		logger.error(err);
+                	})
+                	.on('done', function() {
+                		next();
+                	})
+                .walk();
             },
             function(err) {
                 if (err) done(err);
