@@ -282,14 +282,17 @@ module.exports.minimize = function(options, done) {
     .walk(); */
 };
 
-module.exports.gatherDir = function(options, docroot, done) {
+module.exports.gatherDir = function(config, docroot, done) {
     logger.info('******** gatherDir START '+ docroot);
+    var filez = [];
     filewalker(docroot, { maxPending: 1, maxAttempts: 3, attemptTimeout: 3000 })
     .on('file', function(path, s, fullPath) {
         logger.trace(docroot + ' FILE ' + path + ' ' + fullPath);
-        fileCache.readDocument(options, path, function(err, docEntry) {
-        	if (!err && docEntry) options.gatheredDocuments.push(docEntry);
-        	if (err) logger.error(err);
+        filez.push({ 
+        	docroot: docroot,
+        	path: path,
+        	stats: s,
+        	fullPath: fullPath
         });
     })
     .on('error', function(err) {
@@ -297,24 +300,35 @@ module.exports.gatherDir = function(options, docroot, done) {
         done(err);
     })
     .on('done', function() {
-        logger.info('gatherDir DONE '+ docroot +' '+ options.gatheredDocuments.length);
-        done();
+    	async.eachSeries(filez,
+			function(fnpath, next) {
+				// logger.trace('gatherDir about to read '+ util.inspect(fnpath));
+				fileCache.readDocument(config, fnpath.path, function(err, docEntry) {
+					if (!err && docEntry) config.gatheredDocuments.push(docEntry);
+					if (err) logger.error(err);
+					next();
+				});
+			},
+			function(err) {
+				logger.info('gatherDir DONE '+ docroot +' '+ config.gatheredDocuments.length);
+				done();
+			});
     })
     .walk();
 };
 
-var gather_documents = module.exports.gather_documents = function(options, done) {
-    options.gatheredDocuments = [];
-    async.forEachSeries(options.root_docs,
+var gather_documents = module.exports.gather_documents = function(config, done) {
+    config.gatheredDocuments = [];
+    async.eachSeries(config.root_docs,
         function(docroot, cb) {
-            module.exports.gatherDir(options, docroot, function(err) {
+            module.exports.gatherDir(config, docroot, function(err) {
                 if (err) { logger.error(err); cb(err); } else cb();
             });
         },
         function(err) {
             var entryCount = 0;
-            for (var docNm in options.gatheredDocuments) { entryCount++; }
-            logger.info('gather_documents DONE count='+ entryCount +' length='+ options.gatheredDocuments.length);
+            for (var docNm in config.gatheredDocuments) { entryCount++; }
+            logger.info('gather_documents DONE count='+ entryCount +' length='+ config.gatheredDocuments.length);
             if (err) { logger.error(err);  done(err); } else done();
         });
 };
@@ -487,39 +501,6 @@ var process_and_render_files = function(config, done) {
     
 };
 
-module.exports.dirPathForDocument = function(config, urlpath, done) {
-	var docEntry = module.exports.findDocumentForUrlpath(config, urlpath);
-	if (docEntry) {
-		done(undefined, {
-			path: '/'+ path.dirname(docEntry.path),
-			dirname: path.dirname(docEntry.path) === "." ? "/" : '/'+ path.dirname(docEntry.path),
-			dirpath: path.dirname(docEntry.fullpath)
-		});
-	} else {
-		var dirpath = path.join(config.root_docs[0], urlpath);
-		fs.stat(dirpath, function(err, stats) {
-			if (err) done(err);
-			else {
-				if (stats.isDirectory()) {
-					done(undefined, {
-						path: urlpath,
-						dirname: urlpath === "." ? "/" : urlpath,
-						dirpath: dirpath
-					});
-				} else if (stats.isFile()) {
-					done(undefined, {
-						path: urlpath,
-						dirname: path.dirname(urlpath) === "." ? "/" : path.dirname(urlpath),
-						dirpath: path.dirname(dirpath)
-					});
-				} else {
-					done(new Error("directory not found for "+ urlpath));
-				}
-			}
-		});
-	}
-};
-
 module.exports.oembedRender = function(arg, callback) {
     return renderer.oembedRender(arg, callback);
 };
@@ -528,9 +509,9 @@ module.exports.findAssetAsync = function(config, fileName, done) {
     find.assetFile(config, fileName, done);
 };
 
-module.exports.findDocument = function(config, fileName) {
-    return find.document(config, fileName);
-};
+// module.exports.findDocument = function(config, fileName) {
+//     return find.document(config, fileName);
+// };
 
 module.exports.findDocumentAsync = function(config, fileName, done) {
     find.documentAsync(config, fileName, done);
@@ -540,29 +521,29 @@ module.exports.findDocumentForUrlpath = function(config, urlpath) {
     return fileCache.documentForUrlpath(config, urlpath);
 };
 
-module.exports.findTemplate = function(config, fileName) {
-    return find.template(config, fileName);
-};
+// module.exports.findTemplate = function(config, fileName) {
+//     return find.template(config, fileName);
+// };
 
 module.exports.findTemplateAsync = function(config, fileName, done) {
     find.templateAsync(config, fileName, done);
 };
 
-module.exports.findPartial = function(config, fileName) {
-    return find.partial(config, fileName);
-};
+// module.exports.findPartial = function(config, fileName) {
+//     return find.partial(config, fileName);
+// };
 
 module.exports.findPartialAsync = function(config, fileName, done) {
     find.partialAsync(config, fileName, done);
 };
 
-module.exports.readTemplateEntry = function(config, fileName, done) {
-    fileCache.readTemplate(config, fileName, done);
-};
+// module.exports.readTemplateEntry = function(config, fileName, done) {
+//     fileCache.readTemplate(config, fileName, done);
+// };
 
-module.exports.readPartialEntry = function(config, fileName, done) {
-    fileCache.readPartial(config, fileName, done);
-};
+// module.exports.readPartialEntry = function(config, fileName, done) {
+//     fileCache.readPartial(config, fileName, done);
+// };
 
 module.exports.readDocumentEntry = function(config, fileName, done) {
     fileCache.readDocument(config, fileName, done);
@@ -580,7 +561,7 @@ module.exports.deleteDocumentForUrlpath = function(config, path, cb) {
     fileCache.deleteDocumentForUrlpath(config, path, cb);
 };
 
-module.exports.findSiblings = function(config, fileName, done) {
+/* module.exports.findSiblings = function(config, fileName, done) {
     var bnm   = path.basename(fileName);
     var dirname = path.dirname(fileName);
     fileCache.readDocument(config, fileName, function(err, entry) {
@@ -606,7 +587,7 @@ module.exports.findSiblings = function(config, fileName, done) {
 				});
     	}
     });
-};
+}; */
 
 module.exports.urlForFile = function(fileName) {
     return '/'+ fileCache.renderedFileName(fileName);
