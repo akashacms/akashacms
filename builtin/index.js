@@ -15,105 +15,36 @@ module.exports.config = function(_akasha, config) {
     config.root_assets.push(path.join(__dirname, 'assets'));
     
     if (config.mahabhuta) {
+    
         config.mahabhuta.push(function($, metadata, dirty, done) {
-            if (typeof metadata.pagetitle !== "undefined") {
-                /*akasha.partialSync(config, 'ak_titletag.html.ejs', {
-                  title: data.pagetitle !== "undefined" ? data.pagetitle : data.title
-                }, function(err, html) {
-                  
-                });*/
-                $('ak-page-title').replaceWith(
-                    akasha.partialSync("ak_titletag.html.ejs", { title: metadata.pagetitle })
-                );
-            } else if (typeof metadata.title !== "undefined") {
-                $('ak-page-title').replaceWith(
-                    akasha.partialSync("ak_titletag.html.ejs", { title: metadata.title })
-                );
-            }
-            
-            if (typeof metadata.rendered_url !== "undefined") {
-                var ru = akasha.partialSync("ak_linkreltag.html.ejs", {
-                        relationship: "canonical",
-                        url: metadata.rendered_url
-                    });
-                $('ak-header-canonical-url').replaceWith(ru);
-            }
-            else {
-                $('ak-header-canonical-url').remove(); 
-            }
-            
-            if (typeof config.headerScripts !== "undefined") {
-                $('ak-stylesheets').replaceWith(
-                   akasha.partialSync("ak_stylesheets.html.ejs", { headerScripts: config.headerScripts })
-                );
-            }
-            else {
-                $('ak-stylesheets').remove();
-            }
-            
-            if (typeof config.googleSiteVerification !== "undefined")
-                $('ak-siteverification').replaceWith(
-                    akasha.partialSync("ak_siteverification.html.ejs", 
-                        { googleSiteVerification: config.googleSiteVerification })
-                );
-            else
-                $('ak-siteverification').remove();
-            
-            if (typeof config.headerScripts !== "undefined" && typeof config.headerScripts.javaScriptTop !== "undefined")
-                $('ak-headerJavaScript').replaceWith(
-                    akasha.partialSync("ak_javaScript.html.ejs", 
-                        { javaScripts: config.headerScripts.javaScriptTop })
-                    );
-            else
-                $('ak-headerJavaScript').remove();
-            
-            if (typeof config.headerScripts !== "undefined" && typeof config.headerScripts.javaScriptBottom !== "undefined")
-                $('ak-footerJavaScript').replaceWith(
-                    akasha.partialSync("ak_javaScript.html.ejs", 
-                        { javaScripts: config.headerScripts.javaScriptBottom })
-                );
-            else
-                $('ak-footerJavaScript').remove();
-            
-            if (typeof config.googleAnalyticsAccount !== "undefined" && typeof config.googleAnalyticsDomain !== "undefined") {
-                $('ak-google-analytics').replaceWith(
-                    akasha.partialSync("ak_googleAnalytics.html.ejs", {
-                        googleAnalyticsAccount: config.googleAnalyticsAccount,
-                        googleAnalyticsDomain: config.googleAnalyticsDomain
-                    })
-                );
-            }
-            else
-                $('ak-google-analytics').remove();
-            
-            $('ak-sitemapxml').each(function(i, elem) {
-                $(this).replaceWith(
-                    akasha.partialSync("ak_sitemap.html.ejs", {  })
-                );
+        	logger.trace('ak-page-title');
+            var titles = [];
+            $('ak-page-title').each(function(i, elem) { titles.push(elem); });
+            async.eachSeries(titles,
+            function(titleTag, next) {
+            	var title;
+				if (typeof metadata.pagetitle !== "undefined") {
+					title = metadata.pagetitle;
+				} else if (typeof metadata.title !== "undefined") {
+					title = metadata.title;
+				} else title = "";
+				akasha.partial("ak_titletag.html.ejs", {
+					title: title
+				}, function(err, rendered) {
+					if (err) { logger.error(err); next(err); }
+					else { $(titleTag).replaceWith(rendered); next(); }
+				})
+            },
+            function(err) {
+            	if (err) {
+					logger.error('ak-page-title Errored with '+ util.inspect(err));
+					done(err);
+            	} else done();
             });
-
-            if (typeof metadata.content !== "undefined")
-                $('ak-insert-body-content').replaceWith(metadata.content);
-            else
-                $('ak-insert-body-content').remove();
-                
-            if (typeof metadata.teaser !== "undefined" || typeof metadata["ak-teaser"] !== "undefined") {
-                $('ak-teaser').each(function(i, elem) {
-                    $(this).replaceWith(
-                        akasha.partialSync("ak_teaser.html.ejs", {
-                            teaser: typeof metadata["ak-teaser"] !== "undefined"
-                                ? metadata["ak-teaser"] : metadata.teaser
-                        })
-                    )
-                });
-            } else {
-                $('ak-teaser').remove();
-            }
-            
-            done();
         });
         
         config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('ak-header-metatags');
             var metas = [];
             $('ak-header-metatags').each(function(i, elem) { metas.push(elem); });
             async.eachSeries(metas,
@@ -129,17 +60,251 @@ module.exports.config = function(_akasha, config) {
             	});
             },
             function(err) {
-              if (err) {
-                logger.error('ak-header-metatags Errored with '+ util.inspect(err));
-                done(err);
-              } else {
-                done();
-              }
+				if (err) {
+					logger.error('ak-header-metatags Errored with '+ util.inspect(err));
+					done(err);
+				} else done();
             });
         });
-            
         
         config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('ak-header-canonical-url');
+            var elements = [];
+            $('ak-header-canonical-url').each(function(i, elem) { elements.push(elem); });
+            async.eachSeries(elements,
+            function(element, next) {
+				if (typeof metadata.rendered_url !== "undefined") {
+					akasha.partial("ak_linkreltag.html.ejs", {
+						relationship: "canonical",
+						url: metadata.rendered_url
+					}, function(err, rendered) {
+						if (err) { logger.error(err); next(err); }
+						else { $(element).replaceWith(rendered); next(); }
+					});
+				}
+				else {
+					$(element).remove(); 
+					next();
+				}
+            },
+            function(err) {
+				if (err) {
+					logger.error('ak-header-canonical-url Errored with '+ util.inspect(err));
+					done(err);
+				} else done();
+            });
+        });
+        
+        config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('ak-stylesheets');
+            var elements = [];
+            $('ak-stylesheets').each(function(i, elem) { elements.push(elem); });
+            async.eachSeries(elements,
+            function(element, next) {
+				if (typeof config.headerScripts !== "undefined") {
+					akasha.partial("ak_stylesheets.html.ejs", {
+						headerScripts: config.headerScripts 
+					}, function(err, style) {
+						if (err) { logger.error(err); next(err); }
+						else {
+							$('ak-stylesheets').replaceWith(style);
+							next();
+						}
+					});
+				}
+				else {
+					$('ak-stylesheets').remove();
+					next();
+				}
+            }, 
+            function(err) {
+				if (err) {
+					logger.error('ak-stylesheets Errored with '+ util.inspect(err));
+					done(err);
+				} else done();
+            });
+        });
+        
+        config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('ak-siteverification');
+            var elements = [];
+            $('ak-siteverification').each(function(i, elem) { elements.push(elem); });
+            async.eachSeries(elements,
+            function(element, next) {
+            
+				if (typeof config.googleSiteVerification !== "undefined")
+					$('ak-siteverification').replaceWith(
+						akasha.partialSync("ak_siteverification.html.ejs", 
+							{ googleSiteVerification: config.googleSiteVerification })
+					);
+				else
+					$('ak-siteverification').remove();
+            
+				next();
+            }, 
+            function(err) {
+				if (err) {
+					logger.error('ak-siteverification Errored with '+ util.inspect(err));
+					done(err);
+				} else done();
+            });
+        });
+        
+        config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('ak-headerJavaScript');
+            var elements = [];
+            $('ak-headerJavaScript').each(function(i, elem) { elements.push(elem); });
+            async.eachSeries(elements,
+            function(element, next) {
+            
+				if (typeof config.headerScripts !== "undefined" && typeof config.headerScripts.javaScriptTop !== "undefined")
+					$('ak-headerJavaScript').replaceWith(
+						akasha.partialSync("ak_javaScript.html.ejs", 
+							{ javaScripts: config.headerScripts.javaScriptTop })
+						);
+				else
+					$('ak-headerJavaScript').remove();
+            
+				next();
+            }, 
+            function(err) {
+				if (err) {
+					logger.error('ak-headerJavaScript Errored with '+ util.inspect(err));
+					done(err);
+				} else done();
+            });
+        });
+        
+        config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('ak-footerJavaScript');
+            var elements = [];
+            $('ak-footerJavaScript').each(function(i, elem) { elements.push(elem); });
+            async.eachSeries(elements,
+            function(element, next) {
+			
+				if (typeof config.headerScripts !== "undefined" && typeof config.headerScripts.javaScriptBottom !== "undefined")
+					$('ak-footerJavaScript').replaceWith(
+						akasha.partialSync("ak_javaScript.html.ejs", 
+							{ javaScripts: config.headerScripts.javaScriptBottom })
+					);
+				else
+					$('ak-footerJavaScript').remove();
+            
+				next();
+            }, 
+            function(err) {
+				if (err) {
+					logger.error('ak-footerJavaScript Errored with '+ util.inspect(err));
+					done(err);
+				} else done();
+            });
+        });
+        
+        config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('ak-google-analytics');
+            var elements = [];
+            $('ak-google-analytics').each(function(i, elem) { elements.push(elem); });
+            async.eachSeries(elements,
+            function(element, next) {
+			
+				if (typeof config.googleAnalyticsAccount !== "undefined" && typeof config.googleAnalyticsDomain !== "undefined") {
+					$('ak-google-analytics').replaceWith(
+						akasha.partialSync("ak_googleAnalytics.html.ejs", {
+							googleAnalyticsAccount: config.googleAnalyticsAccount,
+							googleAnalyticsDomain: config.googleAnalyticsDomain
+						})
+					);
+				}
+				else
+					$('ak-google-analytics').remove();
+            
+				next();
+            }, 
+            function(err) {
+				if (err) {
+					logger.error('ak-google-analytics Errored with '+ util.inspect(err));
+					done(err);
+				} else done();
+            });
+        });
+           
+        config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('ak-sitemapxml');
+            var elements = [];
+            $('ak-sitemapxml').each(function(i, elem) { elements.push(elem); });
+            async.eachSeries(elements,
+            function(element, next) {
+			
+				$('ak-sitemapxml').each(function(i, elem) {
+					$(this).replaceWith(
+						akasha.partialSync("ak_sitemap.html.ejs", {  })
+					);
+				});
+            
+				next();
+            }, 
+            function(err) {
+				if (err) {
+					logger.error('ak-sitemapxml Errored with '+ util.inspect(err));
+					done(err);
+				} else done();
+            });
+        });
+           
+        config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('ak-insert-body-content');
+            var elements = [];
+            $('ak-insert-body-content').each(function(i, elem) { elements.push(elem); });
+            async.eachSeries(elements,
+            function(element, next) {
+			
+				if (typeof metadata.content !== "undefined")
+					$('ak-insert-body-content').replaceWith(metadata.content);
+				else
+					$('ak-insert-body-content').remove();
+            
+				next();
+            }, 
+            function(err) {
+				if (err) {
+					logger.error('ak-insert-body-content Errored with '+ util.inspect(err));
+					done(err);
+				} else done();
+            });
+        });
+             
+        config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('ak-teaser');
+            var elements = [];
+            $('ak-teaser').each(function(i, elem) { elements.push(elem); });
+            async.eachSeries(elements,
+            function(element, next) {
+			
+				if (typeof metadata.teaser !== "undefined" || typeof metadata["ak-teaser"] !== "undefined") {
+					$('ak-teaser').each(function(i, elem) {
+						$(this).replaceWith(
+							akasha.partialSync("ak_teaser.html.ejs", {
+								teaser: typeof metadata["ak-teaser"] !== "undefined"
+									? metadata["ak-teaser"] : metadata.teaser
+							})
+						)
+					});
+				} else {
+					$('ak-teaser').remove();
+				}
+            
+				next();
+            }, 
+            function(err) {
+				if (err) {
+					logger.error('ak-teaser Errored with '+ util.inspect(err));
+					done(err);
+				} else done();
+            });
+        });
+
+        config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('rss-header-meta');
 			if ($('html head').get(0)) {
 				var rssheadermeta = [];
 				$('rss-header-meta').each(function(i, elem){ rssheadermeta.push(elem); });
@@ -162,6 +327,7 @@ module.exports.config = function(_akasha, config) {
         });          
                                
         config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('partial');
             // <partial file-name="file-name.html.whatever" data-attr-1=val data-attr-2=val/>
             var partials = [];
             $('partial').each(function(i, elem) { partials.push(elem); });
@@ -194,6 +360,29 @@ module.exports.config = function(_akasha, config) {
         });
         
         config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('publication-date');
+			var elements = [];
+			$('publication-date').each(function(i, elem) { elements.push(elem); });
+			async.eachSeries(elements,
+			function(element, next) {
+				logger.trace(metadata.publicationDate);
+				if (metadata.publicationDate) {
+					akasha.partial(config, "ak_publdate.html.ejs", {
+							publicationDate: metadata.publicationDate
+						},
+						function(err, html) {
+							if (err) { logger.error(err); next(err); } 
+							else { $(element).replaceWith(html); next(); }
+						});
+				} else next();
+			}, function(err) {
+				if (err) { logger.error(err); done(err); } 
+				else { logger.trace('END publication-date'); done(); }
+			});
+        });
+        
+        config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('footnote');
         	// <footnote href="http:..." name="..." title="..." rel="nofollow">Description</footnote>
         	var footnoteCount = 0;
             var footnotes = [];
@@ -238,13 +427,12 @@ module.exports.config = function(_akasha, config) {
 				if (err) {
 					logger.trace('partial Errored with '+ util.inspect(err));
 					done(err);
-				} else {
-					done();
-				}
+				} else done();
         	});
         });
         
         config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('a modifications');
             var links = [];
             $('a').each(function(i, elem) { links.push(elem); });
             async.eachSeries(links,
@@ -315,11 +503,8 @@ module.exports.config = function(_akasha, config) {
 				} else next();
             },
             function(err) {
-				if (err) {
-					done(err);
-				} else {
-					done();
-				}
+				if (err) done(err);
+				else done();
         	});
         });
     }

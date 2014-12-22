@@ -16,18 +16,9 @@
 <ak-siteverification/>
 <ak-stylesheets/>
 <ak-headerJavaScript/>
-<%
-// Our site title and description 
-if (typeof pagetitle !== "undefined") {
-         %><p>Old title</p><title><%= pagetitle %></title><% 
-} else if (typeof title !== "undefined") {
-         %><p>Old title</p><title><%= title %></title><% 
-} %>
-<%- partial('ak_sitemap.html.ejs', locals) %>
-<%- partial('ak_siteverification.html.ejs', locals) %>
 </head>
 <body>
-<ak-insert-body-content/>
+<%- content %>
 <!-- JavaScript at the bottom for fast page loading -->
 <ak-footerJavaScript/>
 <ak-google-analytics/>
