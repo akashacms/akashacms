@@ -179,7 +179,7 @@ var fileMatchRenderable = function(file) {
 };
 
 var mkSidebarFiles = function(urlpath, done) {
-	akasha.dirPathForDocument(config, urlpath, function(err, dirpathInfo) {
+	dirPathForDocument(config, urlpath, function(err, dirpathInfo) {
 		if (err) {
 			done(err);
 		} else {
@@ -625,6 +625,39 @@ exports.apiUploadFiles = function(req, res) {
 			});
 		});
 	form.parse(req);
+};
+
+var dirPathForDocument = function(config, urlpath, done) {
+	var docEntry = module.exports.findDocumentForUrlpath(config, urlpath);
+	if (docEntry) {
+		done(undefined, {
+			path: '/'+ path.dirname(docEntry.path),
+			dirname: path.dirname(docEntry.path) === "." ? "/" : '/'+ path.dirname(docEntry.path),
+			dirpath: path.dirname(docEntry.fullpath)
+		});
+	} else {
+		var dirpath = path.join(config.root_docs[0], urlpath);
+		fs.stat(dirpath, function(err, stats) {
+			if (err) done(err);
+			else {
+				if (stats.isDirectory()) {
+					done(undefined, {
+						path: urlpath,
+						dirname: urlpath === "." ? "/" : urlpath,
+						dirpath: dirpath
+					});
+				} else if (stats.isFile()) {
+					done(undefined, {
+						path: urlpath,
+						dirname: path.dirname(urlpath) === "." ? "/" : path.dirname(urlpath),
+						dirpath: path.dirname(dirpath)
+					});
+				} else {
+					done(new Error("directory not found for "+ urlpath));
+				}
+			}
+		});
+	}
 };
 
 ////////////////////// OLD FUNCTIONS TO BE REPLACED MAYBE
