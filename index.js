@@ -395,7 +395,7 @@ var process2html = function(options, entry, done) {
         renderer.render(module.exports, options, entry, undefined, renderopts, function(err, rendered) {
             logger.trace('***** DONE RENDER ' + entry.path); // util.inspect(rendered));
             if (err) {
-            	logger.trace('Rendering '+ entry.path +' failed with '+ err);
+            	logger.error('Rendering '+ entry.path +' failed with '+ err);
             	done('Rendering '+ entry.path +' failed with '+ err);
             } else {
                 var renderTo = path.join(options.root_out, rendered.fname);
@@ -414,7 +414,7 @@ var process2html = function(options, entry, done) {
                                     if (entry.frontmatter.yaml && entry.frontmatter.yaml.publDate) {
                                         var parsed = Date.parse(entry.frontmatter.yaml.publDate);
                                         if (isNaN(parsed)) {
-                                            logger.info("WARNING WARNING Bad date provided "+ entry.frontmatter.yaml.publDate);
+                                            logger.error("WARNING WARNING Bad date provided "+ entry.frontmatter.yaml.publDate);
                                         } else {
                                             atime = mtime = new Date(parsed);
                                         }
