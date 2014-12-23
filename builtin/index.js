@@ -381,6 +381,84 @@ module.exports.config = function(_akasha, config) {
 			});
         });
         
+        /**
+         * These next two tags / functions are a two-step process for extracting image
+         * references and listing them as meta og:image tags.
+         *
+         * In phase 1 <open-graph-promote-images> should be put in a template, to trigger
+         * the code below.  It simply adds the metaog-promote class to any image found
+         * in the content, and then the <open-graph-promote-images> tag is removed.
+         * That class triggers phase 2.
+         *
+         * In phase 2 - triggered only when there is "html head" present in the DOM -
+         * we take img.metaog-promote images and insert a
+         *			<meta name="og:image" content="...">
+         * tag into the <head> section for each one.
+         */
+        config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('open-graph-promote-images');
+			var elements = [];
+			$('open-graph-promote-images').each(function(i,elem){ elements.push(elem); });
+			async.eachSeries(elements,
+			function(element, next) {
+				$(element).remove();
+				var imgz = [];
+				$('img').each(function(i, elem) { imgz.push(elem); });
+				async.eachSeries(imgz,
+					function(img, next2) {
+						$(img).addClass('metaog-promote');
+						next2();
+						
+					}, function(err) {
+						if (err) next(err);
+						else next();
+					});
+			}, function(err) {
+				if (err) { logger.error(err); done(err); } 
+				else { logger.trace('END open-graph-promote-images'); done(); }
+			});
+        });
+        				
+        /** Handle phase 2 of promoting image href's as og:image meta tags. */
+        config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('img.metaog-promote');
+			if ($('html head').get(0)) {
+				var elements = [];
+				$('img.metaog-promote').each(function(i,elem) {
+					elements.push(elem);
+				});
+				async.eachSeries(elements,
+				function(element, next) {
+					$(element).removeClass('metaog-promote');
+					var href = $(element).attr('src');
+					if (href && href.length > 0) {
+						var pHref = url.parse(href);
+						// In case this is a site-relative URL, fix it up
+						// to have the full URL.
+						if (! pHref.host) {
+							if (pHref.path.match(/^\//)) {
+								href = config.root_url +'/'+ href;
+							} else {
+								var pRendered = url.parse(metadata.rendered_url);
+								var dirRender = path.dirname(pRendered.path);
+								href = config.root_url +'/' + dirRender +'/'+ href;
+							}
+						}
+					}
+					akasha.partial('ak_metatag.html.ejs', {
+						tagname: 'og:image',
+						tagcontent: href
+					}, function(err, txt) {
+						if (err) { logger.error(err); next(err); }
+						else { $('head').append(txt); next(); }
+					});
+				}, function(err) {
+					if (err) { logger.error(err); done(err); } 
+					else { logger.trace('END img.metaog-promote'); done(); }
+				});
+			} else done();
+        });
+
         config.mahabhuta.push(function($, metadata, dirty, done) {
         	logger.trace('footnote');
         	// <footnote href="http:..." name="..." title="..." rel="nofollow">Description</footnote>
