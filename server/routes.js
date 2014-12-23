@@ -628,7 +628,7 @@ exports.apiUploadFiles = function(req, res) {
 };
 
 var dirPathForDocument = function(config, urlpath, done) {
-	var docEntry = module.exports.findDocumentForUrlpath(config, urlpath);
+	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
 	if (docEntry) {
 		done(undefined, {
 			path: '/'+ path.dirname(docEntry.path),
