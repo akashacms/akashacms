@@ -23,7 +23,7 @@ module.exports = function(_akasha, _config) {
 	akasha = _akasha;
 	config = _config;
 	logger = akasha.getLogger("server");
-	log4js.addAppender(streamAppender.appender, '[all]');
+	log4js.addAppender(streamAppender.appender, 'akashacms', 'routes');
 	routes.config(akasha, config);
     routes.readFiles(function(err) {
         if (err) {
@@ -63,16 +63,6 @@ var useDomain = function(req, res, next) {
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
-
-/*function logErrors(err, req, res, next) {
-	logger.trace(req.method +' '+ req.url);
-	logger.trace(util.inspect(url.parse(req.url, true)));
-	logger.trace(util.inspect(req.params));
-  if (err) console.error(err.stack);
-  next(err);
-}
-
-app.use(logErrors);*/
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 //  Not Needed: app.use(cookieParser());
@@ -80,16 +70,23 @@ app.use(bodyParser.urlencoded({ extended: false }));
 var streamAppender = {
 	openRes: [],
 	appender: function(loggingEvent) {
-		// util.log('streamAppender loggingEvent='+ util.inspect(loggingEvent));
-		var tolog = '['+ loggingEvent.startTime +'] '+ loggingEvent.categoryName 
-				   +' '+ loggingEvent.level.levelStr +' '+ loggingEvent.data;
-		// util.log(tolog);
-		async.each(streamAppender.openRes, function(res, done) {
-			res.sse.write(tolog, "utf8");
-			done();
-		},
-		function(err) {
-		});
+		// Work around a problem with sseasy in which it's only sending 158 or so messages
+		// to the browser.  This ensures we're only sending INFO messages to the browser,
+		// and some code above limits the messages to the akashacms and routes modules.
+		// Hence, the user see's more of the activity log and isn't inundated if the logging
+		// happens to be turned all the way up.
+		if (loggingEvent.level.levelStr === "INFO") {
+			// util.log('streamAppender loggingEvent='+ util.inspect(loggingEvent));
+			var tolog = '['+ loggingEvent.startTime +'] '+ loggingEvent.categoryName 
+					   +' '+ loggingEvent.level.levelStr +' '+ loggingEvent.data;
+			// util.log(tolog);
+			async.each(streamAppender.openRes, function(res, done) {
+				res.sse.write(tolog, "utf8");
+				done();
+			},
+			function(err) {
+			});
+		}
 	},
 	configure: function(log4jsconfig, options) {
 	},
@@ -121,17 +118,12 @@ process.on('exit', function() {
 
 app.get(/^\/\.\.stream-logs/, sse(), streamAppender.register);
 
-/* app.get(/^\/\.\.admin\/fullbuild(\/.*)/,
-	useDomain,
-	routes.checkDirectory,
-	routes.fullBuild); */
-
 app.get(/^\/\.\.assets(\/.*)/, 
 	useDomain,
 	routes.checkEditorAssetsDirectory,
 	function(req, res) {
-		logger.trace(req.method +' '+ req.url);
-		logger.trace(util.inspect(url.parse(req.url, true)));
+		// logger.trace(req.method +' '+ req.url);
+		// logger.trace(util.inspect(url.parse(req.url, true)));
 		// logger.trace(util.inspect(req.params));
 		var requrl = url.parse(req.params[0], true);
 		routes.streamFile(req, res, requrl, path.join(__dirname, 'assets', requrl.pathname));
@@ -151,7 +143,6 @@ app.get(/^\/\.\.api\/sidebarFilesList/, // (\/.*)/,
 
 app.get(/^\/\.\.api\/docData/, // (\/.*)/,
 	useDomain,
-	// routes.checkDirectory,
 	routes.docData);
 	
 app.get(/^\/\.\.api\/fileViewer/, // (\/.*)/,
@@ -220,29 +211,10 @@ app.get(/^(\/.+)/,
 
 app.get(/^(\/)/, 
 	useDomain,
-	// routes.checkDirectory,
 	routes.baseTemplate,
 	routes.breadcrumbTrail,
 	routes.sidebarFilez,
-	routes.serveHtml
-	/*,
-	function(req, res) {
-		var requrl = url.parse(req.url, true);
-		var fname  = path.join(config.root_out, requrl.pathname);
-		// logger.trace(req.method +' url='+ req.url +' fname='+ fname);
-		// logger.trace(util.inspect(url.parse(req.url, true)));
-		fs.stat(fname, function(err, status) {
-			if (err) {
-				res.status(404).send("file "+ fname +" not found "+ err);
-			} else {
-				if (status.isDirectory()) {
-					res.redirect(path.join(requrl.pathname, 'index.html'));
-				} else {
-					routes.streamFile(req, res, requrl, fname);
-				}
-			}
-		});
-	}*/);
+	routes.serveHtml);
 
 
 

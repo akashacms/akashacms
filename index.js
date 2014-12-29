@@ -645,7 +645,7 @@ module.exports.deployViaRsync = function(config) {
 	}
 	nargv.push(config.root_out+'/');
 	nargv.push(user+'@'+host+':'+dir+'/');
-	util.log(util.inspect(nargv));
+	logger.info('deploy Via Rsync '+ util.inspect(nargv));
 	return spawn('rsync', nargv, {env: process.env, stdio: ['pipe', 'pipe', 'pipe']});
 };
 
