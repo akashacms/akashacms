@@ -42,7 +42,7 @@ program
 
 program
     .command('init <dirName>')
-    .description('initialize an akashacms site')
+    .description('initialize an AkashaCMS site')
     .action(function(dirName){
         /*var git = exec(
                 'git clone git://github.com/robogeek/akashacms-example.git' + dirName,
@@ -60,35 +60,8 @@ program
     });
 
 program
-    .command('bootstrap')
-    .description('Download the Twitter Bootstrap code')
-    .action(function() {
-        var AdmZip = require('adm-zip');
-        var data = [], dataLen = 0; 
-        http.request("http://twitter.github.com/bootstrap/assets/bootstrap.zip", function(res) {
-            res.on('data', function(chunk) {
-                data.push(chunk);
-                dataLen += chunk.length;
-            });
-            res.on('end', function() {
-                var buf = new Buffer(dataLen);
-
-                for (var i=0, len = data.length, pos = 0; i < len; i++) { 
-                    data[i].copy(buf, pos); 
-                    pos += data[i].length; 
-                }
-    
-                var zip = new AdmZip(buf);
-                zip.extractAllTo("bootstrap-from-request", true);
-                //var zipEntries = zip.getEntries();
-                //util.log(util.inspect(zipEntries));
-            });
-        }).end();
-    });
-
-program
     .command('build')
-    .description('build an akashacms site in the current directory')
+    .description('build an AkashaCMS site in the current directory')
     .action(function() {
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
@@ -179,6 +152,7 @@ program
     .action(function(options) {
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
+        var logger = akasha.getLogger('deploy');
         if (config.deploy_ssh2sync) {
             var ssh2sync = require('ssh2sync');
             ssh2sync.upload(config.root_out,
@@ -187,34 +161,23 @@ program
                             config.deploy_ssh2sync.auth);
         }
         else if (config.deploy_rsync) {
-            var user = config.deploy_rsync.user;
-            var host = config.deploy_rsync.host;
-            var dir  = config.deploy_rsync.dir;
-            var nargv = [];
-            nargv.push('--verbose');
-			nargv.push('--archive');
-			nargv.push('--delete');
-			nargv.push('--compress');
-            // if (options.force) 
-            if (config.deploy_rsync.exclude) {
-            	nargv.push('--exclude');
-            	nargv.push(config.deploy_rsync.exclude);
-            }
-            if (config.deploy_rsync.excludeFile) {
-            	nargv.push('--exclude-from');
-            	nargv.push(config.deploy_rsync.excludeFile);
-            }
-            nargv.push(config.root_out+'/');
-            nargv.push(user+'@'+host+':'+dir+'/');
-            util.log(util.inspect(nargv));
-            var rsync = spawn('rsync', nargv, {env: process.env, stdio: 'inherit'});
+        	var rsync = akasha.deployViaRsync(config);
+        	rsync.stdout.on('data', function(data) {
+        		logger.info(data.toString());
+        	});
+        	rsync.stderr.on('data', function(data) {
+        		logger.info('ERROR '+ data.toString());
+        	});
+        	rsync.on('close', function(code) {
+        		logger.info('RSYNC FINISHED with code='+ code);
+        	});
         } // else .. other kinds of deployment scenarios
     });
 
 
 program
     .command('minimize')
-    .description('Minimize the rendered akashacms site')
+    .description('Minimize the rendered AkashaCMS site')
     .action(function() {
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
