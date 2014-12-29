@@ -20,6 +20,8 @@
 var async      = require('async');
 var util       = require('util');
 var url        = require('url');
+var http       = require('http');
+var mime       = require('mime');
 var spawn      = require('child_process').spawn;
 var exec       = require('child_process').exec;
 var find       = require('./lib/find');
@@ -621,6 +623,45 @@ module.exports.supportedForHtml = function(fn) {
 
 module.exports.isIndexHtml = function(fn) {
     return fileCache.isIndexHtml(fn);
+};
+
+///////////////// Preview built website
+
+module.exports.runPreviewServer = function(config) {
+	var server = http.createServer(function (req, res) {
+		var requrl = url.parse(req.url, true);
+		logger.info(req.method +' '+ req.url);
+		var fname = path.join(config.root_out, requrl.pathname);
+		fs.stat(fname, function(err, stats) {
+			if (err) {
+				res.statusCode = 404;
+				res.end();
+			} else {
+				if (stats.isDirectory()) {
+					requrl.pathname += 'index.html';
+					res.setHeader('Location', url.format(requrl));
+					res.statusCode = 302;
+					res.end();
+				} else if (stats.isFile()) {
+					var m = mime.lookup(fname);
+					res.writeHead(200, {
+						'Content-Type':  m,
+						'Content-Length': stats.size
+					});
+					var readStream = fs.createReadStream(fname);
+					readStream.on('error', function(err) {
+						res.end();
+					});
+					readStream.pipe(res);
+				} else {
+					res.statusCode = 404;
+					res.end();
+				}
+			}
+		});
+	});
+	
+	server.listen(6080);
 };
 
 ///////////////// Deployment of Sites

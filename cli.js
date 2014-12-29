@@ -186,7 +186,7 @@ program
     
 program
     .command('serve')
-    .description('start a webserver')
+    .description('start the editing server')
     .action(function() {
         // var staticSrv  = require('node-static');
         var config = require(path.join(process.cwd(), '/config.js'));
@@ -198,6 +198,16 @@ program
 				require('./server/app')(akasha, config);
 			}
 		});
+    });
+    
+program
+    .command('preview')
+    .description('simple preview of built site')
+    .action(function() {
+        // var staticSrv  = require('node-static');
+        var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
+        akasha.runPreviewServer(config);
     });
     
 program
