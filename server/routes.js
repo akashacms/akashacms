@@ -677,32 +677,12 @@ exports.apiDeploySite = function(req, res) {
 	rsync.stdout.on('data', function(data) {
 		logger.info(data.toString());
 	});
-	rsync.stderr.on('data', function(data) {
-		logger.info('ERROR '+ data.toString());
+	rsync.stderr.on('error', function(data) {
+		logger.error('ERROR '+ data.toString());
 	});
 	rsync.on('close', function(code) {
 		logger.info('RSYNC FINISHED with code='+ code);
-	});
-};
-
-////////////////////// OLD FUNCTIONS TO BE REPLACED MAYBE
-
-exports.addIndexPage = function(req, res) {
-	var urlpath = req.params[0];
-	var $ = newCheerio(findTemplate("baseHtml"));
-	$('body').append(prepareIndexCreateForm(urlpath));
-	logger.trace($.html());
-	res.end($.html());
-};
-
-exports.fullBuild = function(req, res) {
-	var urlpath = req.params[0];
-	akasha.process(config, function(err) {
-		if (err) res.status(404).end("Failed to rebuild site because "+ err);
-		else {
-			logger.trace(urlpath);
-			res.redirect(urlpath);
-		}
+		res.status(200).end();
 	});
 };
 
@@ -711,7 +691,7 @@ exports.docData = function(req, res) {
 	logger.trace('docData call '+ urlpath);
 	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
 	if (docEntry) {
-		logger.trace('docData result '+ urlpath);
+		// logger.trace('docData result '+ urlpath);
 		res.status(200).json({
 			urlpath: urlpath,
 			metadata: docEntry.frontmatter.yamltext,
@@ -724,117 +704,28 @@ exports.docData = function(req, res) {
 };
 
 exports.streamFile = function(req, res, requrl, fname) {
-    logger.info('streamFile '+ fname /*+' '+ util.inspect(requrl)*/);
-    /*if (requrl.pathname.match(/\.html$/)) {
-        fs.readFile(fname, { encoding: 'utf8' }, function(err, buf) {
-            if (err) {
-                res.status(404).end("file "+ fname +" not readable "+ err);
-            } else {
-                var $ = newCheerio(buf);
-                var docEntry = akasha.findDocumentForUrlpath(config, requrl.pathname);
-                // logger.trace('streamFile '+ requrl.pathname);
-                // logger.trace(util.inspect(docEntry));
-                // $('body').wrapInner('<div id="ak-original-content"></div>');
-                $('body').prepend(findTemplate("toolbar"));
-                $("#ak-editor-file-name").append("<strong>File Name: "+ requrl.pathname +"</strong>");
-                $("#ak-editor-edit-link").attr('href', "/..admin/editpage"+requrl.pathname);
-                $("#ak-editor-delete-link").attr('href', "/..admin/deletepage"+requrl.pathname);
-                $("#ak-editor-addnew-link").attr('href', "/..admin/addnewpage"+requrl.pathname);
-                $("#ak-editor-addnewdir-link").attr('href', "/..admin/addnewdir"+requrl.pathname);
-                $("#ak-editor-full-build-link").attr('href', "/..admin/fullbuild"+requrl.pathname);
-                /*$('body').append(
-                    '<script src="/..admin/js/editor.js"></script>'
-                   +'<script src="/..admin/vendor/ace-1.1.7/ace.js" type="text/javascript" charset="utf-8"></script>'
-                );* /
-                $('html head').append(
-                    '<link rel="stylesheet" href="/..admin/css/editor.css" type="text/css"/>'
-                );
-                var ht = $.html();
-                res.status(200).set({
-                    'Content-Type': mime.lookup(fname),
-                    'Content-Length': ht.length
-                });
-                res.end(ht);
-            }
-        });
-    } else {*/
-        fs.stat(fname, function(err, status) {
-            if (err) {
-                res.status(404).end("file "+ fname +" not found "+err);
-            } else {
-            	logger.info('fname = '+ fname);
-            	var m = mime.lookup(fname);
-                res.status(200);
-                res.set({
-                    'Content-Type':  m,
-                    'Content-Length': status.size
-                });
-                var readStream = fs.createReadStream(fname);
-                readStream.on('error', function(err) {
-                    res.end();
-                });
-                readStream.pipe(res);
-            }
-        });
-    /*} */
+    logger.info('streamFile '+ fname);
+	fs.stat(fname, function(err, status) {
+		if (err) {
+			res.status(404).end("file "+ fname +" not found "+err);
+		} else {
+			// logger.info('fname = '+ fname);
+			var m = mime.lookup(fname);
+			res.status(200);
+			res.set({
+				'Content-Type':  m,
+				'Content-Length': status.size
+			});
+			var readStream = fs.createReadStream(fname);
+			readStream.on('error', function(err) {
+				res.end();
+			});
+			readStream.pipe(res);
+		}
+	});
 };
 
-var prepareDocEditForm = function(urlpath, metadata, content) {
-    var $ = newCheerio(findTemplate("txtEditForm"));
-    $('#ak-editor-urlpath').attr('value', urlpath);
-    doBreadcrumb($, urlpath, '/..admin/editPage');
-    // $('#ak-editor-metadata-input').append(metadata ? metadata : "");
-    // $('#ak-editor-content-input').append(content ? content : "");
-    return $.html();
-};
-
-var prepareDirCreateForm = function(urlpath) {
-	// logger.trace('prepareDirCreateForm urlpath='+ urlpath);
-	var t = findTemplate("dirAddForm");
-	// logger.trace(t);
-    var $ = newCheerio(t);
-    $('#ak-adddir-urlpath').attr('value', urlpath);
-    $('#ak-adddir-dirname').attr('value', path.dirname(urlpath));
-    $('#ak-adddir-add-dirname').append(path.dirname(urlpath));
-    doBreadcrumb($, urlpath, '/..admin/addnewdir');
-    // logger.trace($.html());
-    return $.html();
-};
-
-var prepareDocCreateForm = function(urlpath, dirname /*, fname, metadata, content */) {
-	// logger.trace('prepareDocCreateForm urlpath='+ urlpath +' dirname='+ dirname);
-    var $ = newCheerio(findTemplate("txtAddForm"));
-    $('#ak-editor-urlpath').attr('value', urlpath);
-    $('#ak-editor-add-dirname').append(dirname);
-    $('#ak-editor-pathname-input').attr('value', "");
-    doBreadcrumb($, urlpath, '/..admin/addnewpage');
-    // $('#ak-editor-metadata-input').append(metadata ? metadata : "");
-    // $('#ak-editor-content-input').append(content ? content : "");
-    return $.html();
-};
-
-var prepareIndexCreateForm = function(dirname) {
-	// logger.trace('prepareDirCreateForm dirname='+ dirname);
-    var $ = newCheerio(findTemplate("txtAddForm"));
-    $('#ak-editor-urlpath').attr('value', dirname);
-    $('#ak-editor-add-dirname').append(dirname);
-    $('#ak-editor-fnextension').remove();
-    $('#ak-editor-pathname-input').replaceWith(
-    	'<input type=hidden name=pathname id="ak-editor-pathname-input" value="index.html.md">'
-       +'<span id="ak-editor-add-dirname">/index.html.md</span>'
-    );
-    $('#ak-editor-metadata-input').append("layout: index-page.html.ejs\ntitle: \n");
-    doBreadcrumb($, urlpath, '/..admin/addindexpage');
-    // $('#ak-editor-content-input').append(content ? content : "");
-    return $.html();
-};
-
-var prepareDocDeleteForm = function(urlpath) {
-    var $ = newCheerio(findTemplate("txtDeleteForm"));
-    $('#ak-editor-urlpath').attr('value', urlpath);
-    doBreadcrumb($, urlpath, '/..admin/deletepage');
-    return $.html();
-};
+////////////////////// OLD FUNCTIONS TO BE REPLACED MAYBE
 
 // The normal Javascript String.strim function only removes whitespace
 // However we observe excess \r's and blank lines sometimes inserted at beginning and end of text
