@@ -6,13 +6,13 @@ $(function() {
 			if ($("#ak-editor-breadcrumbs").length > 0) {
 				$("#ak-editor-breadcrumbs button").on('click', function(event) {
 			
-					console.log('ak-editor-breadcrumbs button click');
+					// console.log('ak-editor-breadcrumbs button click');
 			
 					event.preventDefault();
 					// get ak-path from the button clicked on
 					var akpath = $(this).attr('ak-path');
 			
-					console.log(akpath);
+					// console.log(akpath);
 				
 					editviewer.clear();
 					breadcrumbs.update(akpath);
@@ -21,7 +21,7 @@ $(function() {
 			}
 		},
     	update: function(akpath) {
-			console.log("/..api/breadcrumbTrail"+ akpath);
+			// console.log("/..api/breadcrumbTrail"+ akpath);
 			$.ajax({
 				url: "/..api/breadcrumbTrail",
 				type: "GET",
@@ -74,12 +74,12 @@ $(function() {
 			if ($('#ak-editor-files-sidebar').length > 0) {
 				$('#ak-editor-files-sidebar span.label').on('click', function(event) {
 			
-					console.log('ak-editor-files-sidebar span.label click');
+					// console.log('ak-editor-files-sidebar span.label click');
 				
 					event.preventDefault();
 					var akpath = $(this).attr('ak-path');
 			
-					console.log(akpath);
+					// console.log(akpath);
 				
 					editviewer.clear();
 					breadcrumbs.update(akpath);
@@ -89,7 +89,7 @@ $(function() {
 			}
 		},
     	update: function(akpath) {
-			console.log("/..api/sidebarFilesList"+ akpath);
+			// console.log("/..api/sidebarFilesList"+ akpath);
 			$.ajax({
 				url: "/..api/sidebarFilesList", // + akpath,
 				type: "GET",
@@ -130,7 +130,7 @@ $(function() {
 			$("#ak-editor-editor-area").empty();
     	},
     	fileView: function(akpath) {
-			console.log("/..api/fileViewer"+ akpath);
+			// console.log("/..api/fileViewer"+ akpath);
 			$.ajax({
 				url: "/..api/fileViewer",
 				type: "GET",
@@ -179,11 +179,11 @@ $(function() {
 			});
 			
 			$("#editFileModal #ak-editor-nav-tabs .modal-editor-tab").on('shown.bs.tab', function (e) {
-				console.log("#editFileModal #modal-link-page-area shown.bs.tab");
+				// console.log("#editFileModal #modal-link-page-area shown.bs.tab");
 				editorModal.initModalEditorTabs();
 			});
 			$("#editFileModal #modal-tab-upload-file").on('shown.bs.tab', function (e) {
-				console.log("#editFileModal #modal-tab-upload-file shown.bs.tab");
+				// console.log("#editFileModal #modal-tab-upload-file shown.bs.tab");
 				editorModal.initModalFileUploadTab();
 			});
 			
@@ -192,7 +192,7 @@ $(function() {
 		initializeFileEditModal: function(event) {
 			var button = $(event.relatedTarget);
 			var mode = button.data('mode');
-			console.log('initializeFileEditModal '+ mode +' '+ breadcrumbs.akpath());
+			// console.log('initializeFileEditModal '+ mode +' '+ breadcrumbs.akpath());
 			if (mode === "create") {
 				$("#editFileModal").removeClass("edit").addClass("create");
 				$("#editFileModal #ak-edit-editor-pathname-inputs").show();
@@ -213,7 +213,7 @@ $(function() {
 					},
 					dataType: "json",
 					success: function(json) {
-						console.log('initializeFileEditModal success');
+						// console.log('initializeFileEditModal success');
 						editorModal.metaeditorEdit.setValue(json.metadata);
 						editorModal.contenteditorEdit.setValue(json.content);
 					},
@@ -229,7 +229,7 @@ $(function() {
 			if ($("#editFileModal").hasClass("edit")) mode = "edit";
 			else if ($("#editFileModal").hasClass("create")) mode = "create";
 			$("#editFileModal").modal('hide');
-			console.log('saveEditedFile mode='+ mode);
+			// console.log('saveEditedFile mode='+ mode);
 			if (mode === "create") {
 				$.ajax({
 					url: "/..api/saveNewFile",
@@ -278,18 +278,18 @@ $(function() {
 		},
 		initModalEditorTabs: function() {
 			if ($("#editFileModal #modal-link-page-area #modal-breadcrumbs-link-page").hasClass("uninitialized")) {
-				console.log("#editFileModal #modal-link-page-area #modal-breadcrumbs-link-page uninitialized");
+				// console.log("#editFileModal #modal-link-page-area #modal-breadcrumbs-link-page uninitialized");
 				editorModal.updateModalEditorBreadcrumbsWidget("/", "#modal-link-page-area");
 				editorModal.updateModalEditorSidebarWidget("/", "#modal-link-page-area");
 			}
 			if ($("#editFileModal #modal-upload-file-area #modal-breadcrumbs-upload-file").hasClass("uninitialized")) {
-				console.log("#editFileModal #modal-upload-file-area #modal-breadcrumbs-upload-file uninitialized");
+				// console.log("#editFileModal #modal-upload-file-area #modal-breadcrumbs-upload-file uninitialized");
 				editorModal.updateModalEditorBreadcrumbsWidget("/", "#modal-upload-file-area");
 				editorModal.updateModalEditorSidebarWidget("/", "#modal-upload-file-area");
 			}
 		},
 		updateModalEditorBreadcrumbsWidget: function(akpath, selector) {
-			console.log("updateModalEditorUploadFileBreadcrumbs /..api/breadcrumbTrail"+ akpath);
+			// console.log("updateModalEditorUploadFileBreadcrumbs /..api/breadcrumbTrail"+ akpath);
 			$.ajax({
 				url: "/..api/breadcrumbTrail",
 				type: "GET",
@@ -315,12 +315,12 @@ $(function() {
 		},
 		setupButtonsModalEditorBreadcrumbsWidget: function(akpath, selector) {
 			$("#editFileModal "+ selector +" .pane-breadcrumbs-container button").on('click', function(event) {
-				console.log(selector +' breadcrumbs button click');
+				// console.log(selector +' breadcrumbs button click');
 
 				event.preventDefault();
 				
 				var akpath = $(this).attr('ak-path');
-				console.log(akpath);
+				// console.log(akpath);
 	
 				editorModal.clearViewerModalEditor(selector);
 				editorModal.updateModalEditorBreadcrumbsWidget(akpath, selector);
@@ -328,7 +328,7 @@ $(function() {
 			});
 		},
 		updateModalEditorSidebarWidget: function(akpath, selector) {
-			console.log("updateModalEditorSidebarWidget /..api/sidebarFilesList"+ akpath);
+			// console.log("updateModalEditorSidebarWidget /..api/sidebarFilesList"+ akpath);
 			$.ajax({
 				url: "/..api/sidebarFilesList",
 				type: "GET",
@@ -354,12 +354,12 @@ $(function() {
 		setupButtonsModalEditorSidebarWidget: function(akpath, selector) {
 			$('#editFileModal '+ selector +' span.label').on('click', function(event) {
 	
-				console.log(selector +' sidebar click');
+				// console.log(selector +' sidebar click');
 		
 				event.preventDefault();
 				var akpath = $(this).attr('ak-path');
 	
-				console.log(akpath);
+				// console.log(akpath);
 		
 				editorModal.clearViewerModalEditor(selector);
 				editorModal.updateModalEditorBreadcrumbsWidget(akpath, selector);
@@ -382,7 +382,7 @@ $(function() {
 		},
 		showViewerModalEditor: function(akpath, selector) {
 			if (selector === "#modal-link-page-area") {
-				console.log("/..api/showViewerModalEditorLinkPage"+ akpath);
+				// console.log("/..api/showViewerModalEditorLinkPage"+ akpath);
 				$.ajax({
 					url: "/..api/showViewerModalEditorLinkPage",
 					type: "GET",
@@ -467,7 +467,7 @@ $(function() {
 			$("#ak-delete-file-name").text(breadcrumbs.akpath());
 		},
 		deleteFileConfirm: function(event) {
-			console.log('deleteFileConfirm '+ breadcrumbs.akpath());
+			// console.log('deleteFileConfirm '+ breadcrumbs.akpath());
 			$("#deleteFileModal").modal('hide');
 			$.ajax({
 				url: "/..api/deleteFileConfirm",
@@ -536,7 +536,7 @@ $(function() {
     	},
     	source: undefined,
     	initializeRebuildSiteModal: function(e) {
-    		console.log('rebuildSite.initializeRebuildSiteModal');
+    		// console.log('rebuildSite.initializeRebuildSiteModal');
     		
     		$("#rebuildSiteModal .modal-body pre").empty();
     		
@@ -566,12 +566,14 @@ $(function() {
 				contentType: false,
 				processData: false,
                 success: function(json) {
-    				console.log('rebuildSite.initializeRebuildSiteModal SUCCESS');
+    				// console.log('rebuildSite.initializeRebuildSiteModal SUCCESS');
+					$("#rebuildSiteModal .modal-body pre").append('Rebuild Site SUCCESS\n');
                 	if (rebuildSite.source) rebuildSite.source.close();
                 	rebuildSite.source = undefined;
                 },
                 error: function(xhr, status, errorThrown) {
-    				console.log('rebuildSite.initializeRebuildSiteModal ERROR');
+    				// console.log('rebuildSite.initializeRebuildSiteModal ERROR');
+					$("#rebuildSiteModal .modal-body pre").append('Rebuild Site ERROR '+ xhr.responseText +'\n');
                     messages.display("ERROR "+ xhr.responseText);
                 }
             });
@@ -591,7 +593,7 @@ $(function() {
     	},
     	source: undefined,
     	initializeDeploySiteModal: function(e) {
-    		console.log('deploySite.initializeDeploySiteModal');
+    		// console.log('deploySite.initializeDeploySiteModal');
     		
     		$("#deploySiteModal .modal-body pre").empty();
     		
@@ -613,12 +615,14 @@ $(function() {
 				contentType: false,
 				processData: false,
                 success: function(json) {
-    				console.log('deploySite.initializeDeploySiteModal SUCCESS');
+    				// console.log('deploySite.initializeDeploySiteModal SUCCESS');
+					$("#deploySiteModal .modal-body pre").append('Deploy Site SUCCESS\n');
                 	if (deploySite.source) deploySite.source.close();
                 	deploySite.source = undefined;
                 },
                 error: function(xhr, status, errorThrown) {
-    				console.log('deploySite.initializeDeploySiteModal ERROR');
+    				// console.log('deploySite.initializeDeploySiteModal ERROR');
+					$("#deploySiteModal .modal-body pre").append('Deploy Site ERROR '+ xhr.responseText +'\n');
                     messages.display("ERROR "+ xhr.responseText);
                 }
             });
