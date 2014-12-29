@@ -660,6 +660,31 @@ var dirPathForDocument = function(config, urlpath, done) {
 	}
 };
 
+exports.apiFullBuild = function(req, res) {
+	logger.trace('in /..api/fullBuild ');
+	akasha.process(config, function(err) {
+		if (err) res.status(404).end("Failed to rebuild site because "+ err);
+		else {
+			logger.trace('END /..api/fullBuild ');
+			res.status(200).end();
+		}
+	});
+};
+
+exports.apiDeploySite = function(req, res) {
+	logger.trace('in /..api/deploysite ');
+	var rsync = akasha.deployViaRsync(config);
+	rsync.stdout.on('data', function(data) {
+		logger.info(data.toString());
+	});
+	rsync.stderr.on('data', function(data) {
+		logger.info('ERROR '+ data.toString());
+	});
+	rsync.on('close', function(code) {
+		logger.info('RSYNC FINISHED with code='+ code);
+	});
+};
+
 ////////////////////// OLD FUNCTIONS TO BE REPLACED MAYBE
 
 exports.addIndexPage = function(req, res) {

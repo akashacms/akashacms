@@ -43,11 +43,58 @@
 		<button id="ak-sidebar-new-directory-button" type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#uploadFileModal">
 			<span class="glyphicon glyphicon-cloud-upload" aria-hidden="true"></span> Upload File
 		</button>
+		<button id="ak-sidebar-rebuild-site-button" type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#rebuildSiteModal">
+			<span class="glyphicon glyphicon-cog" aria-hidden="true"></span> Rebuild Site
+		</button>
+		<button id="ak-sidebar-deploy-site-button" type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#deploySiteModal">
+			<span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Deploy Site
+		</button>
 	</div><br>
 	<div id="ak-editor-files-sidebar"></div>
 </div>
 <div id="ak-editor-editor-area" class="col-md-9"></div>
 </div>
+
+
+
+<div class="modal fade" id="rebuildSiteModal" tabindex="-1" role="dialog" aria-labelledby="rebuildSiteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close rebuild-site-modal-close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="rebuildSiteModalLabel">Rebuild site</h4>
+      </div>
+      <div class="modal-body">
+      	<p><!-- span class="glyphicon glyphicon-circle-arrow-left spinner" aria-hidden="true"></span --> </p>
+      	<pre></pre></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default rebuild-site-modal-close" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<div class="modal fade" id="deploySiteModal" tabindex="-1" role="dialog" aria-labelledby="deploySiteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="deploySiteModalLabel">Deploy site</h4>
+      </div>
+      <div class="modal-body"><pre></pre></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
 
 
 <div class="modal fade" id="newDirectoryModal" tabindex="-1" role="dialog" aria-labelledby="newDirectoryModalLabel" aria-hidden="true">
@@ -69,59 +116,6 @@
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
-
-
-<!--
-<div class="modal fade" id="newFileModal" tabindex="-1" role="dialog" aria-labelledby="newFileModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-        <h4 class="modal-title" id="newFileModalLabel">Create new File</h4>
-      </div>
-      <div class="modal-body">
-      
-		<div id="ak-edit-editor-pathname-inputs">
-		<label for="pathname-input">New File Name:</label><br/>
-		<span class="form-control-static" id="ak-editor-add-dirname"></span><br>
-		<input type="text" class="form-control" name="pathname" id="ak-editor-pathname-input" size="30">
-		<select class="form-control" name="fnextension" id="ak-editor-fnextension">
-			<option selected>.html.md</option> 
-			<option>.html.ejs.md</option>
-			<option>.html.ejs</option>
-		</select>
-		</div>
-		
-		<span class="label label-default">Metadata</span>
-		<div id="ak-editor-new-metadata-input"></div>
-	
-		<div id="ak-edit-editor-buttons" class="btn-group" role="group">
-			<button id="ak-edit-linkto-page-button" type="button" class="btn btn-default">
-				<span class="glyphicon glyphicon-random" aria-hidden="true"></span> Link To Page
-			</button>
-			<button id="ak-edit-image-button" type="button" class="btn btn-default">
-				<span class="glyphicon glyphicon-picture" aria-hidden="true"></span> Find Image
-			</button>
-			<button id="ak-edit-upload-document-button" type="button" class="btn btn-default">
-				<span class="glyphicon glyphicon-cloud-upload" aria-hidden="true"></span> Upload document
-			</button>
-			<button id="ak-edit-linkto-document-button" type="button" class="btn btn-default">
-				<span class="glyphicon glyphicon-book" aria-hidden="true"></span> Link to document (PDF etc)
-			</button>
-		</div><br>
-	
-		<span class="label label-default">Content</span>
-		<div id="ak-editor-new-content-input"></div>
-      
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" id="newFileSave">Save changes</button>
-      </div>
-    </div>< !-- /.modal-content -- >
-  </div>< !-- /.modal-dialog -- >
-</div>< !-- /.modal -- >
--->
 
 <div class="modal fade" id="editFileModal" tabindex="-1" role="dialog" aria-labelledby="editFileModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">

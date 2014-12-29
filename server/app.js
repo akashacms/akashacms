@@ -1,9 +1,12 @@
 
-var http = require('http');
-var url  = require('url');
-var path = require('path');
-var util = require('util');
-var fs   = require('fs');
+var http  = require('http');
+var url   = require('url');
+var path  = require('path');
+var util  = require('util');
+var fs    = require('fs');
+var async = require('async');
+var sse   = require('sseasy');
+var log4js  = require('log4js');
 
 var express = require('express');
 // Not Needed: var cookieParser = require('cookie-parser');
@@ -20,6 +23,7 @@ module.exports = function(_akasha, _config) {
 	akasha = _akasha;
 	config = _config;
 	logger = akasha.getLogger("server");
+	log4js.addAppender(streamAppender.appender, '[all]');
 	routes.config(akasha, config);
     routes.readFiles(function(err) {
         if (err) {
@@ -73,10 +77,54 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 //  Not Needed: app.use(cookieParser());
 
-app.get(/^\/\.\.admin\/fullbuild(\/.*)/,
+var streamAppender = {
+	openRes: [],
+	appender: function(loggingEvent) {
+		// util.log('streamAppender loggingEvent='+ util.inspect(loggingEvent));
+		var tolog = '['+ loggingEvent.startTime +'] '+ loggingEvent.categoryName 
+				   +' '+ loggingEvent.level.levelStr +' '+ loggingEvent.data;
+		// util.log(tolog);
+		async.each(streamAppender.openRes, function(res, done) {
+			res.sse.write(tolog, "utf8");
+			done();
+		},
+		function(err) {
+		});
+	},
+	configure: function(log4jsconfig, options) {
+	},
+	shutdown: function(cb) {
+		util.log('***** SHUTDOWN streamAppender.shutdown');
+		async.each(streamAppender.openRes, function(res, done) {
+			if (!res.sse.write('\n', "utf-8")) {
+				res.sse.once('drain', function() {
+					res.sse.end(done);
+				});
+			} else {
+				res.sse.end(done);
+			}
+		}, cb);
+	},
+	register: function(req, res) {
+		streamAppender.openRes.push(res);
+		res.sse.write(config.data.metaOGsite_name, "utf-8");
+		res.on('close', function() {
+			util.log('***** CLOSE streamAppender.close');
+			var indx = streamAppender.openRes.indexOf(res);
+			if (indx >= 0) streamAppender.openRes.splice(indx, 1);
+		});
+	}
+};
+process.on('exit', function() {
+	streamAppender.shutdown(function(err) { });
+});
+
+app.get(/^\/\.\.stream-logs/, sse(), streamAppender.register);
+
+/* app.get(/^\/\.\.admin\/fullbuild(\/.*)/,
 	useDomain,
 	routes.checkDirectory,
-	routes.fullBuild);
+	routes.fullBuild); */
 
 app.get(/^\/\.\.assets(\/.*)/, 
 	useDomain,
@@ -134,6 +182,13 @@ app.post(/^\/\.\.api\/uploadFiles/,
 	useDomain,
 	routes.apiUploadFiles);
 
+app.get(/^\/\.\.api\/fullbuild/,
+	useDomain,
+	routes.apiFullBuild);
+	
+app.get(/^\/\.\.api\/deploysite/,
+	useDomain,
+	routes.apiDeploySite);
 	
 app.get(/^(\/.+)/, 
 	useDomain,

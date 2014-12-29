@@ -72,3 +72,9 @@ html, body { height: 100% }
 #editFileModal #ak-edit-modal-link-file-area {
 	display: none; /* hide by default */
 }
+
+#rebuildSiteModal .modal-dialog .modal-body pre,
+#deploySiteModal  .modal-dialog .modal-body pre {
+	max-height: 500px;
+}
+

@@ -513,11 +513,130 @@ $(function() {
 		}
     };
     
+    var spinnerNext = function(span) {
+    	if ($(span).hasClass('glyphicon-circle-arrow-left')) {
+    		$(span).removeClass('glyphicon-circle-arrow-left');
+    		$(span).addClass('glyphicon-circle-arrow-down');
+    	} else if ($(span).hasClass('glyphicon-circle-arrow-down')) {
+    		$(span).removeClass('glyphicon-circle-arrow-down');
+    		$(span).addClass('glyphicon-circle-arrow-right');
+    	} else if ($(span).hasClass('glyphicon-circle-arrow-right')) {
+    		$(span).removeClass('glyphicon-circle-arrow-right');
+    		$(span).addClass('glyphicon-circle-arrow-up');
+    	} else if ($(span).hasClass('glyphicon-circle-arrow-up')) {
+    		$(span).removeClass('glyphicon-circle-arrow-up');
+    		$(span).addClass('glyphicon-circle-arrow-left');
+    	}
+    };
+    
+    var rebuildSite = {
+    	setup: function() {
+    		$("#rebuildSiteModal").on('show.bs.modal', rebuildSite.initializeRebuildSiteModal);
+    		$("#rebuildSiteModal").on('hidden.bs.modal', rebuildSite.hiddenRebuildSiteModal);
+    	},
+    	source: undefined,
+    	initializeRebuildSiteModal: function(e) {
+    		console.log('rebuildSite.initializeRebuildSiteModal');
+    		
+    		$("#rebuildSiteModal .modal-body pre").empty();
+    		
+    		rebuildSite.source = new EventSource('/..stream-logs');
+    		
+			rebuildSite.source.addEventListener('message', function(ev) {
+				/* var msgs = $("#rebuildSiteModal .modal-body pre").text().split('\n');
+				msgs.push(ev.data);
+				while(msgs.length >= 150) msgs.shift(); */
+				$("#rebuildSiteModal .modal-body pre").append(ev.data + '\n');
+				// spinnerNext("#rebuildSiteModal .modal-body span.spinner");
+			});
+			
+			rebuildSite.source.addEventListener('error', function(ev) {
+				/* var msgs = $("#rebuildSiteModal .modal-body pre").text().split('\n');
+				msgs.push('ERROR: '+ ev.data);
+				while(msgs.length >= 150) msgs.shift(); */
+				$("#rebuildSiteModal .modal-body pre").append('ERROR: '+ ev.data +'\n');
+				// spinnerNext("#rebuildSiteModal .modal-body span.spinner");
+			});
+			
+            $.ajax({
+                url: "/..api/fullbuild",
+                type: "GET",
+                data: null,
+                cache: false,
+				contentType: false,
+				processData: false,
+                success: function(json) {
+    				console.log('rebuildSite.initializeRebuildSiteModal SUCCESS');
+                	if (rebuildSite.source) rebuildSite.source.close();
+                	rebuildSite.source = undefined;
+                },
+                error: function(xhr, status, errorThrown) {
+    				console.log('rebuildSite.initializeRebuildSiteModal ERROR');
+                    messages.display("ERROR "+ xhr.responseText);
+                }
+            });
+    	},
+    	hiddenRebuildSiteModal: function(e) {
+    		if (rebuildSite.source) {
+				rebuildSite.source.close();
+				rebuildSite.source = undefined;
+    		}
+    	}
+    };
+    
+    var deploySite = {
+    	setup: function() {
+    		$("#deploySiteModal").on('show.bs.modal', deploySite.initializeDeploySiteModal);
+    		$("#deploySiteModal").on('hidden.bs.modal', deploySite.hiddenDeploySiteModal);
+    	},
+    	source: undefined,
+    	initializeDeploySiteModal: function(e) {
+    		console.log('deploySite.initializeDeploySiteModal');
+    		
+    		$("#deploySiteModal .modal-body pre").empty();
+    		
+    		deploySite.source = new EventSource('/..stream-logs');
+    		
+			deploySite.source.addEventListener('message', function(ev) {
+				$("#deploySiteModal .modal-body pre").append(ev.data + '\n');
+			});
+			
+			deploySite.source.addEventListener('error', function(ev) {
+				$("#deploySiteModal .modal-body pre").append('ERROR: '+ ev.data +'\n');
+			});
+			
+            $.ajax({
+                url: "/..api/deploysite",
+                type: "GET",
+                data: null,
+                cache: false,
+				contentType: false,
+				processData: false,
+                success: function(json) {
+    				console.log('deploySite.initializeDeploySiteModal SUCCESS');
+                	if (deploySite.source) deploySite.source.close();
+                	deploySite.source = undefined;
+                },
+                error: function(xhr, status, errorThrown) {
+    				console.log('deploySite.initializeDeploySiteModal ERROR');
+                    messages.display("ERROR "+ xhr.responseText);
+                }
+            });
+    	},
+    	hiddenDeploySiteModal: function(e) {
+    		if (deploySite.source) {
+				deploySite.source.close();
+				deploySite.source = undefined;
+    		}
+    	}
+    };
+    
     breadcrumbs.setup();
     sidebar.setup();
     editviewer.setup();
     messages.setup();
     buttons.setup();
     editorModal.setup();
-
+	rebuildSite.setup();
+	deploySite.setup();
 });
