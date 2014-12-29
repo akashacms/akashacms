@@ -20,6 +20,8 @@
 var async      = require('async');
 var util       = require('util');
 var url        = require('url');
+var spawn      = require('child_process').spawn;
+var exec       = require('child_process').exec;
 var find       = require('./lib/find');
 var renderer   = require('./lib/renderer2');
 var mahabhuta  = require('./lib/mahabhuta');
@@ -619,6 +621,32 @@ module.exports.supportedForHtml = function(fn) {
 
 module.exports.isIndexHtml = function(fn) {
     return fileCache.isIndexHtml(fn);
+};
+
+///////////////// Deployment of Sites
+
+module.exports.deployViaRsync = function(config) {
+	var user = config.deploy_rsync.user;
+	var host = config.deploy_rsync.host;
+	var dir  = config.deploy_rsync.dir;
+	var nargv = [];
+	nargv.push('--verbose');
+	nargv.push('--archive');
+	nargv.push('--delete');
+	nargv.push('--compress');
+	// if (options.force) 
+	if (config.deploy_rsync.exclude) {
+		nargv.push('--exclude');
+		nargv.push(config.deploy_rsync.exclude);
+	}
+	if (config.deploy_rsync.excludeFile) {
+		nargv.push('--exclude-from');
+		nargv.push(config.deploy_rsync.excludeFile);
+	}
+	nargv.push(config.root_out+'/');
+	nargv.push(user+'@'+host+':'+dir+'/');
+	util.log(util.inspect(nargv));
+	return spawn('rsync', nargv, {env: process.env, stdio: ['pipe', 'pipe', 'pipe']});
 };
 
 ///////////////// RSS Feed Generation
