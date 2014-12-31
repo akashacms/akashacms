@@ -367,7 +367,7 @@ module.exports.config = function(_akasha, config) {
 			function(element, next) {
 				logger.trace(metadata.publicationDate);
 				if (metadata.publicationDate) {
-					akasha.partial(config, "ak_publdate.html.ejs", {
+					akasha.partial("ak_publdate.html.ejs", {
 							publicationDate: metadata.publicationDate
 						},
 						function(err, html) {
@@ -379,6 +379,48 @@ module.exports.config = function(_akasha, config) {
 				if (err) { logger.error(err); done(err); } 
 				else { logger.trace('END publication-date'); done(); }
 			});
+        });
+        
+        config.mahabhuta.push(function($, metadata, dirty, done) {
+        	logger.trace('author-link');
+			if (config.authorship) {
+				var auname;
+				if (!metadata.authorname && config.authorship.defaultAuthorName) {
+					auname = config.authorship.defaultAuthorName;
+				} else if (metadata.authorname) {
+					auname = metadata.authorname;
+				}
+				if (auname) {
+					var elements = [];
+					$('author-link').each(function(i, elem) { elements.push(elem); });
+					async.eachSeries(elements,
+					function(element, next) {
+						var author;
+						for (var i in config.authorship.authors) {
+							if (config.authorship.authors[i].name === auname) {
+								author = config.authorship.authors[i];
+								break;
+							}
+						}
+						if (author) {
+							akasha.partial("ak_authorship.html.ejs", {
+									fullname: author.fullname,
+									authorship: author.authorship
+								},
+								function(err, html) {
+									if (err) { logger.error(err); next(err); } 
+									else { $(element).replaceWith(html); next(); }
+								});
+						} else {
+							logger.warn('no author data found for '+ auname);
+							next();
+						}
+					}, function(err) {
+						if (err) { logger.error(err); done(err); } 
+						else { logger.trace('END author-link'); done(); }
+					});
+				} else done();
+			} else done();
         });
         
         /**
