@@ -8,9 +8,12 @@ var async = require('async');
 var sse   = require('sseasy');
 var log4js  = require('log4js');
 
+var auth = require('basic-auth');
+
 var express = require('express');
-// Not Needed: var cookieParser = require('cookie-parser');
+// var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+
 var app = express();
 
 var routes = require('./routes');
@@ -25,6 +28,7 @@ module.exports = function(_akasha, _config) {
 	logger = akasha.getLogger("server");
 	log4js.addAppender(streamAppender.appender, 'akashacms', 'routes');
 	routes.config(akasha, config);
+	
     routes.readFiles(function(err) {
         if (err) {
             throw err;
@@ -40,7 +44,6 @@ module.exports = function(_akasha, _config) {
         }
     });
 }
-
 
 //*********** Catch errors using domain module
 var domain = require('domain');
@@ -65,7 +68,13 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-//  Not Needed: app.use(cookieParser());
+// app.use(cookieParser());
+app.use(session({
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: true }
+}));
 
 var streamAppender = {
 	openRes: [],
@@ -116,7 +125,38 @@ process.on('exit', function() {
 	streamAppender.shutdown(function(err) { });
 });
 
-app.get(/^\/\.\.stream-logs/, sse(), streamAppender.register);
+var checkAuth = function(req, res, next) {
+	var credentials = auth(req);
+	// logger.info(util.inspect(credentials));
+
+	if (config.editor && config.editor.users) {
+		var user;
+		// logger.info(util.inspect(config.editor));
+		if (credentials) {
+			for (var i in config.editor.users) {
+				// logger.info(util.inspect(config.editor.users[i]));
+				if (config.editor.users[i].user === credentials.name
+				 && config.editor.users[i].password === credentials.pass) {
+					user = config.editor.users[i];
+					break;
+				}
+			}
+		}
+		if (user) {
+			next();
+		} else {
+			res.status(401)
+			.set({ 'WWW-Authenticate': 'Basic realm="example"' })
+			.end();
+		}
+	} else next();
+
+};
+
+app.get(/^\/\.\.stream-logs/,
+	checkAuth,
+	sse(),
+	streamAppender.register);
 
 app.get(/^\/\.\.assets(\/.*)/, 
 	useDomain,
@@ -135,54 +175,67 @@ app.get(/^\/\.\.api\/download(\/.*)/,
 
 app.get(/^\/\.\.api\/breadcrumbTrail/, // (\/.*)/,
 	useDomain,
+	checkAuth,
 	routes.apiBreadcrumbTrail);
 
 app.get(/^\/\.\.api\/sidebarFilesList/, // (\/.*)/,
 	useDomain,
+	checkAuth,
 	routes.apiSidebarFilesList);
 
 app.get(/^\/\.\.api\/docData/, // (\/.*)/,
 	useDomain,
+	checkAuth,
 	routes.docData);
 	
 app.get(/^\/\.\.api\/fileViewer/, // (\/.*)/,
 	useDomain,
+	checkAuth,
 	routes.apiFileViewer);
 	
 app.get(/^\/\.\.api\/showViewerModalEditorLinkPage/, // (\/.*)/,
 	useDomain,
+	checkAuth,
 	routes.apiShowViewerModalEditorLinkPage);
 	
 app.post(/^\/\.\.api\/addnewdir/,
 	useDomain,
+	checkAuth,
 	routes.apiPostAddNewDir);
 
 app.post(/^\/\.\.api\/saveNewFile/,
 	useDomain,
+	checkAuth,
 	routes.apiPostAddNewFile);
 
 app.post(/^\/\.\.api\/saveEditedFile/,
 	useDomain,
+	checkAuth,
 	routes.apiPostAddEditedFile);
 
 app.post(/^\/\.\.api\/deleteFileConfirm/,
 	useDomain,
+	checkAuth,
 	routes.apiDeleteFileConfirm);
 
 app.post(/^\/\.\.api\/uploadFiles/,
 	useDomain,
+	checkAuth,
 	routes.apiUploadFiles);
 
 app.get(/^\/\.\.api\/fullbuild/,
 	useDomain,
+	checkAuth,
 	routes.apiFullBuild);
 	
 app.get(/^\/\.\.api\/deploysite/,
 	useDomain,
+	checkAuth,
 	routes.apiDeploySite);
 	
 app.get(/^(\/.+)/, 
 	useDomain,
+	checkAuth,
 	function(req, res) {
 		logger.trace(req.method +' '+ req.url +' path='+ unescape(req.path));
 		logger.trace(util.inspect(url.parse(req.url, true)));
@@ -211,6 +264,7 @@ app.get(/^(\/.+)/,
 
 app.get(/^(\/)/, 
 	useDomain,
+	checkAuth,
 	routes.baseTemplate,
 	routes.breadcrumbTrail,
 	routes.sidebarFilez,
