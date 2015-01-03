@@ -43,6 +43,8 @@ module.exports = function(_akasha, _config) {
 			});
         }
     });
+    
+    akasha.runPreviewServer(config);
 }
 
 //*********** Catch errors using domain module
@@ -69,12 +71,7 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 // app.use(cookieParser());
-app.use(session({
-  secret: 'keyboard cat',
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: true }
-}));
+
 
 var streamAppender = {
 	openRes: [],

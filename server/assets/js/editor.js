@@ -128,6 +128,8 @@ $(function() {
     	},
     	clear: function() {
 			$("#ak-editor-editor-area").empty();
+			$("#ak-editor-editor-area").removeAttr('ak-path');
+			$("#ak-editor-editor-area").removeAttr('render-path');
     	},
     	fileView: function(akpath) {
 			// console.log("/..api/fileViewer"+ akpath);
@@ -141,6 +143,9 @@ $(function() {
 				success: function(json) {
 					editviewer.clear();
 					$("#ak-editor-editor-area").append(json.html);
+					$("#ak-editor-editor-area").attr('ak-path', json.akpath);
+					$("#ak-editor-editor-area").attr('render-path', json.renderpath);
+					launchPreview.setupEditorButton();
 				},
 				error: function(xhr, status, errorThrown) {
 					messages.display("ERROR "+ xhr.responseText);
@@ -635,6 +640,32 @@ $(function() {
     	}
     };
     
+    var launchPreview = {
+    	setup: function() {
+    		$("#ak-sidebar-launch-preview").on('click', launchPreview.launch);
+    	},
+    	setupEditorButton: function() {
+    		$("#ak-edit-preview-button").on('click', launchPreview.launchForPage);
+    	},
+    	launch: function(e) {
+    		var akpath = $("#ak-editor-files-sidebar").attr('ak-path');
+    		// console.log(akpath);
+    		var url2visit = window.location.protocol +'//'+ window.location.hostname +':6080' + akpath;
+    		// console.log(url2visit);
+    		var win = window.open('', "ak-preview");
+    		win.location = url2visit;
+    		win.focus();
+    	},
+    	launchForPage: function(e) {
+    		var akpath = $("#ak-editor-editor-area").attr('render-path');
+    		var url2visit = window.location.protocol +'//'+ window.location.hostname +':6080' + akpath;
+    		// console.log(url2visit);
+    		var win = window.open('', "ak-preview");
+    		win.location = url2visit;
+    		win.focus();
+    	}
+    };
+    
     breadcrumbs.setup();
     sidebar.setup();
     editviewer.setup();
@@ -643,4 +674,5 @@ $(function() {
     editorModal.setup();
 	rebuildSite.setup();
 	deploySite.setup();
+	launchPreview.setup();
 });

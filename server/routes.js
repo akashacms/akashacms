@@ -296,6 +296,7 @@ exports.apiSidebarFilesList = function(req, res, next) {
 exports.apiFileViewer = function(req, res, next) {
 	var urlpath = req.query.akpath; // req.params[0];
 	logger.trace('apiFileViewer origUrl='+ req.originalUrl +' urlpath='+ urlpath);
+	// logger.trace(req.headers);
 	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
 	// logger.trace(util.inspect(docEntry));
 	if (docEntry && fileMatchImage(urlpath)) { // exports.apiImageViewer(req, res, next);
@@ -303,7 +304,12 @@ exports.apiFileViewer = function(req, res, next) {
 			function($, metadata, dirty, done) {
 				$('#ak-image-viewer').prepend(findTemplate('viewerFileDetails'));
 				$('#ak-image-viewer').prepend(findTemplate('viewerButtons'));
-				$('img#ak-image-display').attr("src", urlpath);
+				var urlReq = 'http://'+ req.headers.host +'/'+ urlpath;
+				var pUrlReq = url.parse(urlReq, true);
+				pUrlReq.port = 6080;
+				pUrlReq.host = pUrlReq.hostname +':'+ pUrlReq.port;
+				// logger.trace(util.inspect(pUrlReq));
+				$('img#ak-image-display').attr("src", url.format(pUrlReq)); // urlpath);
 				$('#file-name a').text(docEntry.path);
 				$('#file-name a').attr('href', path.join('/..api/download', urlpath));
 				$('#file-size').text(docEntry.stat.size +' bytes');
@@ -311,17 +317,27 @@ exports.apiFileViewer = function(req, res, next) {
 				$("#file-type").text("image");
 				$("#content-type").text(mime.lookup(docEntry.path));
 				$("#ak-edit-edit-button").remove();
+				$("#ak-edit-preview-button").remove();
 				done();
 			}, 
 			function(err, html) {
-				res.status(200).json({ html: html });
+				res.status(200).json({ 
+					html: html, 
+					renderpath: '/'+ docEntry.renderedFileName, 
+					akpath: req.query.akpath 
+				});
 			});
 	} else if (docEntry && fileMatchRenderable(urlpath)) { // exports.apiPageViewer(req, res, next);
 		mahabhuta.process1(findTemplate("viewPage"), { },
 			function($, metadata, dirty, done) {
 				$('#ak-page-viewer').prepend(findTemplate('viewerFileDetails'));
 				$('#ak-page-viewer').prepend(findTemplate('viewerButtons'));
-				$('iframe#ak-page-display').attr("src", docEntry.renderedFileName);
+				var urlReq = 'http://'+ req.headers.host +'/'+ docEntry.renderedFileName;
+				var pUrlReq = url.parse(urlReq, true);
+				pUrlReq.port = 6080;
+				pUrlReq.host = pUrlReq.hostname +':'+ pUrlReq.port;
+				// logger.trace(util.inspect(pUrlReq));
+				$('iframe#ak-page-display').attr("src", url.format(pUrlReq)); // docEntry.renderedFileName);
 				$('#file-name a').text(docEntry.path);
 				$('#file-name a').attr('href', path.join('/..api/download', urlpath));
 				$('#file-size').text(docEntry.stat.size +' bytes');
@@ -331,7 +347,11 @@ exports.apiFileViewer = function(req, res, next) {
 				done();
 			}, 
 			function(err, html) {
-				res.status(200).json({ html: html });
+				res.status(200).json({ 
+					html: html, 
+					renderpath: '/'+ docEntry.renderedFileName, 
+					akpath: req.query.akpath 
+				});
 			});
 	} else {
 		fs.stat(path.join(config.root_docs[0], urlpath), function(err, stats) {
@@ -349,10 +369,15 @@ exports.apiFileViewer = function(req, res, next) {
 						$("#file-type").text("default");
 						$("#content-type").text(mime.lookup(docEntry.path));
 						$("#ak-edit-edit-button").remove();
+						$("#ak-edit-preview-button").remove();
 						done();
 					}, 
 					function(err, html) {
-						res.status(200).json({ html: html });
+						res.status(200).json({ 
+							html: html, 
+							renderpath: '/'+ docEntry.renderedFileName, 
+							akpath: req.query.akpath 
+						});
 					});
 			}
 		});
