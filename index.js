@@ -420,7 +420,8 @@ var process2html = function(options, entry, done) {
                                     if (entry.frontmatter.yaml && entry.frontmatter.yaml.publDate) {
                                         var parsed = Date.parse(entry.frontmatter.yaml.publDate);
                                         if (isNaN(parsed)) {
-                                            logger.error("WARNING WARNING Bad date provided "+ entry.frontmatter.yaml.publDate);
+                                            logger.warn("WARNING WARNING Bad date provided "+ entry.frontmatter.yaml.publDate);
+                                            atime = mtime = new Date();
                                         } else {
                                             atime = mtime = new Date(parsed);
                                         }
