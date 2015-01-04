@@ -386,7 +386,6 @@ exports.apiFileViewer = function(req, res, next) {
 
 exports.apiShowViewerModalEditorLinkPage = function(req, res) {
 	var urlpath = req.query.akpath; // req.params[0];
-	logger.trace('apiFileViewer origUrl='+ req.originalUrl +' urlpath='+ urlpath);
 	logger.trace('apiShowViewerModalEditorLinkPage '+ urlpath);
 	if (fileMatchImage(urlpath)) {
 		mahabhuta.process1(findTemplate('linkviewImage'), { },
