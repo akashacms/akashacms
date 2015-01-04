@@ -654,6 +654,7 @@ module.exports.runPreviewServer = function(config) {
 				res.end();
 			} else {
 				if (stats.isDirectory()) {
+					if (requrl.pathname.match(/[^\/]$/)) requrl.pathname += '/';
 					requrl.pathname += 'index.html';
 					res.setHeader('Location', url.format(requrl));
 					res.statusCode = 302;

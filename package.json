@@ -14,7 +14,7 @@
   "bin": {
     "akashacms": "cli.js"
   },
-  "version": "0.3.35",
+  "version": "0.3.36",
   "engines": {
     "node": ">=0.8.1"
   },
@@ -45,7 +45,8 @@
     "sightmap": ">=0.0.0",
     "ssh2sync": "*",
     "yamljs": "*",
-    "rss": "*"
+    "rss": "*",
+    "sseasy": "*"
   },
   "devDependencies": {
     "vows": "*"
