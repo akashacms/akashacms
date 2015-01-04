@@ -224,27 +224,29 @@ module.exports.partialSync = function(name, metadata, callback) {
     return renderer.partialSync(name, metadata, callback);
 };
 
-module.exports.renderFile = function(options, fileName, callback) {
+var renderDocEntry = function(config, docEntry, done) {
+	// logger.trace('renderFile before rendering '+ fileName);
+	if (fileCache.supportedForHtml(docEntry.path)) {
+		process2html(config, docEntry, done);
+	} else if (docEntry.path.match(/\.css\.less$/)) {
+		// render .less files; rendered.fname will be xyzzy.css
+		render_less(config, docEntry, done);
+	} else {
+		// for anything not rendered, simply copy it
+		copy_to_outdir(config, docEntry, done);
+	}
+};
+
+module.exports.renderFile = function(config, fileName, callback) {
     if (fileName.charAt(0) === '/') {
         fileName = fileName.substr(1);
     }
-    renderer.config(module.exports, options);
-	// logger.trace('renderFile before readDocument '+ fileName);
-    fileCache.readDocument(options, fileName, function(err, entry) {
+    renderer.config(module.exports, config);
+	logger.trace('renderFile before readDocument '+ fileName);
+    fileCache.readDocument(config, fileName, function(err, docEntry) {
     	if (err) callback(err);
 		else if (!entry) callback(new Error('File '+fileName+' not found'));
-		else {
-			// logger.trace('renderFile before rendering '+ fileName);
-			if (fileCache.supportedForHtml(entry.path)) {
-				process2html(options, entry, callback);
-			} else if (entry.path.match(/\.css\.less$/)) {
-				// render .less files; rendered.fname will be xyzzy.css
-				render_less(options, entry, callback);
-			} else {
-				// for anything not rendered, simply copy it
-				copy_to_outdir(options, entry, callback);
-			}
-		}
+		else renderDocEntry(config, docEntry, callback);
     });
 };
 
@@ -657,20 +659,25 @@ module.exports.runPreviewServer = function(config) {
 					res.end();
 				} else if (stats.isFile()) {
 					if (requrl.pathname.match(/\.html$/i)) {
-						var docEntry = module.exports.findDocumentForUrlpath(config, requrl.pathname);
-						if (docEntry) {
-							if ((stats.mtime - docEntry.stat.mtime) < 0) {
-								module.exports.renderFile(config, docEntry.path, function(err) {
-									if (err) {
-										res.statusCode = 500;
-										res.end(err);
-									} else {
-										fs.stat(fname, function(err, stats2) {
-											streamit(res, fname, stats2);
-										});
-									}
-								});
-							} else streamit(res, fname, stats);
+						var docEntrie = fileCache.documentForUrlpath(config, requrl.pathname);
+						if (docEntrie) {
+							fileCache.readDocument(config, docEntrie.path, function(err, docEntry) {
+								if (err) {
+									res.statusCode = 500;
+									res.end(err);
+								} else if ((stats.mtime - docEntry.stat.mtime) < 0) {
+									renderDocEntry(config, docEntry, function(err) {
+										if (err) {
+											res.statusCode = 500;
+											res.end(err);
+										} else {
+											fs.stat(fname, function(err, stats2) {
+												streamit(res, fname, stats2);
+											});
+										}
+									});
+								} else streamit(res, fname, stats);
+							});
 						} else streamit(res, fname, stats);
 					} else streamit(res, fname, stats);
 				} else {
