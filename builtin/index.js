@@ -608,12 +608,15 @@ module.exports.config = function(_akasha, config) {
 						// This is where we would handle local links
             			var docEntry = akasha.findDocumentForUrlpath(config, href);
             			if (docEntry) {
-            				if (!$(link).attr('title')
-            				 && docEntry.frontmatter.yaml.title) {
+            				// Automatically add a title= attribute
+            				if (!$(link).attr('title') && docEntry.frontmatter.yaml.title) {
             					$(link).attr('title', docEntry.frontmatter.yaml.title);
             				}
+            				// For local links that don't have text or interior nodes,
+            				// supply text from the title of the target of the link.
             				var linktext = $(link).text();
             				if ((!linktext || linktext.length <= 0 || linktext === href)
+            				 && $(link).children() <= 0
             				 && docEntry.frontmatter.yaml.title) {
             					$(link).text(docEntry.frontmatter.yaml.title);
             				}
