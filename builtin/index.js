@@ -335,10 +335,12 @@ module.exports.config = function(_akasha, config) {
             function(partial, next) {
             	dirty();
                 var fname = $(partial).attr("file-name");
+                var txt   = $(partial).text();
                 var d = {};
                 for (var mprop in metadata) { d[mprop] = metadata[mprop]; }
                 var data = $(partial).data();
                 for (var dprop in data) { d[dprop] = data[dprop]; }
+                d["partialBody"] = txt;
                 logger.trace('partial tag fname='+ fname +' attrs '+ util.inspect(data));
                 akasha.partial(fname, d, function(err, html) {
                     if (err) {
