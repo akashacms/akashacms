@@ -28,6 +28,7 @@ var find       = require('./lib/find');
 var renderer   = require('./lib/renderer2');
 var mahabhuta  = require('./lib/mahabhuta');
 var fs         = require('fs-extra');
+var ncp        = require('ncp');
 var path       = require('path');
 var fileCache  = require('./lib/fileCache');
 var smap       = require('sightmap');
@@ -124,14 +125,23 @@ module.exports.process = function(options, callback) {
     };
     
     var copyAssets = function(done) {
-        async.forEachSeries(options.root_assets,
+        async.eachSeries(options.root_assets,
             function(assetdir, next) {
                 logger.info('copy assetdir ' + assetdir + ' to ' + options.root_out);
+                
+                ncp(assetdir, options.root_out, {
+                	clobber: true
+                }, function(err) {
+                	if (err) { logger.error('ncp '+ err); next(err); }
+                	else next();
+                });
+                
                 /*fs.copy(assetdir, options.root_out, function(err) {
                     if (err) next(err);
                     else next();
                 });*/
                 
+                /*
                 filewalker(assetdir)
                 	.on('file', function(fname, stats) {
                 		logger.trace('..... '+ fname);
@@ -139,38 +149,38 @@ module.exports.process = function(options, callback) {
                 		var fnCopyTo   = path.join(options.root_out, fname);
                 		var dirCopyTo  = path.dirname(fnCopyTo);
                 		fs.mkdirs(dirCopyTo, function(err) {
-                			if (err) { logger.error(err); }
+                			if (err) { logger.error('mkdirs '+ err); }
                 			else {
-                				fs.copy(fnCopyFrom, fnCopyTo, function(err) {
-                					if (err) logger.error(err);
-                				});
-                				/* 
+                				/* fs.copy(fnCopyFrom, fnCopyTo, function(err) {
+                					if (err) logger.error('copy '+ err);
+                				}); * /
+                				
 								var rd = fs.createReadStream(fnCopyFrom);
 								rd.on("error", function(err) {
-									logger.error(err);
+									logger.error('createReadStream '+ err);
 								});
 								var wr = fs.createWriteStream(fnCopyTo);
 								wr.on("error", function(err) {
-									logger.error(err);
+									logger.error('createWriteStream '+ err);
 								});
 								wr.on("close", function(ex) {
 									// done();
 								});
 								rd.pipe(wr);
-                				*/
+                				
                 			}
                 		});
                 	})
                 	.on('error', function(err) {
-                		logger.error(err);
+                		logger.error('on error '+ err);
                 	})
                 	.on('done', function() {
                 		next();
                 	})
-                .walk();
+                .walk();*/
             },
             function(err) {
-                if (err) done(err);
+                if (err) { logger.error('async done '+ err); done(err); }
                 else done();
             });
     };
@@ -179,7 +189,7 @@ module.exports.process = function(options, callback) {
         if (err) throw new Error(err);
         else {
             copyAssets(function(err) {
-                if (err) callback(err);
+                if (err) { logger.error('copyAssets done '+ err); callback(err); }
                 else {
                     gather_documents(options, function(err, data) {
                         // util.log('gather_documents CALLBACK CALLED');
@@ -245,7 +255,7 @@ module.exports.renderFile = function(config, fileName, callback) {
 	logger.trace('renderFile before readDocument '+ fileName);
     fileCache.readDocument(config, fileName, function(err, docEntry) {
     	if (err) callback(err);
-		else if (!entry) callback(new Error('File '+fileName+' not found'));
+		else if (!docEntry) callback(new Error('File '+fileName+' not found'));
 		else renderDocEntry(config, docEntry, callback);
     });
 };
@@ -311,7 +321,7 @@ module.exports.gatherDir = function(config, docroot, done) {
 				// logger.trace('gatherDir about to read '+ util.inspect(fnpath));
 				fileCache.readDocument(config, fnpath.path, function(err, docEntry) {
 					if (!err && docEntry) config.gatheredDocuments.push(docEntry);
-					if (err) logger.error(err);
+					if (err) logger.error('gatherDir readDocument '+ err);
 					next();
 				});
 			},
@@ -328,14 +338,14 @@ var gather_documents = module.exports.gather_documents = function(config, done) 
     async.eachSeries(config.root_docs,
         function(docroot, cb) {
             module.exports.gatherDir(config, docroot, function(err) {
-                if (err) { logger.error(err); cb(err); } else cb();
+                if (err) { logger.error('gather_documents '+ err); cb(err); } else cb();
             });
         },
         function(err) {
             var entryCount = 0;
             for (var docNm in config.gatheredDocuments) { entryCount++; }
             logger.info('gather_documents DONE count='+ entryCount +' length='+ config.gatheredDocuments.length);
-            if (err) { logger.error(err);  done(err); } else done();
+            if (err) { logger.error('gather_documents done '+ err);  done(err); } else done();
         });
 };
 
