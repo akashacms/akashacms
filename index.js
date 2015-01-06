@@ -28,7 +28,7 @@ var find       = require('./lib/find');
 var renderer   = require('./lib/renderer2');
 var mahabhuta  = require('./lib/mahabhuta');
 var fs         = require('fs-extra');
-var ncp        = require('ncp');
+var globcopy   = require('./lib/globcopy');
 var path       = require('path');
 var fileCache  = require('./lib/fileCache');
 var smap       = require('sightmap');
@@ -118,23 +118,31 @@ module.exports.process = function(options, callback) {
                 logger.info('making empty ' + options.root_out);
                 fs.mkdirs(options.root_out, function(err) {
                     if (err) done(err);
-                    else done();
+                    else { logger.trace('cleanDir FINI'); done(); }
                 });
             }
         });
     };
     
     var copyAssets = function(done) {
+    	logger.trace('copyAssets START');
+                
         async.eachSeries(options.root_assets,
             function(assetdir, next) {
                 logger.info('copy assetdir ' + assetdir + ' to ' + options.root_out);
                 
+                globcopy(assetdir, "**/*", options.root_out, function(err) {
+                	if (err) next(err);
+                	else next();
+                });
+                
+                /*
                 ncp(assetdir, options.root_out, {
                 	clobber: true
                 }, function(err) {
                 	if (err) { logger.error('ncp '+ err); next(err); }
-                	else next();
-                });
+                	else { logger.info('ncp FINI '+ assetdir); next(); }
+                }); */
                 
                 /*fs.copy(assetdir, options.root_out, function(err) {
                     if (err) next(err);
@@ -181,12 +189,12 @@ module.exports.process = function(options, callback) {
             },
             function(err) {
                 if (err) { logger.error('async done '+ err); done(err); }
-                else done();
+                else { logger.trace('copyAssets FINI '); done(); }
             });
     };
     
     cleanDir(function(err) {
-        if (err) throw new Error(err);
+        if (err) { logger.error(err); callback(new Error(err)); }
         else {
             copyAssets(function(err) {
                 if (err) { logger.error('copyAssets done '+ err); callback(err); }
@@ -334,6 +342,7 @@ module.exports.gatherDir = function(config, docroot, done) {
 };
 
 var gather_documents = module.exports.gather_documents = function(config, done) {
+	logger.info('********** gather_documents');
     config.gatheredDocuments = [];
     async.eachSeries(config.root_docs,
         function(docroot, cb) {
