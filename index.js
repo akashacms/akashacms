@@ -109,6 +109,23 @@ module.exports.getLogger = function(category) {
 	return category ? log4js.getLogger(category) : log4js.getLogger();
 };
 
+module.exports.copyAssets = function(config, done) {
+	logger.trace('copyAssets START');
+			
+	async.eachSeries(config.root_assets,
+		function(assetdir, next) {
+			logger.info('copy assetdir ' + assetdir + ' to ' + config.root_out);
+			globcopy(assetdir, "**/*", config.root_out, function(err) {
+				if (err) next(err);
+				else next();
+			});
+		},
+		function(err) {
+			if (err) { logger.error('async done '+ err); done(err); }
+			else { logger.trace('copyAssets FINI '); done(); }
+		}); 
+};
+
 module.exports.process = function(options, callback) {
     var cleanDir = function(done) {
         logger.info('removing ' + options.root_out);
@@ -124,79 +141,10 @@ module.exports.process = function(options, callback) {
         });
     };
     
-    var copyAssets = function(done) {
-    	logger.trace('copyAssets START');
-                
-        async.eachSeries(options.root_assets,
-            function(assetdir, next) {
-                logger.info('copy assetdir ' + assetdir + ' to ' + options.root_out);
-                
-                globcopy(assetdir, "**/*", options.root_out, function(err) {
-                	if (err) next(err);
-                	else next();
-                });
-                
-                /*
-                ncp(assetdir, options.root_out, {
-                	clobber: true
-                }, function(err) {
-                	if (err) { logger.error('ncp '+ err); next(err); }
-                	else { logger.info('ncp FINI '+ assetdir); next(); }
-                }); */
-                
-                /*fs.copy(assetdir, options.root_out, function(err) {
-                    if (err) next(err);
-                    else next();
-                });*/
-                
-                /*
-                filewalker(assetdir)
-                	.on('file', function(fname, stats) {
-                		logger.trace('..... '+ fname);
-                		var fnCopyFrom = path.join(assetdir, fname);
-                		var fnCopyTo   = path.join(options.root_out, fname);
-                		var dirCopyTo  = path.dirname(fnCopyTo);
-                		fs.mkdirs(dirCopyTo, function(err) {
-                			if (err) { logger.error('mkdirs '+ err); }
-                			else {
-                				/* fs.copy(fnCopyFrom, fnCopyTo, function(err) {
-                					if (err) logger.error('copy '+ err);
-                				}); * /
-                				
-								var rd = fs.createReadStream(fnCopyFrom);
-								rd.on("error", function(err) {
-									logger.error('createReadStream '+ err);
-								});
-								var wr = fs.createWriteStream(fnCopyTo);
-								wr.on("error", function(err) {
-									logger.error('createWriteStream '+ err);
-								});
-								wr.on("close", function(ex) {
-									// done();
-								});
-								rd.pipe(wr);
-                				
-                			}
-                		});
-                	})
-                	.on('error', function(err) {
-                		logger.error('on error '+ err);
-                	})
-                	.on('done', function() {
-                		next();
-                	})
-                .walk();*/
-            },
-            function(err) {
-                if (err) { logger.error('async done '+ err); done(err); }
-                else { logger.trace('copyAssets FINI '); done(); }
-            });
-    };
-    
     cleanDir(function(err) {
         if (err) { logger.error(err); callback(new Error(err)); }
         else {
-            copyAssets(function(err) {
+            module.exports.copyAssets(options, function(err) {
                 if (err) { logger.error('copyAssets done '+ err); callback(err); }
                 else {
                     gather_documents(options, function(err, data) {
