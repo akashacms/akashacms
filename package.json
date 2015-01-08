@@ -5,7 +5,7 @@
     "url": "http://davidherron.com"
   },
   "name": "akashacms",
-  "description": "A content management system that generates static websites.",
+  "description": "A content management system to generate static websites using latest HTML5/CSS3/JS goodness.",
   "homepage": "https://github.com/robogeek/akashacms",
   "repository": {
     "type": "git",
@@ -16,7 +16,7 @@
   },
   "version": "0.3.38",
   "engines": {
-    "node": ">=0.8.1"
+    "node": ">=0.10.1"
   },
   "directories": {
     "lib": "./lib"
@@ -41,7 +41,7 @@
     "minify": ">=0.1.8",
     "node-zip": "*",
     "oembed": ">=0.1.0",
-    "markdown-it": "*",
+    "marked": "*",
     "request": "*",
     "sightmap": ">=0.0.0",
     "ssh2sync": "*",
@@ -50,7 +50,7 @@
     "sseasy": "*"
   },
   "devDependencies": {
-    "vows": "*"
+    "vows": ">=0.8.1"
   },
   "scripts": {
     "test": "vows --verbose --spec test/*"
