@@ -1,13 +1,18 @@
 var util = require('util');
+var path = require('path');
 
 module.exports = {
-    root_assets: [ __dirname +'/assets' ],
-    root_layouts: [ __dirname +'/layouts' ],    // Directory for layout files
-    root_partials: [ __dirname +'/partials' ],  // Directory for partials
+    root_assets: [ path.join(__dirname, '/assets') ],
+    root_layouts: [ path.join(__dirname, '/layouts') ],    // Directory for layout files
+    root_partials: [ path.join(__dirname, '/partials') ],  // Directory for partials
     root_out: 'out',                // Rendered output goes here
-    root_docs: [ __dirname +'/documents' ],     // Directory/ies of input files
+    root_docs: [ path.join(__dirname, '/documents') ],     // Directory/ies of input files
 
     root_url: "http://test.site", // Root URL for the site this will generate
+    
+    plugins: [
+	    require('../../akashacms-embeddables')
+    ],
     
     mahabhuta: [ /*function(config, $, metadata, done) {
       
@@ -32,6 +37,15 @@ module.exports = {
         // Any functions put here are available in templates as functions
     },
     
+    log4js: {
+    	appenders: [
+    		{ type: "console" }
+    	],
+    	replaceConsole: false,
+    	levels: {
+    		"[all]": "TRACE"
+    	}
+    },
     
     config: function(akasha) {
     }

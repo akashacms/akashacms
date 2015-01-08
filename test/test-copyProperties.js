@@ -3,6 +3,10 @@ var assert = require('assert');
 var vows   = require('vows');
 var render = require('../lib/renderer2');
 
+var config = require('../test-site/config.js');
+var akasha = require('../test-site/fake-akasha');
+akasha.config(config);
+
 vows.describe("copyProperties").addBatch({
     "check null object": {
         topic: render.copyProperties({ val1: "val1", val2: "val2", something: "different" }, null),

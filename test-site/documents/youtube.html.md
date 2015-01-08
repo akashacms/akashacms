@@ -11,8 +11,11 @@ foo: bar
 * is
 * Real
 
-{oembed({
+<!-- -->
+<youtube-video url="http://www.youtube.com/watch?v=kOjCcL1PN_Y" template="youtube.html.ejs"></youtube-video>
+
+{ oembed({
     url: "http://www.youtube.com/watch?v=kOjCcL1PN_Y",
     template: "youtube.html.ejs"
-    })}
+    }) }
 

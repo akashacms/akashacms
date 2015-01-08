@@ -2,12 +2,16 @@ var assert = require('assert');
 var vows   = require('vows');
 var fc     = require('../lib/fileCache');
 var util   = require('util');
-var config = require('../test-site/config.js');
 
+var config = require('../test-site/config.js');
+var akasha = require('../test-site/fake-akasha');
+akasha.config(config);
 
 vows.describe("fileCache").addBatch({
   "fc index.html": {
-      topic: fc.readDocument(config, "index.html.md"),
+      topic: function() {
+      	fc.readDocument(config, "index.html.md", this.callback);
+      },
       "type document": function(topic) {
           assert.equal(topic.type, "document");
       },

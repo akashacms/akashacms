@@ -1,3 +1,4 @@
+var events = require('events');
 var assert = require('assert');
 var vows   = require('vows');
 var fc     = require('../lib/fileCache');
@@ -6,14 +7,32 @@ var config = require('../test-site/config.js');
 var render = require('../lib/renderer2');
 var akasha = require('../index');
 akasha.config(config);
-render.config(config);
+// render.config(config);
+
+// var process = require('process');
+
+process.on('uncaughtException', function(err) {
+console.log('Caught exception: ' + err.stack);
+});
 
 vows.describe("renderer").addBatch({
   "render index.html.md": {
       topic: function() {
-          render.render(akasha, config, undefined,
-                        "index.html.md", {}, undefined,
-                        this.callback);
+      	var that = this;
+      	var emitter = new(events.EventEmitter);
+      	fc.readDocument(config, "index.html.md", function(err, docEntry) {
+      		if (err) emitter.emit('error', err);
+        	else render.render(akasha, config, docEntry, undefined, 
+				docEntry.frontmatter.yaml,
+				function(err2, rendered) {
+					if (err2) emitter.emit('error', err2);
+					else {
+						// console.log(util.inspect(rendered));
+						emitter.emit('success', rendered);
+					}
+				});
+        });
+        return emitter;
       },
       /*"show": function(topic) {
           util.log(util.inspect(topic));
@@ -28,6 +47,8 @@ vows.describe("renderer").addBatch({
           var locBefore  = topic.content.indexOf("Ahead of the content");
           var locContent = topic.content.indexOf("This is the index of test-site");
           var locAfter   = topic.content.indexOf("After the content");
+          // console.log(topic.content);
+          // console.log('locBefore='+ locBefore +' locContent='+ locContent +' locAfter='+ locAfter);
           assert.isTrue(locBefore < locContent && locContent < locAfter);
       },
       "mahabhuta rendered title": function(topic) {
@@ -37,20 +58,35 @@ vows.describe("renderer").addBatch({
           assert.isTrue(topic.content.indexOf("Salut from partial=hello.html.ejs") >= 0);
       }
   },
-  "render list.html.md.ejs": {
+  "render list.html.ejs.md": {
       topic: function() {
-          render.render(akasha, config, undefined,
-                        "list.html.md.ejs", {}, undefined,
-                        this.callback);
+      	var that = this;
+      	var emitter = new(events.EventEmitter);
+      	fc.readDocument(config, "list.html.ejs.md", function(err, docEntry) {
+      		if (err) emitter.emit('error', err);
+        	else render.render(akasha, config, docEntry, undefined,
+				docEntry.frontmatter.yaml,
+				function(err2, rendered) {
+					if (err2) emitter.emit('error', err2);
+					else {
+						// console.log(util.inspect(rendered));
+						emitter.emit('success', rendered);
+					}
+				});
+        });
+        return emitter;
+        //  render.render(akasha, config, undefined,
+        //                "list.html.md.ejs", {}, undefined,
+        //                this.callback);
       },
       /*"show": function(topic) {
           util.log(util.inspect(topic));
       },*/
       "fname": function(topic) {
-          assert.equal(topic.fname, "list.html");
+          assert.equal(topic.fname, "list.html.ejs");
       },
       "ext": function(topic) {
-          assert.equal(topic.ext, "ejs");
+          assert.equal(topic.ext, "md");
       },
       "content rendered": function(topic) {
           var locItem1 = topic.content.indexOf("Item 1");
@@ -68,11 +104,25 @@ vows.describe("renderer").addBatch({
           assert.isTrue(topic.content.indexOf("Salut from partial=hello.html.ejs") >= 0);
       }
   },
-  "render youtube.html.md.kernel": {
+  "render youtube.html.md": {
       topic: function() {
-          render.render(akasha, config, undefined,
-                        "youtube.html.md.kernel", {}, undefined,
-                        this.callback);
+      	var that = this;
+      	var emitter = new(events.EventEmitter);
+      	fc.readDocument(config, "youtube.html.md", function(err, docEntry) {
+      		if (err) emitter.emit('error', err);
+        	else {
+        		render.render(akasha, config, docEntry, undefined,
+        			docEntry.frontmatter.yaml,
+        			function(err2, rendered) {
+        				if (err2) emitter.emit('error', err2);
+        				else {
+							console.log(util.inspect(rendered));
+							emitter.emit('success', rendered);
+						}
+        			});
+        	}
+        });
+        return emitter;
       },
       /*"show": function(topic) {
           util.log(util.inspect(topic));
@@ -81,7 +131,7 @@ vows.describe("renderer").addBatch({
           assert.equal(topic.fname, "youtube.html");
       },
       "ext": function(topic) {
-          assert.equal(topic.ext, "kernel");
+          assert.equal(topic.ext, "md");
       },
       "mahabhuta rendered title": function(topic) {
           assert.isTrue(topic.content.indexOf("<title>Youtube</title>") >= 0);
@@ -89,7 +139,7 @@ vows.describe("renderer").addBatch({
       "partial rendered": function(topic) {
           assert.isTrue(topic.content.indexOf("Salut from partial=hello.html.ejs") >= 0);
       },
-      "oembed rendered youtube": function(topic) {
+      "rendered youtube": function(topic) {
           assert.isTrue(topic.content.indexOf("wonderingmind42") >= 0);
       }
   }
