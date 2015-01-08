@@ -1,6 +1,6 @@
 /**
  *
- * Copyright 2012 David Herron
+ * Copyright 2012-2015 David Herron
  * 
  * This file is part of AkashaCMS (http://akashacms.com/).
  *
