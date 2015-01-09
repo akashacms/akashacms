@@ -29,6 +29,7 @@ var renderer   = require('./lib/renderer2');
 var mahabhuta  = require('./lib/mahabhuta');
 var fs         = require('fs-extra');
 var globcopy   = require('./lib/globcopy');
+var globfs     = require('globfs');
 var path       = require('path');
 var fileCache  = require('./lib/fileCache');
 var smap       = require('sightmap');
@@ -111,19 +112,13 @@ module.exports.getLogger = function(category) {
 
 module.exports.copyAssets = function(config, done) {
 	logger.trace('copyAssets START');
-			
-	async.eachSeries(config.root_assets,
-		function(assetdir, next) {
-			logger.info('copy assetdir ' + assetdir + ' to ' + config.root_out);
-			globcopy(assetdir, "**/*", config.root_out, function(err) {
-				if (err) next(err);
-				else next();
-			});
-		},
+
+	globfs.copy(config.root_assets, [ "**/*", '**/.*/*', '**/.*' ], config.root_out, {},
 		function(err) {
-			if (err) { logger.error('async done '+ err); done(err); }
+			if (err) { logger.error(err); done(err); }
 			else { logger.trace('copyAssets FINI '); done(); }
-		}); 
+		});
+
 };
 
 module.exports.process = function(options, callback) {
@@ -181,14 +176,9 @@ module.exports.process = function(options, callback) {
     });
 };
 
-module.exports.partial = function(name, metadata, callback) {
-    renderer.partial(name, metadata, callback);
-};
+module.exports.partial = renderer.partial;
 
-module.exports.partialSync = function(name, metadata, callback) {
-    // logger.trace('akasha exports.partialSync '+ name);
-    return renderer.partialSync(name, metadata, callback);
-};
+module.exports.partialSync = renderer.partialSync;
 
 var renderDocEntry = function(config, docEntry, done) {
 	// logger.trace('renderFile before rendering '+ fileName);
@@ -475,41 +465,29 @@ var process_and_render_files = function(config, done) {
     
 };
 
-module.exports.oembedRender = function(arg, callback) {
-    return renderer.oembedRender(arg, callback);
-};
+module.exports.oembedRender = renderer.oembedRender;
 
-module.exports.findAssetAsync = function(config, fileName, done) {
-    find.assetFile(config, fileName, done);
-};
+module.exports.findAssetAsync = find.assetFile;
 
 // module.exports.findDocument = function(config, fileName) {
 //     return find.document(config, fileName);
 // };
 
-module.exports.findDocumentAsync = function(config, fileName, done) {
-    find.documentAsync(config, fileName, done);
-};
+module.exports.findDocumentAsync = find.documentAsync;
 
-module.exports.findDocumentForUrlpath = function(config, urlpath) {
-    return fileCache.documentForUrlpath(config, urlpath);
-};
+module.exports.findDocumentForUrlpath = fileCache.documentForUrlpath;
 
 // module.exports.findTemplate = function(config, fileName) {
 //     return find.template(config, fileName);
 // };
 
-module.exports.findTemplateAsync = function(config, fileName, done) {
-    find.templateAsync(config, fileName, done);
-};
+module.exports.findTemplateAsync = find.templateAsync;
 
 // module.exports.findPartial = function(config, fileName) {
 //     return find.partial(config, fileName);
 // };
 
-module.exports.findPartialAsync = function(config, fileName, done) {
-    find.partialAsync(config, fileName, done);
-};
+module.exports.findPartialAsync = find.partialAsync;
 
 // module.exports.readTemplateEntry = function(config, fileName, done) {
 //     fileCache.readTemplate(config, fileName, done);
@@ -519,21 +497,13 @@ module.exports.findPartialAsync = function(config, fileName, done) {
 //     fileCache.readPartial(config, fileName, done);
 // };
 
-module.exports.readDocumentEntry = function(config, fileName, done) {
-    fileCache.readDocument(config, fileName, done);
-};
+module.exports.readDocumentEntry = fileCache.readDocument;
 
-module.exports.updateDocumentData = function(config, docEntry, metadata, content, cb) {
-    fileCache.updateDocumentData(config, docEntry, metadata, content, cb);
-};
+module.exports.updateDocumentData = fileCache.updateDocumentData;
 
-module.exports.createDocument = function(config, rootdir, path, metadata, content, cb) {
-    fileCache.createDocument(config, rootdir, path, metadata, content, cb);
-};
+module.exports.createDocument = fileCache.createDocument;
 
-module.exports.deleteDocumentForUrlpath = function(config, path, cb) {
-    fileCache.deleteDocumentForUrlpath(config, path, cb);
-};
+module.exports.deleteDocumentForUrlpath = fileCache.deleteDocumentForUrlpath;
 
 /* module.exports.findSiblings = function(config, fileName, done) {
     var bnm   = path.basename(fileName);
@@ -567,33 +537,19 @@ module.exports.urlForFile = function(fileName) {
     return '/'+ fileCache.renderedFileName(fileName);
 };
 
-module.exports.eachDocument = function(config, doccb) {
-    fileCache.eachDocument(config, doccb);
-};
+module.exports.eachDocument = fileCache.eachDocument;
 
-module.exports.indexChain = function(config, fileName) {
-	return fileCache.indexChain(config, fileName);
-};
+module.exports.indexChain = fileCache.indexChain;
 
-module.exports.isSyncHtml = function(fn) {
-    return fileCache.isSyncHtml(fn);
-};
+module.exports.isSyncHtml = fileCache.isSyncHtml;
 
-module.exports.isASyncHtml = function(fn) {
-    return fileCache.isASyncHtml(fn);
-};
+module.exports.isASyncHtml = fileCache.isASyncHtml;
 
-module.exports.isHtml = function(fn) {
-    return fileCache.isHtml(fn);
-};
+module.exports.isHtml = fileCache.isHtml;
 
-module.exports.supportedForHtml = function(fn) {
-    return fileCache.supportedForHtml(fn);
-};
+module.exports.supportedForHtml = fileCache.supportedForHtml;
 
-module.exports.isIndexHtml = function(fn) {
-    return fileCache.isIndexHtml(fn);
-};
+module.exports.isIndexHtml = fileCache.isIndexHtml;
 
 ///////////////// Preview built website
 
