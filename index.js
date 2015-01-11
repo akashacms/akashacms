@@ -28,7 +28,6 @@ var find       = require('./lib/find');
 var renderer   = require('./lib/renderer2');
 var mahabhuta  = require('./lib/mahabhuta');
 var fs         = require('fs-extra');
-var globcopy   = require('./lib/globcopy');
 var globfs     = require('globfs');
 var path       = require('path');
 var fileCache  = require('./lib/fileCache');
@@ -242,6 +241,15 @@ module.exports.minimize = function(options, done) {
         else { done(); } 
     })
     .walk(); */
+};
+
+var gather_documents_new = function(config, done) {
+	globfs.operate(config.root_docs, [ '**/*', '**/.*/*', '**/.*' ],
+		function(basedir, fpath, fini) { fini(null, fpath); },
+		function(err, results) {
+			if (err) done(err);
+			else done(null, results);
+		});
 };
 
 module.exports.gatherDir = function(config, docroot, done) {
