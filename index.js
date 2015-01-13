@@ -34,7 +34,6 @@ var fileCache  = require('./lib/fileCache');
 var smap       = require('sightmap');
 var RSS        = require('rss');
 // var minify     = require('minify');
-var filewalker = require('filewalker');
 var log4js     = require('log4js');
 var logger;
 
@@ -254,37 +253,40 @@ var gather_documents_new = function(config, done) {
 
 module.exports.gatherDir = function(config, docroot, done) {
     logger.info('******** gatherDir START '+ docroot);
-    var filez = [];
-    filewalker(docroot, { maxPending: 1, maxAttempts: 3, attemptTimeout: 3000 })
-    .on('file', function(path, s, fullPath) {
-        logger.trace(docroot + ' FILE ' + path + ' ' + fullPath);
-        filez.push({ 
-        	docroot: docroot,
-        	path: path,
-        	stats: s,
-        	fullPath: fullPath
-        });
-    })
-    .on('error', function(err) {
-        logger.error('gatherDir ERROR '+ docroot +' '+ err);
-        done(err);
-    })
-    .on('done', function() {
-    	async.eachSeries(filez,
-			function(fnpath, next) {
-				// logger.trace('gatherDir about to read '+ util.inspect(fnpath));
-				fileCache.readDocument(config, fnpath.path, function(err, docEntry) {
-					if (!err && docEntry) config.gatheredDocuments.push(docEntry);
-					if (err) logger.error('gatherDir readDocument '+ err);
-					next();
-				});
-			},
-			function(err) {
-				logger.info('gatherDir DONE '+ docroot +' '+ config.gatheredDocuments.length);
-				done();
-			});
-    })
-    .walk();
+    
+    globfs.operate([ docroot ], [ '**/*', '**/.*/*', '**/.*' ],
+    	function(basedir, fpath, fini) {
+    		var fullPath = path.join(basedir, fpath);
+    		fs.stat(fullPath, function(err, stats) {
+    			if (err) { logger.error(err); fini(); }
+    			else {
+    				logger.trace(basedir + ' FILE ' + fpath + ' ' + fullPath);
+    				if (stats.isFile()) {
+						fini(null, {
+							docroot: basedir,
+							path: fpath,
+							stats: stats,
+							fullPath: fullPath
+						});
+    				} else fini();
+    			}
+    		});
+    	},
+    	function(err, results) {
+    		async.eachLimit(results, 10,
+    			function(result, next) {
+	    			// logger.trace('gatherDir about to read '+ util.inspect(result));
+					fileCache.readDocument(config, result.path, function(err, docEntry) {
+						if (!err && docEntry) config.gatheredDocuments.push(docEntry);
+						if (err) logger.error('gatherDir readDocument '+ err);
+						next();
+					});
+    			},
+    			function(err) {
+					logger.info('gatherDir DONE '+ docroot +' '+ config.gatheredDocuments.length);
+					done();
+    			});
+    	});
 };
 
 var gather_documents = module.exports.gather_documents = function(config, done) {
