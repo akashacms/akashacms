@@ -408,7 +408,8 @@ var process2html = function(options, entry, done) {
 var copy_to_outdir = function(options, entry, done) {
     // for anything not rendered, simply copy it
     var renderTo = path.join(options.root_out, entry.path);
-    fs.mkdirs(path.dirname(entry.path), function(err) {
+    // util.log('copy_to_outdir renderTo='+ renderTo +' entry.path='+ entry.path);
+    fs.mkdirs(path.dirname(renderTo), function(err) {
         if (err) done(err); 
         else fs.copy(entry.fullpath, renderTo, function(msg) {
             fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
