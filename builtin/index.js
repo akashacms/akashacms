@@ -33,6 +33,10 @@ module.exports.config = function(_akasha, config) {
     config.root_layouts.push(path.join(__dirname, 'layout'));
     config.root_assets.push(path.join(__dirname, 'assets'));
     
+    if (config.headerScripts) {
+        config.headerScripts.javaScriptBottom.push({ href: "/js/akbase.js" });
+	}
+	
     if (config.mahabhuta) {
     
         config.mahabhuta.push(function($, metadata, dirty, done) {
