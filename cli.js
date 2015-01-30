@@ -82,6 +82,18 @@ program
     });
 
 program
+    .command('oembed <url>')
+    .description('fetch and display oEmbed data for a given URL')
+    .action(function(url) {
+        var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
+        akasha.oEmbedData(url, function(err, result) {
+            if (err) throw err;
+			else util.log(util.inspect(result));
+        });
+    });
+
+program
     .command('metadata <fileName>')
     .description('Print the metadata for a document')
     .action(function(fileName) {

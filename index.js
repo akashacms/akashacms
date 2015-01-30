@@ -27,6 +27,7 @@ var exec       = require('child_process').exec;
 var find       = require('./lib/find');
 var renderer   = require('./lib/renderer2');
 var mahabhuta  = require('./lib/mahabhuta');
+var oembed     = require('oembed');
 var fs         = require('fs-extra');
 var globfs     = require('globfs');
 var path       = require('path');
@@ -476,7 +477,9 @@ var process_and_render_files = function(config, done) {
     
 };
 
-module.exports.oembedRender = renderer.oembedRender;
+module.exports.oEmbedData = function(url, callback) {
+  oembed.fetch(url, { maxwidth: 6000 }, callback);
+};
 
 module.exports.findAssetAsync = find.assetFile;
 
