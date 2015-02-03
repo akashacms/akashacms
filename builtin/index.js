@@ -155,15 +155,20 @@ module.exports.config = function(_akasha, config) {
             async.eachSeries(elements,
             function(element, next) {
             
-				if (typeof config.googleSiteVerification !== "undefined")
-					$('ak-siteverification').replaceWith(
-						akasha.partialSync("ak_siteverification.html.ejs", 
-							{ googleSiteVerification: config.googleSiteVerification })
-					);
-				else
+				if (typeof config.googleSiteVerification !== "undefined") {
+				    akasha.partialSync("ak_siteverification.html.ejs", 
+							{ googleSiteVerification: config.googleSiteVerification },
+							function(err, html) {
+								if (err) next(err);
+								else {
+									$('ak-siteverification').replaceWith(html);
+									next();
+								}
+							});
+				} else {
 					$('ak-siteverification').remove();
-            
-				next();
+            		next();
+				}
             }, 
             function(err) {
 				if (err) {
@@ -180,15 +185,21 @@ module.exports.config = function(_akasha, config) {
             async.eachSeries(elements,
             function(element, next) {
             
-				if (typeof config.headerScripts !== "undefined" && typeof config.headerScripts.javaScriptTop !== "undefined")
-					$('ak-headerJavaScript').replaceWith(
-						akasha.partialSync("ak_javaScript.html.ejs", 
-							{ javaScripts: config.headerScripts.javaScriptTop })
-						);
-				else
+				if (typeof config.headerScripts !== "undefined" && typeof config.headerScripts.javaScriptTop !== "undefined") {
+				    akasha.partialSync("ak_javaScript.html.ejs", 
+							{ javaScripts: config.headerScripts.javaScriptTop },
+							function(err, html) {
+								if (err) next(err);
+								else {
+									$('ak-headerJavaScript').replaceWith(html);
+									next();
+								}
+							});
+				}
+				else {
 					$('ak-headerJavaScript').remove();
-            
-				next();
+            		next();
+				}
             }, 
             function(err) {
 				if (err) {
@@ -206,14 +217,19 @@ module.exports.config = function(_akasha, config) {
             function(element, next) {
 			
 				if (typeof config.headerScripts !== "undefined" && typeof config.headerScripts.javaScriptBottom !== "undefined")
-					$('ak-footerJavaScript').replaceWith(
-						akasha.partialSync("ak_javaScript.html.ejs", 
-							{ javaScripts: config.headerScripts.javaScriptBottom })
-					);
-				else
+				    akasha.partial("ak_javaScript.html.ejs", 
+							{ javaScripts: config.headerScripts.javaScriptBottom },
+							function(err, html) {
+								if (err) next(err);
+								else {
+									$('ak-footerJavaScript').replaceWith(html);
+									next();
+								}
+							});
+				else {
 					$('ak-footerJavaScript').remove();
-            
-				next();
+            		next();
+				}
             }, 
             function(err) {
 				if (err) {
@@ -231,17 +247,21 @@ module.exports.config = function(_akasha, config) {
             function(element, next) {
 			
 				if (typeof config.googleAnalyticsAccount !== "undefined" && typeof config.googleAnalyticsDomain !== "undefined") {
-					$('ak-google-analytics').replaceWith(
-						akasha.partialSync("ak_googleAnalytics.html.ejs", {
+				    akasha.partial("ak_googleAnalytics.html.ejs", {
 							googleAnalyticsAccount: config.googleAnalyticsAccount,
 							googleAnalyticsDomain: config.googleAnalyticsDomain
-						})
-					);
+						}, function(err, html) {
+						    if (err) next(err);
+							else {
+								$('ak-google-analytics').replaceWith(html);
+								next();
+							}
+						});
 				}
-				else
+				else {
 					$('ak-google-analytics').remove();
-            
-				next();
+            		next();
+				}
             }, 
             function(err) {
 				if (err) {
@@ -258,13 +278,13 @@ module.exports.config = function(_akasha, config) {
             async.eachSeries(elements,
             function(element, next) {
 			
-				$('ak-sitemapxml').each(function(i, elem) {
-					$(this).replaceWith(
-						akasha.partialSync("ak_sitemap.html.ejs", {  })
-					);
+				akasha.partial("ak_sitemap.html.ejs", {  }, function(err, html) {
+						if (err) next(err);
+						else {
+								$(element).replaceWith(html);
+								next();
+						}
 				});
-            
-				next();
             }, 
             function(err) {
 				if (err) {
@@ -304,19 +324,21 @@ module.exports.config = function(_akasha, config) {
             function(element, next) {
 			
 				if (typeof metadata.teaser !== "undefined" || typeof metadata["ak-teaser"] !== "undefined") {
-					$('ak-teaser').each(function(i, elem) {
-						$(this).replaceWith(
-							akasha.partialSync("ak_teaser.html.ejs", {
+						akasha.partial("ak_teaser.html.ejs", {
 								teaser: typeof metadata["ak-teaser"] !== "undefined"
 									? metadata["ak-teaser"] : metadata.teaser
-							})
-						)
-					});
+							},
+							function(err, html) {
+								if (err) next(err);
+								else {
+										$(element).replaceWith(html);
+										next();
+								}
+							});
 				} else {
 					$('ak-teaser').remove();
+					next();
 				}
-            
-				next();
             }, 
             function(err) {
 				if (err) {
