@@ -130,7 +130,6 @@ module.exports.config = function(_akasha, config) {
 					}, function(err, style) {
 						if (err) { logger.error(err); next(err); }
 						else {
-						    logger.error('ak-stylesheets Errored with '+ util.inspect(err));
 							$(element).replaceWith(style);
 							next();
 						}
