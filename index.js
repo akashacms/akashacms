@@ -350,7 +350,9 @@ var config2renderopts = function(config, entry) {
 		}
 	}
 	
-	renderopts.rendered_url = path.join(config.root_url, entry.renderedFileName); 
+	var pRootUrl = url.parse(config.root_url);
+	pRootUrl.pathname = entry.renderedFileName;
+	renderopts.rendered_url = url.format(pRootUrl); 
 	
 	return renderopts;
 };
