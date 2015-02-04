@@ -62,6 +62,10 @@ module.exports.config = function(_config) {
 	}
 
 	logger = module.exports.getLogger("akashacms");
+	
+	if (! config.mahabhuta) {
+		config.mahabhuta = [];
+	}
 
 	// Configure all the modules - primarily so they can get logger support
 	
