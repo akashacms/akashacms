@@ -55,7 +55,7 @@ module.exports.config = function(_akasha, config) {
 					title: title
 				}, function(err, rendered) {
 					if (err) { logger.error(err); next(err); }
-					else { $(titleTag).replaceWith(rendered); next(); }
+					else { logger.trace('ak-title replace'); $(titleTag).replaceWith(rendered); next(); }
 				})
             },
             function(err) {
@@ -130,13 +130,14 @@ module.exports.config = function(_akasha, config) {
 					}, function(err, style) {
 						if (err) { logger.error(err); next(err); }
 						else {
-							$('ak-stylesheets').replaceWith(style);
+						    logger.error('ak-stylesheets Errored with '+ util.inspect(err));
+							$(element).replaceWith(style);
 							next();
 						}
 					});
 				}
 				else {
-					$('ak-stylesheets').remove();
+					$(element).remove();
 					next();
 				}
             }, 
@@ -161,12 +162,12 @@ module.exports.config = function(_akasha, config) {
 							function(err, html) {
 								if (err) next(err);
 								else {
-									$('ak-siteverification').replaceWith(html);
+									$(element).replaceWith(html);
 									next();
 								}
 							});
 				} else {
-					$('ak-siteverification').remove();
+					$(element).remove();
             		next();
 				}
             }, 
@@ -191,13 +192,13 @@ module.exports.config = function(_akasha, config) {
 							function(err, html) {
 								if (err) next(err);
 								else {
-									$('ak-headerJavaScript').replaceWith(html);
+									$(element).replaceWith(html);
 									next();
 								}
 							});
 				}
 				else {
-					$('ak-headerJavaScript').remove();
+					$(element).remove();
             		next();
 				}
             }, 
@@ -222,12 +223,12 @@ module.exports.config = function(_akasha, config) {
 							function(err, html) {
 								if (err) next(err);
 								else {
-									$('ak-footerJavaScript').replaceWith(html);
+									$(element).replaceWith(html);
 									next();
 								}
 							});
 				else {
-					$('ak-footerJavaScript').remove();
+					$(element).remove();
             		next();
 				}
             }, 
@@ -253,13 +254,13 @@ module.exports.config = function(_akasha, config) {
 						}, function(err, html) {
 						    if (err) next(err);
 							else {
-								$('ak-google-analytics').replaceWith(html);
+								$(element).replaceWith(html);
 								next();
 							}
 						});
 				}
 				else {
-					$('ak-google-analytics').remove();
+					$(element).remove();
             		next();
 				}
             }, 
@@ -279,8 +280,9 @@ module.exports.config = function(_akasha, config) {
             function(element, next) {
 			
 				akasha.partial("ak_sitemap.html.ejs", {  }, function(err, html) {
-						if (err) next(err);
-						else {
+						if (err) {
+								next(err);
+						} else {
 								$(element).replaceWith(html);
 								next();
 						}
@@ -302,9 +304,9 @@ module.exports.config = function(_akasha, config) {
             function(element, next) {
 			
 				if (typeof metadata.content !== "undefined")
-					$('ak-insert-body-content').replaceWith(metadata.content);
+					$(element).replaceWith(metadata.content);
 				else
-					$('ak-insert-body-content').remove();
+					$(element).remove();
             
 				next();
             }, 
