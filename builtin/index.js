@@ -492,10 +492,20 @@ module.exports.config = function(_akasha, config) {
 			function(element, next) {
 				$(element).remove();
 				var imgz = [];
-				$('img').each(function(i, elem) { imgz.push(elem); });
+				var selector = $(element).attr('root')
+						? ($(element).attr('root') +' img')
+						: 'img';
+				$(selector).each(function(i, elem) { imgz.push(elem); });
 				async.eachSeries(imgz,
 					function(img, next2) {
-						$(img).addClass('metaog-promote');
+						var imgurl = $(img).attr('src');
+						if (imgurl.match(/\/img\/extlink.png/)
+						 || imgurl.match(/\/img\/rss_button.png/)
+						 || imgurl.match(/\/img\/rss_button.gif/)) {
+						    // Ignore these images
+						} else {
+							$(img).addClass('metaog-promote');
+						}
 						next2();
 						
 					}, function(err) {
@@ -530,7 +540,9 @@ module.exports.config = function(_akasha, config) {
 							} else {
 								var pRendered = url.parse(metadata.rendered_url);
 								var dirRender = path.dirname(pRendered.path);
-								href = config.root_url +'/' + dirRender +'/'+ href;
+								var pRootUrl = url.parse(config.root_url);
+								pRootUrl.pathname = dirRender +'/'+ href;
+								href = url.format(pRootUrl);
 							}
 						}
 					}
@@ -601,7 +613,7 @@ module.exports.config = function(_akasha, config) {
         config.mahabhuta.push(function($, metadata, dirty, done) {
         	logger.trace('a modifications');
             var links = [];
-            $('a').each(function(i, elem) { links.push(elem); });
+            $('html body a').each(function(i, elem) { links.push(elem); });
             async.eachSeries(links,
             function(link, next) {
             	var href   = $(link).attr('href');
@@ -678,6 +690,7 @@ module.exports.config = function(_akasha, config) {
         	});
         });
     }
+	return module.exports;
 };
 
 var akDoHeaderMeta = function(arg, done) {
