@@ -114,6 +114,20 @@ module.exports.registerPlugins = function(config, plugins) {
 		}
 		config.plugins.push(pluginObj);
 		pluginObj.plugin.config(module.exports, config);
+		
+		if (pluginObj.plugin.mahabhuta) {
+			module.exports.registerMahabhuta(config, pluginObj.plugin.mahabhuta);
+		}
+	});
+	
+	return module.exports;
+};
+
+module.exports.registerMahabhuta = function(config, mahafuncs) {
+	if (! config.mahabhuta) config.mahabhuta = [];
+	
+	mahafuncs.forEach(function(mahafunc) {
+		config.mahabhuta.push(mahafunc);
 	});
 	
 	return module.exports;

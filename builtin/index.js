@@ -22,11 +22,13 @@ var util = require('util');
 var url   = require('url');
 var async = require('async');
 
-var logger;
 var akasha;
+var config;
+var logger;
 
-module.exports.config = function(_akasha, config) {
+module.exports.config = function(_akasha, _config) {
 	akasha = _akasha;
+	config = _config;
 	logger = akasha.getLogger("builtin");
 	
     config.root_partials.push(path.join(__dirname, 'partials'));
@@ -37,9 +39,53 @@ module.exports.config = function(_akasha, config) {
         config.headerScripts.javaScriptBottom.push({ href: "/js/akbase.js" });
 	}
 	
-    if (config.mahabhuta) {
-    
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+	return module.exports;
+};
+
+module.exports.helloWorld = function() {
+   return "Hello, World!";
+};
+
+var akDoHeaderMeta = function(arg, done) {
+	var data = {};
+	for (var prop in arg) {
+		if (!(prop in data)) data[prop] = arg[prop];
+	}
+	if (typeof data.metaOGtitle === "undefined") {
+		if (typeof data.pagetitle !== "undefined") {
+				data.metaOGtitle = data.pagetitle;
+		} else if (typeof data.title !== "undefined") {
+				data.metaOGtitle = data.title;
+		}
+	}
+	if (typeof data.metaOGdescription === "undefined") {
+		if (typeof data.metadescription !== "undefined") {
+				data.metaOGdescription = data.metadescription;
+		}
+	}
+	if (typeof data.metaDCtitle === "undefined") {
+		if (typeof data.pagetitle !== "undefined") {
+				data.metaDCtitle = arg.pagetitle;
+		} else if (typeof data.title !== "undefined") {
+				data.metaDCtitle = data.title;
+		}
+	}
+	if (typeof data.metapagename === "undefined") {
+		if (typeof data.pagetitle !== "undefined") {
+				data.metapagename = arg.pagetitle;
+		} else if (typeof data.title !== "undefined") {
+				data.metapagename = data.title;
+		}
+	}
+	if (typeof data.metadate === "undefined") {
+		data.metadate = data.rendered_date;
+	}
+	
+	akasha.partial("ak_headermeta.html.ejs", data, done);
+};
+
+module.exports.mahabhuta = [
+		function($, metadata, dirty, done) {
         	logger.trace('ak-page-title');
             var titles = [];
             $('ak-page-title').each(function(i, elem) { titles.push(elem); });
@@ -64,9 +110,9 @@ module.exports.config = function(_akasha, config) {
 					done(err);
             	} else done();
             });
-        });
-        
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('ak-header-metatags');
             var metas = [];
             $('ak-header-metatags').each(function(i, elem) { metas.push(elem); });
@@ -88,9 +134,9 @@ module.exports.config = function(_akasha, config) {
 					done(err);
 				} else done();
             });
-        });
-        
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('ak-header-canonical-url');
             var elements = [];
             $('ak-header-canonical-url').each(function(i, elem) { elements.push(elem); });
@@ -116,9 +162,9 @@ module.exports.config = function(_akasha, config) {
 					done(err);
 				} else done();
             });
-        });
-        
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('ak-stylesheets');
             var elements = [];
             $('ak-stylesheets').each(function(i, elem) { elements.push(elem); });
@@ -146,9 +192,9 @@ module.exports.config = function(_akasha, config) {
 					done(err);
 				} else done();
             });
-        });
-        
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('ak-siteverification');
             var elements = [];
             $('ak-siteverification').each(function(i, elem) { elements.push(elem); });
@@ -176,9 +222,9 @@ module.exports.config = function(_akasha, config) {
 					done(err);
 				} else done();
             });
-        });
-        
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('ak-headerJavaScript');
             var elements = [];
             $('ak-headerJavaScript').each(function(i, elem) { elements.push(elem); });
@@ -207,9 +253,9 @@ module.exports.config = function(_akasha, config) {
 					done(err);
 				} else done();
             });
-        });
-        
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('ak-footerJavaScript');
             var elements = [];
             $('ak-footerJavaScript').each(function(i, elem) { elements.push(elem); });
@@ -237,9 +283,9 @@ module.exports.config = function(_akasha, config) {
 					done(err);
 				} else done();
             });
-        });
-        
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('ak-google-analytics');
             var elements = [];
             $('ak-google-analytics').each(function(i, elem) { elements.push(elem); });
@@ -269,9 +315,9 @@ module.exports.config = function(_akasha, config) {
 					done(err);
 				} else done();
             });
-        });
-           
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('ak-sitemapxml');
             var elements = [];
             $('ak-sitemapxml').each(function(i, elem) { elements.push(elem); });
@@ -293,9 +339,9 @@ module.exports.config = function(_akasha, config) {
 					done(err);
 				} else done();
             });
-        });
-           
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('ak-insert-body-content');
             var elements = [];
             $('ak-insert-body-content').each(function(i, elem) { elements.push(elem); });
@@ -315,9 +361,9 @@ module.exports.config = function(_akasha, config) {
 					done(err);
 				} else done();
             });
-        });
-             
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('ak-teaser');
             var elements = [];
             $('ak-teaser').each(function(i, elem) { elements.push(elem); });
@@ -346,9 +392,9 @@ module.exports.config = function(_akasha, config) {
 					done(err);
 				} else done();
             });
-        });
-
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('rss-header-meta');
 			if ($('html head').get(0)) {
 				var rssheadermeta = [];
@@ -369,9 +415,9 @@ module.exports.config = function(_akasha, config) {
 					else done();
 				});
 			} else done();               
-        });          
-                               
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('partial');
             // <partial file-name="file-name.html.whatever" data-attr-1=val data-attr-2=val/>
             var partials = [];
@@ -411,9 +457,9 @@ module.exports.config = function(_akasha, config) {
                 done(err);
               } else done();
             });
-        });
-        
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('publication-date');
 			var elements = [];
 			$('publication-date').each(function(i, elem) { elements.push(elem); });
@@ -433,9 +479,9 @@ module.exports.config = function(_akasha, config) {
 				if (err) { logger.error(err); done(err); } 
 				else { logger.trace('END publication-date'); done(); }
 			});
-        });
-        
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('author-link');
 			if (config.authorship) {
 				var auname;
@@ -475,7 +521,7 @@ module.exports.config = function(_akasha, config) {
 					});
 				} else done();
 			} else done();
-        });
+        },
         
         /**
          * These next two tags / functions are a two-step process for extracting image
@@ -491,7 +537,7 @@ module.exports.config = function(_akasha, config) {
          *			<meta name="og:image" content="...">
          * tag into the <head> section for each one.
          */
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        function($, metadata, dirty, done) {
         	logger.trace('open-graph-promote-images');
 			var elements = [];
 			$('open-graph-promote-images').each(function(i,elem){ elements.push(elem); });
@@ -523,10 +569,10 @@ module.exports.config = function(_akasha, config) {
 				if (err) { logger.error(err); done(err); } 
 				else { logger.trace('END open-graph-promote-images'); done(); }
 			});
-        });
+        },
         				
         /** Handle phase 2 of promoting image href's as og:image meta tags. */
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        function($, metadata, dirty, done) {
         	logger.trace('img.metaog-promote');
 			if ($('html head').get(0)) {
 				var elements = [];
@@ -565,9 +611,9 @@ module.exports.config = function(_akasha, config) {
 					else { logger.trace('END img.metaog-promote'); done(); }
 				});
 			} else done();
-        });
-
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('footnote');
         	// <footnote href="http:..." name="..." title="..." rel="nofollow">Description</footnote>
         	var footnoteCount = 0;
@@ -615,9 +661,9 @@ module.exports.config = function(_akasha, config) {
 					done(err);
 				} else done();
         	});
-        });
-        
-        config.mahabhuta.push(function($, metadata, dirty, done) {
+        },
+		
+		function($, metadata, dirty, done) {
         	logger.trace('a modifications');
             var links = [];
             $('html body a').each(function(i, elem) { links.push(elem); });
@@ -703,49 +749,5 @@ module.exports.config = function(_akasha, config) {
 				if (err) done(err);
 				else done();
         	});
-        });
-    }
-	return module.exports;
-};
-
-module.exports.helloWorld = function() {
-   return "Hello, World!";
-};
-
-var akDoHeaderMeta = function(arg, done) {
-	var data = {};
-	for (var prop in arg) {
-		if (!(prop in data)) data[prop] = arg[prop];
-	}
-	if (typeof data.metaOGtitle === "undefined") {
-		if (typeof data.pagetitle !== "undefined") {
-				data.metaOGtitle = data.pagetitle;
-		} else if (typeof data.title !== "undefined") {
-				data.metaOGtitle = data.title;
-		}
-	}
-	if (typeof data.metaOGdescription === "undefined") {
-		if (typeof data.metadescription !== "undefined") {
-				data.metaOGdescription = data.metadescription;
-		}
-	}
-	if (typeof data.metaDCtitle === "undefined") {
-		if (typeof data.pagetitle !== "undefined") {
-				data.metaDCtitle = arg.pagetitle;
-		} else if (typeof data.title !== "undefined") {
-				data.metaDCtitle = data.title;
-		}
-	}
-	if (typeof data.metapagename === "undefined") {
-		if (typeof data.pagetitle !== "undefined") {
-				data.metapagename = arg.pagetitle;
-		} else if (typeof data.title !== "undefined") {
-				data.metapagename = data.title;
-		}
-	}
-	if (typeof data.metadate === "undefined") {
-		data.metadate = data.rendered_date;
-	}
-	
-	akasha.partial("ak_headermeta.html.ejs", data, done);
-};
+        }
+];
