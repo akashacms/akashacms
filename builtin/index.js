@@ -323,7 +323,6 @@ module.exports.config = function(_akasha, config) {
             $('ak-teaser').each(function(i, elem) { elements.push(elem); });
             async.eachSeries(elements,
             function(element, next) {
-			
 				if (typeof metadata.teaser !== "undefined" || typeof metadata["ak-teaser"] !== "undefined") {
 						akasha.partial("ak_teaser.html.ejs", {
 								teaser: typeof metadata["ak-teaser"] !== "undefined"
@@ -337,7 +336,7 @@ module.exports.config = function(_akasha, config) {
 								}
 							});
 				} else {
-					$('ak-teaser').remove();
+					$(element).remove();
 					next();
 				}
             }, 
@@ -379,7 +378,14 @@ module.exports.config = function(_akasha, config) {
             $('partial').each(function(i, elem) { partials.push(elem); });
             async.eachSeries(partials,
             function(partial, next) {
-            	dirty();
+				// We default to making partial set the dirty flag.  But a user
+				// of the partial tag can choose to tell us it isn't dirty.
+				// For example, if the partial only substitutes values into normal tags
+				// there's no need to do the dirty thing.
+				var dothedirtything = $(partial).attr('dirty');
+				if (!dothedirtything || dothedirtything.match(/true/i)) {
+				    dirty();
+				}
                 var fname = $(partial).attr("file-name");
                 var txt   = $(partial).text();
                 var d = {};
@@ -631,7 +637,7 @@ module.exports.config = function(_akasha, config) {
             	// Also need to consider links to //hostname/path/to/object
             	// Potential for complete link checking service right here
             	
-            	if (href) {
+            	if (href && href !== '#') {
 					var uHref = url.parse(href, true, true);
 					
 					if (uHref.protocol || uHref.slashes) {
@@ -666,6 +672,14 @@ module.exports.config = function(_akasha, config) {
 						next();
 					} else {
 						// This is where we would handle local links
+						if (! href.match(/^\//)) {
+						    var hreforig = href;
+						    var pRenderedUrl = url.parse(metadata.rendered_url);
+						    var docpath = pRenderedUrl.pathname;
+						    var docdir = path.dirname(docpath);
+							href = path.join(docdir, href);
+							// util.log('***** FIXED href '+ hreforig +' to '+ href);
+						}
             			var docEntry = akasha.findDocumentForUrlpath(config, href);
             			if (docEntry) {
             				// Automatically add a title= attribute
