@@ -63,6 +63,7 @@ module.exports.config = function(_config) {
 
 	logger = module.exports.getLogger("akashacms");
 	
+	// Initialize a Mahabhuta array if one wasn't set up
 	if (! config.mahabhuta) {
 		config.mahabhuta = [];
 	}
@@ -74,43 +75,48 @@ module.exports.config = function(_config) {
     renderer.config(module.exports, config);
     mahabhuta.config(module.exports, config);
     
-    // Pull in any plugins to extend AkashaCMS
-    // We allow either a String to give the name of the plugin,
-    // or a module that is the plugin.  This controls where the 
-    // require statement occurs.
-    //
-    // string: The require is done here, and done relative to where
-    //    AkashaCMS is installed.  That means the module reference
-    //    is relative to AkashaCMS.
-    // module: The require is performed inside config.js, meaning the 
-    //    module reference is done there.
-    
-    for (var i = 0; config.plugins && i < config.plugins.length; i++) {
-        var pl = config.plugins[i];
-        var plugin;
-        if (typeof pl === 'string')
-            plugin = require(pl);
-        else
-            plugin = pl;
-        plugin.config(module.exports, config);
-    }
-    
     // Then give the configuration file a shot at extending us
+	// This will cause any plugins to load, when the config function calls requirePlugins
     if (config.config) {
         config.config(module.exports);
     }
     
     // Make the builtin plugin the last on the chain
     var builtin = path.join(__dirname, 'builtin');
-    require(path.join(builtin, 'index')).config(module.exports, config);
+    module.exports.registerPlugins(config, [
+		{ name: 'builtin', plugin: require(path.join(builtin, 'index')) }
+	]); //.config(module.exports, config);
     
     // logger.trace(util.inspect(config));
     
     return module.exports;
 };
 
+/**
+ * getLogger - initialize a logger object, so that each plugin can have its own logger.
+ */
 module.exports.getLogger = function(category) {
 	return category ? log4js.getLogger(category) : log4js.getLogger();
+};
+
+/**
+ * registerPlugins - go through plugins array, adding each to the plugins array in
+ * the config file, then calling the config function of each plugin.
+ */
+module.exports.registerPlugins = function(config, plugins) {
+	if (typeof config.plugins === 'undefined' || ! config.plugins) {
+		config.plugins = [];
+	}
+	
+	plugins.forEach(function(pluginObj) {
+		if (typeof pluginObj.plugin === 'string') {
+			pluginObj.plugin = require(pluginObj.plugin);
+		}
+		config.plugins.push(pluginObj);
+		pluginObj.plugin.config(module.exports, config);
+	});
+	
+	return module.exports;
 };
 
 module.exports.copyAssets = function(config, done) {

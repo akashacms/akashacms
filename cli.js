@@ -307,7 +307,7 @@ program
         console.log('');
         console.log('plugins:');
         for (var i = 0; i < config.plugins.length; i++) {
-            console.log('\t'+ config.plugins[i]);
+            console.log('\t'+ config.plugins[i].name);
         }
         console.log('');
         console.log('data: '+ util.inspect(config.data));
