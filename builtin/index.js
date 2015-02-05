@@ -708,6 +708,10 @@ module.exports.config = function(_akasha, config) {
 	return module.exports;
 };
 
+module.exports.helloWorld = function() {
+   return "Hello, World!";
+};
+
 var akDoHeaderMeta = function(arg, done) {
 	var data = {};
 	for (var prop in arg) {

@@ -119,6 +119,23 @@ module.exports.registerPlugins = function(config, plugins) {
 	return module.exports;
 };
 
+/**
+ * plugin - Look for a plugin, returning its module reference.
+ */
+module.exports.plugin = function(name) {
+	if (! config.plugins) {
+		throw new Error('Configuration has no plugins');
+	}
+	var plugin;
+	config.plugins.forEach(function(pluginObj) {
+		if (pluginObj.name === name) {
+			plugin = pluginObj.plugin;
+		}
+	});
+	return plugin;
+};
+
+
 module.exports.copyAssets = function(config, done) {
 	logger.trace('copyAssets START');
 
@@ -320,72 +337,74 @@ var gather_documents = module.exports.gather_documents = function(config, done) 
 var config2renderopts = function(config, entry) {
 	
 	// Start with a base object that will be passed into the template
-	var renderopts = { };
+	var metadata = { };
 	// Copy data from frontmatter
 	for (var yprop in entry.frontmatter.yaml) {
-		renderopts[yprop] = entry.frontmatter.yaml[yprop];
+		metadata[yprop] = entry.frontmatter.yaml[yprop];
 	}
-	renderopts.content = "";
-	renderopts.documentPath = entry.path; 
+	metadata.content = "";
+	metadata.documentPath = entry.path; 
 	// Copy in any data or functions passed to us
 	if ('data' in config) {
 		for (var prop in config.data) {
-			renderopts[prop] = config.data[prop];
+			metadata[prop] = config.data[prop];
 		}
 	}
 	if ('funcs' in config) {
 		for (var fprop in config.funcs) {
-			renderopts[fprop] = config.funcs[fprop];
+			metadata[fprop] = config.funcs[fprop];
 		}
 	}
-	renderopts.root_url = config.root_url;
-	if (! renderopts.rendered_date) {
-		renderopts.rendered_date = entry.stat.mtime;
+	metadata.root_url = config.root_url;
+	if (! metadata.rendered_date) {
+		metadata.rendered_date = entry.stat.mtime;
 	}
 	
-	if (!renderopts.publicationDate) {
+	if (!metadata.publicationDate) {
 		var dateSet = false;
 		if (entry.frontmatter.yaml && entry.frontmatter.yaml.publDate) {
 			var parsed = Date.parse(entry.frontmatter.yaml.publDate);
 			if (! isNaN(parsed)) {
-			  renderopts.publicationDate = new Date(parsed);
+			  metadata.publicationDate = new Date(parsed);
 			}
 			dateSet = true;
 		}
 		if (! dateSet && entry.stat && entry.stat.mtime) {
-			renderopts.publicationDate = entry.stat.mtime;
+			metadata.publicationDate = entry.stat.mtime;
 		}
-		if (!renderopts.publicationDate) {
-			renderopts.publicationDate = new Date();
+		if (!metadata.publicationDate) {
+			metadata.publicationDate = new Date();
 		}
 	}
 	
 	var pRootUrl = url.parse(config.root_url);
 	pRootUrl.pathname = entry.renderedFileName;
-	renderopts.rendered_url = url.format(pRootUrl); 
+	metadata.rendered_url = url.format(pRootUrl);
 	
-	return renderopts;
+	metadata.plugin = module.exports.plugin;
+	
+	return metadata;
 };
 
 /**
  * For files that are processed into an HTML, run the processing.
  **/
-var process2html = function(options, entry, done) {
+var process2html = function(config, entry, done) {
     logger.trace('process2html #1 '+ entry.path); // util.inspect(entry));
     if (! fileCache.supportedForHtml(entry.path)) {
         done(new Error('UNKNOWN template engine for ' + entry.path));
     } else {
-        var renderopts = config2renderopts(options, entry);
+        var metadata = config2renderopts(config, entry);
         
         logger.trace('process2html #2 '+ entry.path); //  +' '+ util.log(util.inspect(renderopts)));
-        renderer.render(module.exports, options, entry, undefined, renderopts, function(err, rendered) {
+        renderer.render(module.exports, config, entry, undefined, metadata, function(err, rendered) {
             logger.trace('***** DONE RENDER ' + entry.path); // util.inspect(rendered));
             if (err) {
             	logger.error('Rendering '+ entry.path +' failed with '+ err);
             	done('Rendering '+ entry.path +' failed with '+ err);
             } else {
-                var renderTo = path.join(options.root_out, rendered.fname);
-                dispatcher('file-rendered', options, entry.path, renderTo, rendered, function(err) {
+                var renderTo = path.join(config.root_out, rendered.fname);
+                dispatcher('file-rendered', config, entry.path, renderTo, rendered, function(err) {
                     // TBD - the callback needs to send a new rendering 
                     if (err) done('Rendering file-rendered '+ entry.path +' failed with '+ err);
                     else {
@@ -407,7 +426,7 @@ var process2html = function(options, entry, done) {
                                         }
                                     }
                                     fs.utimes(renderTo, atime, mtime, function(err) {
-                                        add_sitemap_entry(options.root_url +'/'+ rendered.fname, 0.5, mtime);
+                                        add_sitemap_entry(config.root_url +'/'+ rendered.fname, 0.5, mtime);
                                         done();
                                     });
                                 }
