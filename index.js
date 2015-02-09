@@ -873,6 +873,13 @@ var generate_sitemap = function(config, done) {
 };
 
 module.exports.pingXmlSitemap = function(config, done) {
+	// ask.com and duckduckgo.com both say they automatically spider and discover everything
+	// and therefore don't support being pinged
+	// pinging yahoo.com as shown below fails with a 404
+	// pinging the /ping URL is per the sitemap protocol: http://www.sitemaps.org/protocol.html#submit_ping
+	// However, if you yahoogle each search engine lists a different URL for sitemap submission.
+	// It's also useful to add a line to robots.txt as it says on the above page
+	//     sitemap: http://www.example.com/sitemap.xml
 	async.eachSeries([
 		"www.google.com", "www.yahoo.com", "www.bing.com"
 	],
