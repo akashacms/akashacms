@@ -34,6 +34,7 @@ var path       = require('path');
 var fileCache  = require('./lib/fileCache');
 var smap       = require('sightmap');
 var RSS        = require('rss');
+var request    = require('request');
 // var minify     = require('minify');
 var log4js     = require('log4js');
 var logger;
@@ -857,11 +858,11 @@ var add_sitemap_entry = function(fname, priority, mtime) {
     }*/
 };
 
-var generate_sitemap = function(options, done) {
+var generate_sitemap = function(config, done) {
     // util.log('generate_sitemap ' + util.inspect(rendered_files));
     smap(rendered_files);
     smap(function(xml) {
-        fs.writeFile(options.root_out +"/sitemap.xml", xml, 'utf8', function (err) {
+        fs.writeFile(config.root_out +"/sitemap.xml", xml, 'utf8', function (err) {
             if (err) {
                 done(err);
             } else {
@@ -869,4 +870,33 @@ var generate_sitemap = function(options, done) {
             }
         });
     });
+};
+
+module.exports.pingXmlSitemap = function(config, done) {
+	async.eachSeries([
+		"www.google.com", "www.yahoo.com", "www.bing.com"
+	],
+	function(hostname, next) {
+		var url2ping = url.format({
+			protocol: "http",
+			hostname: hostname,
+			pathname: "/ping",
+			query: {
+				sitemap: config.root_url +"/sitemap.xml"
+			}
+		});
+		request.get(url2ping)
+		.on('error', function(err) {
+			next(err);
+		})
+		.on('response', function(result) {
+			// console.log(util.inspect(result));
+			console.log(url2ping +' '+ result.statusCode )
+			next();
+		});
+	},
+	function(err) {
+		if (err) done(err);
+		else done();
+	})
 };

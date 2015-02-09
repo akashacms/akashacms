@@ -82,6 +82,19 @@ program
     });
 
 program
+    .command('ping')
+    .description('Ping search engines for sitemap submission')
+    .action(function(fileName) {
+        var config = require(path.join(process.cwd(), '/config.js'));
+        akasha.config(config);
+        akasha.pingXmlSitemap(config, function(err) {
+            if (err) throw err;
+        });
+    });
+	
+
+
+program
     .command('oembed <url>')
     .description('fetch and display oEmbed data for a given URL')
     .action(function(url) {
