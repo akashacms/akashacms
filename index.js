@@ -541,6 +541,8 @@ module.exports.findDocumentForUrlpath = fileCache.documentForUrlpath;
 //     return find.template(config, fileName);
 // };
 
+module.exports.findMatchingDocuments = fileCache.findMatchingDocuments;
+
 module.exports.findTemplateAsync = find.templateAsync;
 
 // module.exports.findPartial = function(config, fileName) {
@@ -704,15 +706,15 @@ module.exports.deployViaRsync = function(config) {
 
 ///////////////// RSS Feed Generation
 
-module.exports.generateRSS = function(config, feedData, items, renderTo, done) {
+module.exports.generateRSS = function(config, configrss, feedData, items, renderTo, done) {
 
 	// logger.trace('generateRSS '+ renderTo);
-
+	
 	// Construct initial rss object
 	var rss = {};
-    for (var key in config.rss) {
-        if (config.rss.hasOwnProperty(key)) {
-            rss[key] = config.rss[key];
+    for (var key in configrss) {
+        if (configrss.hasOwnProperty(key)) {
+            rss[key] = configrss[key];
         }
     }
     
