@@ -14,7 +14,7 @@
   "bin": {
     "akashacms": "cli.js"
   },
-  "version": "0.3.42",
+  "version": "0.3.43",
   "engines": {
     "node": ">=0.10.1"
   },
