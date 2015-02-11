@@ -55,7 +55,7 @@ program
                     }
                 });*/
         var git = spawn('git',
-              [ 'clone', 'git://github.com/robogeek/akashacms-example.git', dirName],
+              [ 'clone', 'git://github.com/akashacms/akashacms-example.git', dirName],
               {env: process.env, stdio: 'inherit'});
     });
 
