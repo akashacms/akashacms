@@ -6,10 +6,10 @@
   },
   "name": "akashacms",
   "description": "A content management system to generate static websites using latest HTML5/CSS3/JS goodness.",
-  "homepage": "https://github.com/robogeek/akashacms",
+  "homepage": "http://akashacms.com/",
   "repository": {
     "type": "git",
-    "url": "git://github.com/robogeek/akashacms.git"
+    "url": "git://github.com/akashacms/akashacms.git"
   },
   "bin": {
     "akashacms": "cli.js"
