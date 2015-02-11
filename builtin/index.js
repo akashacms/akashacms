@@ -201,9 +201,9 @@ module.exports.mahabhuta = [
             async.eachSeries(elements,
             function(element, next) {
             
-				if (typeof config.googleSiteVerification !== "undefined") {
+				if (typeof config.google.siteVerification !== "undefined") {
 				    akasha.partialSync("ak_siteverification.html.ejs", 
-							{ googleSiteVerification: config.googleSiteVerification },
+							{ googleSiteVerification: config.google.siteVerification },
 							function(err, html) {
 								if (err) next(err);
 								else {
@@ -292,10 +292,10 @@ module.exports.mahabhuta = [
             async.eachSeries(elements,
             function(element, next) {
 			
-				if (typeof config.googleAnalyticsAccount !== "undefined" && typeof config.googleAnalyticsDomain !== "undefined") {
+				if (typeof config.google.analyticsAccount !== "undefined" && typeof config.google.analyticsDomain !== "undefined") {
 				    akasha.partial("ak_googleAnalytics.html.ejs", {
-							googleAnalyticsAccount: config.googleAnalyticsAccount,
-							googleAnalyticsDomain: config.googleAnalyticsDomain
+							googleAnalyticsAccount: config.google.analyticsAccount,
+							googleAnalyticsDomain: config.google.analyticsDomain
 						}, function(err, html) {
 						    if (err) next(err);
 							else {
