@@ -46,10 +46,10 @@ module.exports.helloWorld = function() {
    return "Hello, World!";
 };
 
-var akDoHeaderMeta = function(arg, done) {
+var fixHeaderMeta = function(metadata) {
 	var data = {};
-	for (var prop in arg) {
-		if (!(prop in data)) data[prop] = arg[prop];
+	for (var prop in metadata) {
+		if (!(prop in data)) data[prop] = metadata[prop];
 	}
 	if (typeof data.metaOGtitle === "undefined") {
 		if (typeof data.pagetitle !== "undefined") {
@@ -80,8 +80,15 @@ var akDoHeaderMeta = function(arg, done) {
 	if (typeof data.metadate === "undefined") {
 		data.metadate = data.rendered_date;
 	}
-	
-	akasha.partial("ak_headermeta.html.ejs", data, done);
+	return data;
+}
+
+var akDoHeaderMeta = function(metadata, done) {
+	akasha.partial("ak_headermeta.html.ejs", fixHeaderMeta(metadata), done);
+};
+
+module.exports.doHeaderMetaSync = function(metadata) {
+    return akasha.partialSync("ak_headermeta.html.ejs", fixHeaderMeta(metadata));
 };
 
 module.exports.mahabhuta = [
