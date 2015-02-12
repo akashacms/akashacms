@@ -509,6 +509,19 @@ var process_and_render_files = function(config, done) {
             } else if (entry.path.match(/\.css\.less$/)) {
                 // render .less files; rendered.fname will be xyzzy.css
                 render_less(config, entry, cb);
+			} else if (entry.path.match(/\.php\.ejs$/)) {
+				var metadata = config2renderopts(config, entry);
+				metadata.config = config;
+				metadata.partial = renderer.partialSync;
+				var rendered = renderer.renderPHPEJS(module.exports, config, entry, metadata);
+                var renderTo = path.join(config.root_out, entry.renderedFileName);
+				fs.mkdirs(path.dirname(renderTo), function(err) {
+					if (err) done('FAILED to make directory '+ path.dirname(renderTo) +' failed with '+ err); 
+					else fs.writeFile(renderTo, rendered, 'utf8', function (err) {
+						if (err) cb(err);
+						else cb();
+					});
+				});
             } else {
                 // for anything not rendered, simply copy it
                 copy_to_outdir(config, entry, cb);
