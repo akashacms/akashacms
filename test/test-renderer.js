@@ -116,7 +116,7 @@ vows.describe("renderer").addBatch({
         			function(err2, rendered) {
         				if (err2) emitter.emit('error', err2);
         				else {
-							console.log(util.inspect(rendered));
+							// console.log(util.inspect(rendered));
 							emitter.emit('success', rendered);
 						}
         			});
