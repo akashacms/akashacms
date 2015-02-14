@@ -7,6 +7,6 @@ for (var i in javaScripts) {
         if (script.href) { %>src="<%= script.href %>" <% }
         %> > <%
         if (script.script) { %>
-<%= script.script %>
+<%- script.script %>
 <% } %></script>
 <% } %>
