@@ -40,14 +40,13 @@
     "minify": ">=0.1.8",
     "node-zip": "*",
     "oembed": ">=0.1.0",
-    "marked": "*",
     "markdown-it": ">= 3.0.2",
     "request": "*",
     "sightmap": ">=0.0.0",
     "ssh2sync": "*",
-    "yamljs": "*",
     "rss": "*",
-    "sseasy": "*"
+    "sseasy": "*",
+    "yfm": "*"
   },
   "devDependencies": {
     "vows": ">=0.8.1"
