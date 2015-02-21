@@ -209,7 +209,7 @@ module.exports.mahabhuta = [
             function(element, next) {
             
 				if (typeof config.google.siteVerification !== "undefined") {
-				    akasha.partialSync("ak_siteverification.html.ejs", 
+				    akasha.partial("ak_siteverification.html.ejs", 
 							{ googleSiteVerification: config.google.siteVerification },
 							function(err, html) {
 								if (err) next(err);
@@ -239,7 +239,7 @@ module.exports.mahabhuta = [
             function(element, next) {
             
 				if (typeof config.headerScripts !== "undefined" && typeof config.headerScripts.javaScriptTop !== "undefined") {
-				    akasha.partialSync("ak_javaScript.html.ejs", 
+				    akasha.partial("ak_javaScript.html.ejs", 
 							{ javaScripts: config.headerScripts.javaScriptTop },
 							function(err, html) {
 								if (err) next(err);
