@@ -31,9 +31,15 @@ module.exports.config = function(_akasha, _config) {
 	config = _config;
 	logger = akasha.getLogger("builtin");
 	
-    config.root_partials.push(path.join(__dirname, 'partials'));
-    config.root_layouts.push(path.join(__dirname, 'layout'));
-    config.root_assets.push(path.join(__dirname, 'assets'));
+	if (!(config.builtin && config.builtin.suppress && config.builtin.suppress.partials)) {
+		config.root_partials.push(path.join(__dirname, 'partials'));
+	}
+	if (!(config.builtin && config.builtin.suppress && config.builtin.suppress.layouts)) {
+		config.root_layouts.push(path.join(__dirname, 'layout'));
+	}
+	if (!(config.builtin && config.builtin.suppress && config.builtin.suppress.assets)) {
+		config.root_assets.push(path.join(__dirname, 'assets'));
+	}
     
     if (config.headerScripts) {
         config.headerScripts.javaScriptBottom.push({ href: "/js/akbase.js" });
