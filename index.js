@@ -35,6 +35,10 @@ var fileCache  = require('./lib/fileCache');
 var smap       = require('sightmap');
 var RSS        = require('rss');
 var request    = require('request');
+var rendererEjs = require('./lib/renderer-ejs');
+var rendererHTML = require('./lib/renderer-html');
+var md         = require('./lib/md');
+
 // var minify     = require('minify');
 var log4js     = require('log4js');
 var logger;
@@ -87,6 +91,11 @@ module.exports.config = function(_config) {
     module.exports.registerPlugins(config, [
 		{ name: 'builtin', plugin: require(path.join(builtin, 'index')) }
 	]); //.config(module.exports, config);
+	
+	// Set up the default renderer modules
+	[ rendererEjs.rendererEJS, rendererEjs.rendererEJSMD, md, rendererHTML ].forEach(function(renderer) {
+		module.exports.registerRenderer(renderer);
+	});
     
     // logger.trace(util.inspect(config));
     
@@ -150,6 +159,43 @@ module.exports.plugin = function(name) {
 	return plugin;
 };
 
+/**
+ * Add a rendering plugin
+ */
+module.exports.registerRenderer = function(renderer) {
+	if (! config.renderers) config.renderers = [];
+	
+	if ((renderer.match && typeof renderer.match === 'function')
+	 && (
+		(renderer.renderSync && typeof renderer.renderSync === 'function')
+	 || (renderer.render && typeof renderer.render === 'function')
+		)) {
+		config.renderers.push(renderer);
+	} else
+		throw new Error('bad renderer provided '+ util.inspect(renderer));
+	
+	return module.exports;
+};
+
+/**
+ * Find a renderer based on a file name
+ */
+module.exports.findRenderer = function(fname) {
+	var fnameData;
+	var renderer;
+	for (var i = 0; config.renderers && i < config.renderers.length; i++) {
+		fnameData = config.renderers[i].match(fname);
+		if (fnameData !== null) {
+			renderer = config.renderers[i];
+			break;
+		}
+	}
+	if (fnameData && renderer) {
+		fnameData.renderSync = renderer.renderSync;
+		fnameData.render = renderer.render;
+		return fnameData;
+	} else return null;
+}
 
 module.exports.copyAssets = function(config, done) {
 	logger.trace('copyAssets START');
@@ -217,9 +263,48 @@ module.exports.process = function(options, callback) {
     });
 };
 
-module.exports.partial = renderer.partial;
+/**
+ * Render a partial, paying attention to synchronous operation
+ */
+module.exports.partialSync = function(fname, metadata) {
+	var renderer = module.exports.findRenderer(fname);
+    var fnamePartial = find.partial(config, fname);
+    logger.trace('partialSync fname=' + fname + ' fnamePartial=' + fnamePartial);
+    if (fnamePartial === undefined) 
+        return new Error('NO FILE FOUND FOR PARTIAL ' + util.inspect(fname));
+    var text = fs.readFileSync(fnamePartial, 'utf8');
+	if (renderer && renderer.renderSync) {
+	  return renderer.renderSync(text, metadata);
+	} else {
+	  return new Error('UNKNOWN Synchronous Template Engine for ' + fname);
+	}
+};
 
-module.exports.partialSync = renderer.partialSync;
+/**
+ * Render a partial in asynchronous fashion
+ */
+module.exports.partial = function(name, metadata, callback) {
+	var renderer = module.exports.findRenderer(name);
+	if (renderer) {
+	  fileCache.readPartial(config, name, function(err, partialEntry) {
+		if (err) callback(err);
+		else if (renderer.render) {
+		  renderer.render(partialEntry.frontmatter.text, metadata, callback);
+		} else if (renderData.renderer.renderSync) {
+		  var rndrd = renderer.renderSync(partialEntry.frontmatter.text, metadata);
+		  if (rndrd instanceof Error) {
+			  callback(rndrd);
+		  } else {
+			  callback(undefined, rndrd);
+		  }
+		} else {
+		  callback(new Error("Malformed renderer found for "+ name +' '+ util.inspect(renderer)));
+		}
+	  });
+	} else {
+	  callback(new Error("No rendering engine found for "+ name));
+	}
+};
 
 var renderDocEntry = function(config, docEntry, done) {
 	// logger.trace('renderFile before rendering '+ fileName);
@@ -512,8 +597,8 @@ var process_and_render_files = function(config, done) {
 			} else if (entry.path.match(/\.php\.ejs$/)) {
 				var metadata = config2renderopts(config, entry);
 				metadata.config = config;
-				metadata.partial = renderer.partialSync;
-				var rendered = renderer.renderPHPEJS(module.exports, config, entry, metadata);
+				metadata.partial = module.exports.partialSync;
+				var rendered = rendererEjs.rendererEJS.renderSync(entry.frontmatter.text, metadata);
                 var renderTo = path.join(config.root_out, entry.renderedFileName);
 				fs.mkdirs(path.dirname(renderTo), function(err) {
 					if (err) done('FAILED to make directory '+ path.dirname(renderTo) +' failed with '+ err); 
