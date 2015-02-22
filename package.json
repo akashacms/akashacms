@@ -5,6 +5,20 @@
     "url": "http://davidherron.com"
   },
   "name": "akashacms",
+  "keywords": [
+    "content management system",
+    "cms",
+    "static site generator",
+    "static file server",
+    "web development",
+    "build and deployment",
+    "renderer",
+    "templating",
+    "templates",
+    "website",
+    "website builder",
+    "blog"
+  ],
   "description": "A content management system to generate static websites using latest HTML5/CSS3/JS goodness.",
   "homepage": "http://akashacms.com/",
   "repository": {
