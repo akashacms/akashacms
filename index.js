@@ -35,6 +35,7 @@ var fileCache  = require('./lib/fileCache');
 var smap       = require('sightmap');
 var RSS        = require('rss');
 var request    = require('request');
+var rendererCSSLess = require('./lib/renderer-cssless');
 var rendererEjs = require('./lib/renderer-ejs');
 var rendererHTML = require('./lib/renderer-html');
 var md         = require('./lib/md');
@@ -93,8 +94,11 @@ module.exports.config = function(_config) {
 	]); //.config(module.exports, config);
 	
 	// Set up the default renderer modules
-	[ rendererEjs.rendererEJS, rendererEjs.rendererEJSMD, md, rendererHTML ].forEach(function(renderer) {
-		module.exports.registerRenderer(renderer);
+	[
+	  rendererEjs.rendererEJS, rendererEjs.rendererEJSMD, md, rendererHTML,
+	  rendererCSSLess
+	].forEach(function(renderer) {
+		module.exports.registerRenderChain(renderer);
 	});
     
     // logger.trace(util.inspect(config));
@@ -160,39 +164,40 @@ module.exports.plugin = function(name) {
 };
 
 /**
- * Add a rendering plugin
+ * Add a renderChain
  */
-module.exports.registerRenderer = function(renderer) {
-	if (! config.renderers) config.renderers = [];
+module.exports.registerRenderChain = function(renderChain) {
+	if (! config.renderChains) config.renderChains = [];
 	
-	if ((renderer.match && typeof renderer.match === 'function')
+	if ((renderChain.match && typeof renderChain.match === 'function')
 	 && (
-		(renderer.renderSync && typeof renderer.renderSync === 'function')
-	 || (renderer.render && typeof renderer.render === 'function')
+		(renderChain.renderSync && typeof renderChain.renderSync === 'function')
+	 || (renderChain.render && typeof renderChain.render === 'function')
 		)) {
-		config.renderers.push(renderer);
+		config.renderChains.push(renderChain);
 	} else
-		throw new Error('bad renderer provided '+ util.inspect(renderer));
+		throw new Error('bad renderChain provided '+ util.inspect(renderChain));
 	
 	return module.exports;
 };
 
 /**
- * Find a renderer based on a file name
+ * Find a renderChain based on a file name
  */
-module.exports.findRenderer = function(fname) {
+module.exports.findRenderChain = function(fname) {
 	var fnameData;
-	var renderer;
-	for (var i = 0; config.renderers && i < config.renderers.length; i++) {
-		fnameData = config.renderers[i].match(fname);
+	var renderChain;
+	logger.info('findRenderChain '+ fname);
+	for (var i = 0; config.renderChains && i < config.renderChains.length; i++) {
+		fnameData = config.renderChains[i].match(fname);
 		if (fnameData !== null) {
-			renderer = config.renderers[i];
+			renderChain = config.renderChains[i];
 			break;
 		}
 	}
-	if (fnameData && renderer) {
-		fnameData.renderSync = renderer.renderSync;
-		fnameData.render = renderer.render;
+	if (fnameData && renderChain) {
+		fnameData.renderSync = renderChain.renderSync;
+		fnameData.render = renderChain.render;
 		return fnameData;
 	} else return null;
 }
@@ -267,14 +272,14 @@ module.exports.process = function(options, callback) {
  * Render a partial, paying attention to synchronous operation
  */
 module.exports.partialSync = function(fname, metadata) {
-	var renderer = module.exports.findRenderer(fname);
+	var renderChain = module.exports.findRenderChain(fname);
     var fnamePartial = find.partial(config, fname);
     logger.trace('partialSync fname=' + fname + ' fnamePartial=' + fnamePartial);
     if (fnamePartial === undefined) 
         return new Error('NO FILE FOUND FOR PARTIAL ' + util.inspect(fname));
     var text = fs.readFileSync(fnamePartial, 'utf8');
-	if (renderer && renderer.renderSync) {
-	  return renderer.renderSync(text, metadata);
+	if (renderChain && renderChain.renderSync) {
+	  return renderChain.renderSync(text, metadata);
 	} else {
 	  return new Error('UNKNOWN Synchronous Template Engine for ' + fname);
 	}
@@ -284,38 +289,49 @@ module.exports.partialSync = function(fname, metadata) {
  * Render a partial in asynchronous fashion
  */
 module.exports.partial = function(name, metadata, callback) {
-	var renderer = module.exports.findRenderer(name);
-	if (renderer) {
+	var renderChain = module.exports.findRenderChain(name);
+	if (renderChain) {
 	  fileCache.readPartial(config, name, function(err, partialEntry) {
 		if (err) callback(err);
-		else if (renderer.render) {
-		  renderer.render(partialEntry.frontmatter.text, metadata, callback);
-		} else if (renderData.renderer.renderSync) {
-		  var rndrd = renderer.renderSync(partialEntry.frontmatter.text, metadata);
+		else if (renderChain.render) {
+		  renderChain.render(partialEntry.frontmatter.text, metadata, callback);
+		} else if (renderChain.renderSync) {
+		  var rndrd = renderChain.renderSync(partialEntry.frontmatter.text, metadata);
 		  if (rndrd instanceof Error) {
 			  callback(rndrd);
 		  } else {
 			  callback(undefined, rndrd);
 		  }
 		} else {
-		  callback(new Error("Malformed renderer found for "+ name +' '+ util.inspect(renderer)));
+		  callback(new Error("Malformed renderChain found for "+ name +' '+ util.inspect(renderer)));
 		}
 	  });
 	} else {
-	  callback(new Error("No rendering engine found for "+ name));
+	  callback(new Error("No renderChain engine found for "+ name));
 	}
 };
 
 var renderDocEntry = function(config, docEntry, done) {
 	// logger.trace('renderFile before rendering '+ fileName);
-	if (fileCache.supportedForHtml(docEntry.path)) {
+	if (fileCache.doLayoutProcessing(docEntry.path)) {
 		process2html(config, docEntry, done);
-	} else if (docEntry.path.match(/\.css\.less$/)) {
-		// render .less files; rendered.fname will be xyzzy.css
-		render_less(config, docEntry, done);
 	} else {
-		// for anything not rendered, simply copy it
-		copy_to_outdir(config, docEntry, done);
+		var renderChain = module.exports.findRenderChain(docEntry.path);
+		var metadata = config2renderopts(config, docEntry);
+		metadata.config = config;
+		metadata.partial = module.exports.partialSync;
+		if (renderChain && renderChain.renderSync) {
+			var rendered = renderChain.renderSync(docEntry.frontmatter.text, metadata);
+			writeRenderingToFile(config, renderChain.renderedFileName, rendered, docEntry, done);
+		} else if (renderChain && renderChain.render) {
+			renderChain.render(docEntry.frontmatter.text, metadata, function(err, rendered) {
+				if (err) done(err);
+				else writeRenderingToFile(config, renderChain.renderedFileName, rendered, docEntry, done);
+			});
+		} else {
+			// for anything not rendered, simply copy it
+			copy_to_outdir(config, docEntry, done);
+		}
 	}
 };
 
@@ -554,26 +570,21 @@ var copy_to_outdir = function(options, entry, done) {
     });
 };
 
-var render_less = function(options, entry, done) {
-    renderer.renderLess(entry.path, function(err, rendered) {
-        if (err) done(err);
-        else {
-            var renderTo = path.join(options.root_out, rendered.fname);
-            fs.mkdirs(path.dirname(rendered.fname), function(err) {
-                if (err) done(err);
-                else fs.writeFile(renderTo, rendered.css, 'utf8', function (err) {
-                    if (err) done(err);
-                    else {
-                        fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
-                            if (err) done(err);
-                            else done();
-                        });
-                    }
-                });
-            });
-        }
-    });
-};
+var writeRenderingToFile = function(config, renderedFileName, rendered, entry, done) {
+	var renderTo = path.join(config.root_out, renderedFileName);
+	fs.mkdirs(path.dirname(renderTo), function(err) {
+		if (err) done(err);
+		else fs.writeFile(renderTo, rendered, 'utf8', function (err) {
+			if (err) done(err);
+			else {
+				fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
+					if (err) done(err);
+					else done();
+				});
+			}
+		});
+	});
+}
 
 var process_and_render_files = function(config, done) {
     dispatcher('before-render-files', function(err) {
@@ -589,28 +600,7 @@ var process_and_render_files = function(config, done) {
         function(entry, cb) {
             entryCount++;
             logger.info('FILE '+ entryCount +' '+ entry.path);
-            if (fileCache.supportedForHtml(entry.path)) {
-                process2html(config, entry, cb);
-            } else if (entry.path.match(/\.css\.less$/)) {
-                // render .less files; rendered.fname will be xyzzy.css
-                render_less(config, entry, cb);
-			} else if (entry.path.match(/\.php\.ejs$/)) {
-				var metadata = config2renderopts(config, entry);
-				metadata.config = config;
-				metadata.partial = module.exports.partialSync;
-				var rendered = rendererEjs.rendererEJS.renderSync(entry.frontmatter.text, metadata);
-                var renderTo = path.join(config.root_out, entry.renderedFileName);
-				fs.mkdirs(path.dirname(renderTo), function(err) {
-					if (err) done('FAILED to make directory '+ path.dirname(renderTo) +' failed with '+ err); 
-					else fs.writeFile(renderTo, rendered, 'utf8', function (err) {
-						if (err) cb(err);
-						else cb();
-					});
-				});
-            } else {
-                // for anything not rendered, simply copy it
-                copy_to_outdir(config, entry, cb);
-            }
+			renderDocEntry(config, entry, cb);
         },
         function(err) {
             logger.info('***** process_and_render_files saw count='+ entryCount);
@@ -627,35 +617,15 @@ module.exports.oEmbedData = function(url, callback) {
 
 module.exports.findAssetAsync = find.assetFile;
 
-// module.exports.findDocument = function(config, fileName) {
-//     return find.document(config, fileName);
-// };
-
 module.exports.findDocumentAsync = find.documentAsync;
 
 module.exports.findDocumentForUrlpath = fileCache.documentForUrlpath;
-
-// module.exports.findTemplate = function(config, fileName) {
-//     return find.template(config, fileName);
-// };
 
 module.exports.findMatchingDocuments = fileCache.findMatchingDocuments;
 
 module.exports.findTemplateAsync = find.templateAsync;
 
-// module.exports.findPartial = function(config, fileName) {
-//     return find.partial(config, fileName);
-// };
-
 module.exports.findPartialAsync = find.partialAsync;
-
-// module.exports.readTemplateEntry = function(config, fileName, done) {
-//     fileCache.readTemplate(config, fileName, done);
-// };
-
-// module.exports.readPartialEntry = function(config, fileName, done) {
-//     fileCache.readPartial(config, fileName, done);
-// };
 
 module.exports.readDocumentEntry = fileCache.readDocument;
 
@@ -930,46 +900,50 @@ var dispatcher = function() {
 var rendered_files = [];
 
 var add_sitemap_entry = function(fname, priority, mtime) {
-    // util.log('add_sitemap_entry ' + fname);
-    var fDate = new Date(mtime);
-    var mm = fDate.getMonth() + 1;
-    if (mm < 10) {
-        mm = "0" + mm.toString();
-    } else {
-        mm = mm.toString();
-    }
-    var dd = fDate.getDate();
-    if (dd < 10) {
-        dd = "0" + dd.toString();
-    } else {
-        dd = dd.toString();
-    }
-    rendered_files.push({
-        loc: encodeURI(fname),
-        priority: priority,
-        lastmod:  fDate.getUTCFullYear() +"-"+ mm +"-"+ dd
-    });
-    /*
-     * This lets us remove the 'index.html' portion of URL's submitted in the sitemap.
-     * But we need to also ensure all links within the site pointing at this also do
-     * not use 'index.html' in the URL.  Ugh.
-     *if (fname.match(/index.html$/)) {
-        rendered_files.push({loc: fname.replace(/index.html$/, ''), priority: priority});
-    }*/
+	if (!(config && config.builtin && config.builtin.suppress && config.builtin.suppress.sitemap)) {
+		// util.log('add_sitemap_entry ' + fname);
+		var fDate = new Date(mtime);
+		var mm = fDate.getMonth() + 1;
+		if (mm < 10) {
+			mm = "0" + mm.toString();
+		} else {
+			mm = mm.toString();
+		}
+		var dd = fDate.getDate();
+		if (dd < 10) {
+			dd = "0" + dd.toString();
+		} else {
+			dd = dd.toString();
+		}
+		rendered_files.push({
+			loc: encodeURI(fname),
+			priority: priority,
+			lastmod:  fDate.getUTCFullYear() +"-"+ mm +"-"+ dd
+		});
+		/*
+		 * This lets us remove the 'index.html' portion of URL's submitted in the sitemap.
+		 * But we need to also ensure all links within the site pointing at this also do
+		 * not use 'index.html' in the URL.  Ugh.
+		 *if (fname.match(/index.html$/)) {
+			rendered_files.push({loc: fname.replace(/index.html$/, ''), priority: priority});
+		}*/
+	}
 };
 
 var generate_sitemap = function(config, done) {
     // util.log('generate_sitemap ' + util.inspect(rendered_files));
-    smap(rendered_files);
-    smap(function(xml) {
-        fs.writeFile(config.root_out +"/sitemap.xml", xml, 'utf8', function (err) {
-            if (err) {
-                done(err);
-            } else {
-                done();
-            }
-        });
-    });
+	if (!(config && config.builtin && config.builtin.suppress && config.builtin.suppress.sitemap)) {
+		smap(rendered_files);
+		smap(function(xml) {
+			fs.writeFile(config.root_out +"/sitemap.xml", xml, 'utf8', function (err) {
+				if (err) {
+					done(err);
+				} else {
+					done();
+				}
+			});
+		});
+	}
 };
 
 module.exports.pingXmlSitemap = function(config, done) {
