@@ -26,7 +26,7 @@ var spawn      = require('child_process').spawn;
 var exec       = require('child_process').exec;
 var find       = require('./lib/find');
 var renderer   = require('./lib/renderer2');
-var mahabhuta  = require('./lib/mahabhuta');
+var mahabhuta  = require('mahabhuta');
 var oembed     = require('oembed');
 var fs         = require('fs-extra');
 var globfs     = require('globfs');
@@ -79,7 +79,6 @@ module.exports.config = function(_config) {
     fileCache.config(module.exports, config);
     find.config(module.exports, config);
     renderer.config(module.exports, config);
-    mahabhuta.config(module.exports, config);
     
     // Then give the configuration file a shot at extending us
 	// This will cause any plugins to load, when the config function calls requirePlugins
@@ -187,7 +186,7 @@ module.exports.registerRenderChain = function(renderChain) {
 module.exports.findRenderChain = function(fname) {
 	var fnameData;
 	var renderChain;
-	logger.info('findRenderChain '+ fname);
+	// logger.info('findRenderChain '+ fname);
 	for (var i = 0; config.renderChains && i < config.renderChains.length; i++) {
 		fnameData = config.renderChains[i].match(fname);
 		if (fnameData !== null) {
