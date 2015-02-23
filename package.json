@@ -17,7 +17,8 @@
     "templates",
     "website",
     "website builder",
-    "blog"
+    "blog",
+    "akashacms"
   ],
   "description": "A content management system to generate static websites using latest HTML5/CSS3/JS goodness.",
   "homepage": "http://akashacms.com/",

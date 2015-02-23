@@ -212,49 +212,52 @@ module.exports.copyAssets = function(config, done) {
 
 };
 
-module.exports.process = function(options, callback) {
-    var cleanDir = function(done) {
-        logger.info('removing ' + options.root_out);
-        fs.remove(options.root_out, function(err) {
-            if (err) done(err);
-            else {
-                logger.info('making empty ' + options.root_out);
-                fs.mkdirs(options.root_out, function(err) {
-                    if (err) done(err);
-                    else { logger.trace('cleanDir FINI'); done(); }
-                });
-            }
-        });
-    };
+module.exports.emptyRootOut = function(config, done) {
+	logger.info('removing ' + config.root_out);
+	fs.remove(config.root_out, function(err) {
+		if (err) done(err);
+		else {
+			logger.info('making empty ' + config.root_out);
+			fs.mkdirs(config.root_out, function(err) {
+				if (err) done(err);
+				else { logger.trace('cleanDir FINI'); done(); }
+			});
+		}
+	});
+};
+
+module.exports.process = function(config, callback) {
     
-    cleanDir(function(err) {
+    module.exports.emptyRootOut(config, function(err) {
         if (err) { logger.error(err); callback(new Error(err)); }
         else {
-            module.exports.copyAssets(options, function(err) {
+            module.exports.copyAssets(config, function(err) {
                 if (err) { logger.error('copyAssets done '+ err); callback(err); }
                 else {
-                    gather_documents(options, function(err, data) {
-                        // util.log('gather_documents CALLBACK CALLED');
+                    module.exports.gatherDir(config, config.root_docs, function(err) {
+                        // util.log('gatherDir CALLBACK CALLED');
                         if (err) callback(err);
                         else {
-                            var entryCount = 0;
-                            for (var docNm in options.gatheredDocuments) {
-                                // util.log('DOCUMENT '+ options.gatheredDocuments[docNm].path);
-                                entryCount++;
-                            }
-                            logger.info('process '+ options.gatheredDocuments.length +' entries count='+entryCount);
-                            process_and_render_files(options, function(err) {
+                            module.exports.renderDocuments(config, function(err) {
                                 if (err) callback(err);
                                 else {
-                                    generate_sitemap(options, function(err) {
+									logger.info('about to generate sitemap');
+                                    generate_sitemap(config, function(err) {
                                         if (err) callback(err);
                                         else {
-                                            if (options.doMinimize) {
-                                                module.exports.minimize(options, function(err) {
+											logger.info('about to all-done');
+											var allDone = function() {
+												dispatcher('all-done', function(err) {
+													if (err) callback(err);
+													else callback();
+												});
+											}
+                                            if (config.doMinimize) {
+                                                module.exports.minimize(config, function(err) {
                                                     if (err) callback(err);
-                                                    else callback();
+                                                    else allDone();
                                                 });
-                                            } else callback();
+                                            } else allDone();
                                         }
                                     });
                                 }
@@ -310,7 +313,33 @@ module.exports.partial = function(name, metadata, callback) {
 	}
 };
 
-var renderDocEntry = function(config, docEntry, done) {
+// TODO: For a gruntified version, we don't want to use dispatcher here
+// Instead the Gruntfile would do tasks before and after renderDocuments
+module.exports.renderDocuments = function(config, done) {
+    dispatcher('before-render-files', function(err) {
+		var entryCount = 0;
+		fileCache.eachDocumentAsync(config, 
+			function(docEntry, next) {
+				entryCount++;
+				logger.info('FILE '+ entryCount +' '+ docEntry.path);
+				module.exports.renderDocument(config, docEntry, function(err) {
+					if (err) next(err);
+					else next();
+				});
+			}, 
+			function(err) {
+				if (err) done(err);
+				else {
+					logger.info('***** renderDocuments saw count='+ entryCount);
+					dispatcher('done-render-files', function(err) {
+						if (err) done(err); else done();
+					});
+				}
+			});
+	});
+};
+
+var renderDocEntry = module.exports.renderDocument = function(config, docEntry, done) {
 	// logger.trace('renderFile before rendering '+ fileName);
 	if (fileCache.doLayoutProcessing(docEntry.path)) {
 		process2html(config, docEntry, done);
@@ -329,7 +358,17 @@ var renderDocEntry = function(config, docEntry, done) {
 			});
 		} else {
 			// for anything not rendered, simply copy it
-			copy_to_outdir(config, docEntry, done);
+			var renderTo = path.join(config.root_out, docEntry.path);
+			// util.log('copy_to_outdir renderTo='+ renderTo +' entry.path='+ entry.path);
+			fs.mkdirs(path.dirname(renderTo), function(err) {
+				if (err) done(err); 
+				else fs.copy(docEntry.fullpath, renderTo, function(msg) {
+					fs.utimes(renderTo, docEntry.stat.atime, docEntry.stat.mtime, function(err) {
+						/*if (err) done(err);
+						else*/ done();
+					});
+				});
+			});
 		}
 	}
 };
@@ -385,20 +424,15 @@ module.exports.minimize = function(options, done) {
     .walk(); */
 };
 
-var gather_documents_new = function(config, done) {
-	globfs.operate(config.root_docs, [ '**/*', '**/.*/*', '**/.*' ],
-		function(basedir, fpath, fini) { fini(null, fpath); },
-		function(err, results) {
-			if (err) done(err);
-			else done(null, results);
-		});
-};
-
 module.exports.gatherDir = function(config, docroot, done) {
-    logger.info('******** gatherDir START '+ docroot);
-    
-    globfs.operate([ docroot ], [ '**/*', '**/.*/*', '**/.*' ],
+	var dirs = typeof docroot === 'string' ? [ docroot ] : docroot;
+	var lastbasedir;
+    globfs.operate(dirs, [ '**/*', '**/.*/*', '**/.*' ],
     	function(basedir, fpath, fini) {
+			if (lastbasedir !== basedir) {
+				lastbasedir = basedir;
+				logger.info('******** gatherDir DIR '+ basedir);
+			}
     		var fullPath = path.join(basedir, fpath);
     		fs.stat(fullPath, function(err, stats) {
     			if (err) { logger.error(err); fini(); }
@@ -420,33 +454,14 @@ module.exports.gatherDir = function(config, docroot, done) {
     			function(result, next) {
 	    			// logger.trace('gatherDir about to read '+ util.inspect(result));
 					fileCache.readDocument(config, result.path, function(err, docEntry) {
-						if (!err && docEntry) config.gatheredDocuments.push(docEntry);
 						if (err) logger.error('gatherDir readDocument '+ err);
 						next();
 					});
     			},
     			function(err) {
-					logger.info('gatherDir DONE '+ docroot +' '+ config.gatheredDocuments.length);
 					done();
     			});
     	});
-};
-
-var gather_documents = module.exports.gather_documents = function(config, done) {
-	logger.info('********** gather_documents');
-    config.gatheredDocuments = [];
-    async.eachSeries(config.root_docs,
-        function(docroot, cb) {
-            module.exports.gatherDir(config, docroot, function(err) {
-                if (err) { logger.error('gather_documents '+ err); cb(err); } else cb();
-            });
-        },
-        function(err) {
-            var entryCount = 0;
-            for (var docNm in config.gatheredDocuments) { entryCount++; }
-            logger.info('gather_documents DONE count='+ entryCount +' length='+ config.gatheredDocuments.length);
-            if (err) { logger.error('gather_documents done '+ err);  done(err); } else done();
-        });
 };
 
 var config2renderopts = function(config, entry) {
@@ -554,21 +569,6 @@ var process2html = function(config, entry, done) {
     }
 };
 
-var copy_to_outdir = function(options, entry, done) {
-    // for anything not rendered, simply copy it
-    var renderTo = path.join(options.root_out, entry.path);
-    // util.log('copy_to_outdir renderTo='+ renderTo +' entry.path='+ entry.path);
-    fs.mkdirs(path.dirname(renderTo), function(err) {
-        if (err) done(err); 
-        else fs.copy(entry.fullpath, renderTo, function(msg) {
-            fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
-                /*if (err) done(err);
-                else*/ done();
-            });
-        });
-    });
-};
-
 var writeRenderingToFile = function(config, renderedFileName, rendered, entry, done) {
 	var renderTo = path.join(config.root_out, renderedFileName);
 	fs.mkdirs(path.dirname(renderTo), function(err) {
@@ -584,31 +584,6 @@ var writeRenderingToFile = function(config, renderedFileName, rendered, entry, d
 		});
 	});
 }
-
-var process_and_render_files = function(config, done) {
-    dispatcher('before-render-files', function(err) {
-        var entryCount = 0;
-        logger.trace('process_and_render_files '+ config.gatheredDocuments.length +' entries');
-        for (docNm in config.gatheredDocuments) {
-            logger.trace('DOCUMENT '+ config.gatheredDocuments[docNm].path);
-            entryCount++;
-        }
-        logger.info('process_and_render_files entryCount='+ entryCount);
-        entryCount = 0;
-        async.eachSeries(config.gatheredDocuments,
-        function(entry, cb) {
-            entryCount++;
-            logger.info('FILE '+ entryCount +' '+ entry.path);
-			renderDocEntry(config, entry, cb);
-        },
-        function(err) {
-            logger.info('***** process_and_render_files saw count='+ entryCount);
-            dispatcher('done-render-files');
-            if (err) done(err); else done();
-        });
-    });
-    
-};
 
 module.exports.oEmbedData = function(url, callback) {
   oembed.fetch(url, { maxwidth: 6000 }, callback);
@@ -667,6 +642,7 @@ module.exports.urlForFile = function(fileName) {
 };
 
 module.exports.eachDocument = fileCache.eachDocument;
+module.exports.eachDocumentAsync = fileCache.eachDocumentAsync;
 
 module.exports.indexChain = fileCache.indexChain;
 
@@ -931,10 +907,11 @@ var add_sitemap_entry = function(fname, priority, mtime) {
 
 var generate_sitemap = function(config, done) {
     // util.log('generate_sitemap ' + util.inspect(rendered_files));
+	// util.log(util.inspect(config.builtin));
 	if (!(config && config.builtin && config.builtin.suppress && config.builtin.suppress.sitemap)) {
 		smap(rendered_files);
 		smap(function(xml) {
-			fs.writeFile(config.root_out +"/sitemap.xml", xml, 'utf8', function (err) {
+			fs.writeFile(path.join(config.root_out, "sitemap.xml"), xml, 'utf8', function (err) {
 				if (err) {
 					done(err);
 				} else {
@@ -942,7 +919,7 @@ var generate_sitemap = function(config, done) {
 				}
 			});
 		});
-	}
+	} else done();
 };
 
 module.exports.pingXmlSitemap = function(config, done) {

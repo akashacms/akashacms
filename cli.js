@@ -216,7 +216,7 @@ program
         // var staticSrv  = require('node-static');
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
-		akasha.gather_documents(config, function(err, data) {
+		akasha.gatherDir(config, config.root_docs, function(err, data) {
 			if (err) {
 				util.log('ERROR '+ err);
 			} else {
@@ -260,7 +260,7 @@ program
 	
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
-		akasha.gather_documents(config, function(err, data) {
+		akasha.gatherDir(config, config.root_docs, function(err, data) {
 			if (err) {
 				util.log('ERROR '+ err);
 			} else {
@@ -277,7 +277,7 @@ program
 	
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
-		akasha.gather_documents(config, function(err, data) {
+		akasha.gatherDir(config, config.root_docs, function(err, data) {
 			if (err) {
 				util.log('ERROR '+ err);
 			} else {
