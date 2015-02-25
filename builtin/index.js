@@ -31,6 +31,9 @@ module.exports.config = function(_akasha, _config) {
 	config = _config;
 	logger = akasha.getLogger("builtin");
 	
+	if (!config.builtin) config.builtin = {};
+	if (!config.builtin.suppress) config.builtin.suppress = {};
+	
 	if (!(config.builtin && config.builtin.suppress && config.builtin.suppress.partials)) {
 		config.root_partials.push(path.join(__dirname, 'partials'));
 	}
@@ -724,7 +727,8 @@ module.exports.mahabhuta = [
 							$(link).attr('rel', 'nofollow');
 						}
 						
-						if ($(link).find("img.ak-extlink-icon").length <= 0) {
+						if (! config.builtin.suppress.extlink
+						 && $(link).find("img.ak-extlink-icon").length <= 0) {
 							$(link).append('<img class="ak-extlink-icon" src="/img/extlink.png"/>');
 						}
 					
