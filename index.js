@@ -274,6 +274,11 @@ module.exports.process = function(config, callback) {
  * Render a partial, paying attention to synchronous operation
  */
 module.exports.partialSync = function(fname, metadata) {
+	metadata.plugin = module.exports.plugin;
+	metadata.config = config;
+	metadata.partial = module.exports.partialSync;
+	metadata.akashacms = module.exports;
+	
 	var renderChain = module.exports.findRenderChain(fname);
     var fnamePartial = find.partial(config, fname);
     logger.trace('partialSync fname=' + fname + ' fnamePartial=' + fnamePartial);
@@ -291,6 +296,11 @@ module.exports.partialSync = function(fname, metadata) {
  * Render a partial in asynchronous fashion
  */
 module.exports.partial = function(name, metadata, callback) {
+	metadata.plugin = module.exports.plugin;
+	metadata.config = config;
+	metadata.partial = module.exports.partialSync;
+	metadata.akashacms = module.exports;
+	
 	var renderChain = module.exports.findRenderChain(name);
 	if (renderChain) {
 	  fileCache.readPartial(config, name, function(err, partialEntry) {
@@ -341,13 +351,13 @@ module.exports.renderDocuments = function(config, done) {
 
 var renderDocEntry = module.exports.renderDocument = function(config, docEntry, done) {
 	// logger.trace('renderFile before rendering '+ fileName);
+	// util.log('renderDocument '+ docEntry.path);
 	if (fileCache.doLayoutProcessing(docEntry.path)) {
+		// util.log('about to process2html');
 		process2html(config, docEntry, done);
 	} else {
 		var renderChain = module.exports.findRenderChain(docEntry.path);
 		var metadata = config2renderopts(config, docEntry);
-		metadata.config = config;
-		metadata.partial = module.exports.partialSync;
 		if (renderChain && renderChain.renderSync) {
 			var rendered = renderChain.renderSync(docEntry.frontmatter.text, metadata);
 			writeRenderingToFile(config, renderChain.renderedFileName, rendered, docEntry, done);
@@ -363,7 +373,9 @@ var renderDocEntry = module.exports.renderDocument = function(config, docEntry, 
 			fs.mkdirs(path.dirname(renderTo), function(err) {
 				if (err) done(err); 
 				else fs.copy(docEntry.fullpath, renderTo, function(msg) {
-					fs.utimes(renderTo, docEntry.stat.atime, docEntry.stat.mtime, function(err) {
+					fs.utimes(renderTo,
+						docEntry.stat ? docEntry.stat.atime : new Date(), docEntry.stat ? docEntry.stat.mtime : new Date(),
+						function(err) {
 						/*if (err) done(err);
 						else*/ done();
 					});
@@ -487,7 +499,7 @@ var config2renderopts = function(config, entry) {
 	}
 	metadata.root_url = config.root_url;
 	if (! metadata.rendered_date) {
-		metadata.rendered_date = entry.stat.mtime;
+		metadata.rendered_date = entry.stat ? entry.stat.mtime : new Date();
 	}
 	
 	if (!metadata.publicationDate) {
@@ -512,6 +524,10 @@ var config2renderopts = function(config, entry) {
 	metadata.rendered_url = url.format(pRootUrl);
 	
 	metadata.plugin = module.exports.plugin;
+	metadata.config = config;
+	metadata.partial = module.exports.partialSync;
+	
+	metadata.akashacms = module.exports;
 	
 	return metadata;
 };
@@ -525,6 +541,7 @@ var process2html = function(config, entry, done) {
         done(new Error('UNKNOWN template engine for ' + entry.path));
     } else {
         var metadata = config2renderopts(config, entry);
+		// util.log('process2html partial='+ util.inspect(metadata.partial));
         
         logger.trace('process2html #2 '+ entry.path); //  +' '+ util.log(util.inspect(renderopts)));
         renderer.render(module.exports, config, entry, undefined, metadata, function(err, rendered) {
@@ -544,8 +561,8 @@ var process2html = function(config, entry, done) {
                             else fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
                                 if (err) done(err);
                                 else {
-                                    var atime = entry.stat.atime;
-                                    var mtime = entry.stat.mtime;
+                                    var atime = entry.stat ? entry.stat.atime : new Date();
+                                    var mtime = entry.stat ? entry.stat.mtime : new Date();
                                     if (entry.frontmatter.yaml && entry.frontmatter.yaml.publDate) {
                                         var parsed = Date.parse(entry.frontmatter.yaml.publDate);
                                         if (isNaN(parsed)) {
@@ -576,7 +593,9 @@ var writeRenderingToFile = function(config, renderedFileName, rendered, entry, d
 		else fs.writeFile(renderTo, rendered, 'utf8', function (err) {
 			if (err) done(err);
 			else {
-				fs.utimes(renderTo, entry.stat.atime, entry.stat.mtime, function(err) {
+				fs.utimes(renderTo,
+					entry.stat ? entry.stat.atime : new Date(), entry.stat ? entry.stat.mtime : new Date(),
+					function(err) {
 					if (err) done(err);
 					else done();
 				});
@@ -605,6 +624,7 @@ module.exports.readDocumentEntry = fileCache.readDocument;
 
 module.exports.updateDocumentData = fileCache.updateDocumentData;
 
+module.exports.createInMemoryDocument = fileCache.createInMemoryDocument;
 module.exports.createDocument = fileCache.createDocument;
 
 module.exports.deleteDocumentForUrlpath = fileCache.deleteDocumentForUrlpath;
