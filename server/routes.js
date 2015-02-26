@@ -5,7 +5,7 @@ var mime      = require('mime');
 var async     = require('async');
 var util      = require('util');
 var url       = require('url');
-var mahabhuta = require('../lib/mahabhuta');
+var mahabhuta = require('mahabhuta');
 var cheerio   = require('cheerio');
 var formidable = require('formidable');
 
