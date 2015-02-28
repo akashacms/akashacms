@@ -197,6 +197,7 @@ module.exports.findRenderChain = function(fname) {
 	if (fnameData && renderChain) {
 		fnameData.renderSync = renderChain.renderSync;
 		fnameData.render = renderChain.render;
+		if (renderChain.doLayouts) fnameData.doLayouts = renderChain.doLayouts;
 		return fnameData;
 	} else return null;
 }
@@ -238,30 +239,34 @@ module.exports.process = function(config, callback) {
                         // util.log('gatherDir CALLBACK CALLED');
                         if (err) callback(err);
                         else {
-                            module.exports.renderDocuments(config, function(err) {
-                                if (err) callback(err);
-                                else {
-									logger.info('about to generate sitemap');
-                                    generate_sitemap(config, function(err) {
-                                        if (err) callback(err);
-                                        else {
-											logger.info('about to all-done');
-											var allDone = function() {
-												dispatcher('all-done', function(err) {
-													if (err) callback(err);
-													else callback();
-												});
-											}
-                                            if (config.doMinimize) {
-                                                module.exports.minimize(config, function(err) {
-                                                    if (err) callback(err);
-                                                    else allDone();
-                                                });
-                                            } else allDone();
-                                        }
-                                    });
-                                }
-                            });
+							dispatcher('before-render-files', function(err) {
+								module.exports.renderDocuments(config, function(err) {
+									if (err) callback(err);
+									else {
+										dispatcher('done-render-files', function(err) {
+											logger.info('about to generate sitemap');
+											generate_sitemap(config, function(err) {
+												if (err) callback(err);
+												else {
+													logger.info('about to all-done');
+													var allDone = function() {
+														dispatcher('all-done', function(err) {
+															if (err) callback(err);
+															else callback();
+														});
+													}
+													if (config.doMinimize) {
+														module.exports.minimize(config, function(err) {
+															if (err) callback(err);
+															else allDone();
+														});
+													} else allDone();
+												}
+											});
+										});
+									}
+								});
+							});
                         }
                     });
                 }
@@ -326,37 +331,36 @@ module.exports.partial = function(name, metadata, callback) {
 // TODO: For a gruntified version, we don't want to use dispatcher here
 // Instead the Gruntfile would do tasks before and after renderDocuments
 module.exports.renderDocuments = function(config, done) {
-    dispatcher('before-render-files', function(err) {
-		var entryCount = 0;
-		fileCache.eachDocumentAsync(config, 
-			function(docEntry, next) {
-				entryCount++;
-				logger.info('FILE '+ entryCount +' '+ docEntry.path);
-				module.exports.renderDocument(config, docEntry, function(err) {
-					if (err) next(err);
-					else next();
-				});
-			}, 
-			function(err) {
-				if (err) done(err);
-				else {
-					logger.info('***** renderDocuments saw count='+ entryCount);
-					dispatcher('done-render-files', function(err) {
-						if (err) done(err); else done();
-					});
-				}
+	var entryCount = 0;
+	fileCache.eachDocumentAsync(config, 
+		function(docEntry, next) {
+			entryCount++;
+			logger.info('FILE '+ entryCount +' '+ docEntry.path);
+			module.exports.renderDocument(config, docEntry, function(err) {
+				if (err) next(err);
+				else next();
 			});
-	});
+		}, 
+		function(err) {
+			if (err) done(err);
+			else {
+				logger.info('***** renderDocuments saw count='+ entryCount);
+				done();
+			}
+		});
 };
 
 var renderDocEntry = module.exports.renderDocument = function(config, docEntry, done) {
 	// logger.trace('renderFile before rendering '+ fileName);
 	// util.log('renderDocument '+ docEntry.path);
-	if (fileCache.doLayoutProcessing(docEntry.path)) {
+	var renderChain = module.exports.findRenderChain(docEntry.path);
+	// console.log(util.inspect(docEntry.frontmatter));
+	// console.log(util.inspect(renderChain));
+	if (fileCache.doLayoutProcessing(docEntry.path)
+	|| (docEntry.frontmatter.yaml && docEntry.frontmatter.yaml.layout && renderChain.doLayouts)) {
 		// util.log('about to process2html');
 		process2html(config, docEntry, done);
 	} else {
-		var renderChain = module.exports.findRenderChain(docEntry.path);
 		var metadata = config2renderopts(config, docEntry);
 		if (renderChain && renderChain.renderSync) {
 			var rendered = renderChain.renderSync(docEntry.frontmatter.text, metadata);
@@ -537,9 +541,10 @@ var config2renderopts = function(config, entry) {
  **/
 var process2html = function(config, entry, done) {
     logger.trace('process2html #1 '+ entry.path); // util.inspect(entry));
-    if (! fileCache.supportedForHtml(entry.path)) {
+	// TODO Is this test useful?
+    /* if (! fileCache.supportedForHtml(entry.path)) {
         done(new Error('UNKNOWN template engine for ' + entry.path));
-    } else {
+    } else { */
         var metadata = config2renderopts(config, entry);
 		// util.log('process2html partial='+ util.inspect(metadata.partial));
         
@@ -583,7 +588,7 @@ var process2html = function(config, entry, done) {
                 });
             }
         });
-    }
+    /*  } /* */
 };
 
 var writeRenderingToFile = function(config, renderedFileName, rendered, entry, done) {
@@ -823,7 +828,7 @@ var emitter = module.exports.emitter = new events.EventEmitter();
 // which does a lot of stuff, such as generating a bunch of files that
 // must be rendered
 
-var dispatcher = function() {
+var dispatcher = module.exports.dispatcher = function() {
     // Convert our arguments into an array to simplify working on the args
     var args = Array.prototype.slice.call(arguments);
     // logger.trace(util.inspect(args));
@@ -925,7 +930,7 @@ var add_sitemap_entry = function(fname, priority, mtime) {
 	}
 };
 
-var generate_sitemap = function(config, done) {
+var generate_sitemap = module.exports.generateSitemap = function(config, done) {
     // util.log('generate_sitemap ' + util.inspect(rendered_files));
 	// util.log(util.inspect(config.builtin));
 	if (!(config && config.builtin && config.builtin.suppress && config.builtin.suppress.sitemap)) {
