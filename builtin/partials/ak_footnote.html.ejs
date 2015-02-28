@@ -1,5 +1,5 @@
 <div class="ak-footnote">
-<%= count %>. <a href="<%= url %>" <%
+<%= count %>. <a name="<%= name %>">[<%= name %>]</a>: <a href="<%= url %>" <%
     if (rel) {
         %>rel="<%= rel %>" <%
     } %>><%
@@ -9,5 +9,5 @@
       %><span class="ak-footnote-url"><%= url %></span><%
    }
 %></a>
-<a name="<%= name %>"><span class="ak-footnote-description"><%= description %></span></a>
+<span class="ak-footnote-description"><%= description %></span>
 </div>
