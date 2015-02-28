@@ -198,16 +198,6 @@ program
         	});
         } // else .. other kinds of deployment scenarios
     });
-
-
-program
-    .command('minimize')
-    .description('Minimize the rendered AkashaCMS site')
-    .action(function() {
-        var config = require(path.join(process.cwd(), '/config.js'));
-        akasha.config(config);
-        akasha.minimize(config);
-    });
     
 program
     .command('serve')

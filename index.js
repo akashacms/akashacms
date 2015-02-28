@@ -40,7 +40,6 @@ var rendererEjs = require('./lib/renderer-ejs');
 var rendererHTML = require('./lib/renderer-html');
 var md         = require('./lib/md');
 
-// var minify     = require('minify');
 var log4js     = require('log4js');
 var logger;
 
@@ -249,18 +248,10 @@ module.exports.process = function(config, callback) {
 												if (err) callback(err);
 												else {
 													logger.info('about to all-done');
-													var allDone = function() {
-														dispatcher('all-done', function(err) {
-															if (err) callback(err);
-															else callback();
-														});
-													}
-													if (config.doMinimize) {
-														module.exports.minimize(config, function(err) {
-															if (err) callback(err);
-															else allDone();
-														});
-													} else allDone();
+													dispatcher('all-done', function(err) {
+														if (err) callback(err);
+														else callback();
+													});
 												}
 											});
 										});
@@ -400,44 +391,6 @@ module.exports.renderFile = function(config, fileName, callback) {
 		else if (!docEntry) callback(new Error('File '+fileName+' not found'));
 		else renderDocEntry(config, docEntry, callback);
     });
-};
-
-/**
- * Minimize a directory tree using the minify library.
- **/
-module.exports.minimize = function(options, done) {
-	done();
-	
-	/*
-    filewalker(options.root_out, { maxPending: 1, maxAttempts: 3, attemptTimeout: 3000 })
-    .on('file', function(path, s, fullPath) {
-        if (fullPath.match(/\.js$/) || fullPath.match(/\.html$/) || fullPath.match(/\.css$/)) {
-            var stat = fs.statSync(fullPath);
-            // util.log("Minimizing " + fullPath);
-            minify.optimize([fullPath], {
-                cache: true,
-                callback: function(pMinData) {
-                    // util.log("Writing Minimized file " + fullPath);
-                    fs.writeFile(fullPath, pMinData, 'utf8', function (err) {
-                        if (err) done(err);
-                        else {
-                            fs.utimes(fullPath, stat.atime, stat.mtime, function(err) {
-                                if (err)
-                                    done(err);
-                                else
-                                    done();
-                            });
-                        }
-                    });
-                }
-            });
-        }
-    })
-    .on('error', function(err) {
-        if (err) done(err);
-        else { done(); } 
-    })
-    .walk(); */
 };
 
 module.exports.gatherDir = function(config, docroot, done) {
