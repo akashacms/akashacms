@@ -62,7 +62,8 @@
     "ssh2sync": "*",
     "rss": "*",
     "sseasy": "*",
-    "yfm": "*"
+    "yfm": "*",
+    "archiver": "*"
   },
   "devDependencies": {
     "vows": ">=0.8.1"

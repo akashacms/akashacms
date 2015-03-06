@@ -31,6 +31,7 @@ var oembed     = require('oembed');
 var fs         = require('fs-extra');
 var globfs     = require('globfs');
 var path       = require('path');
+var archiver   = require('archiver');
 var fileCache  = require('./lib/fileCache');
 var smap       = require('sightmap');
 var RSS        = require('rss');
@@ -513,7 +514,7 @@ var process2html = function(config, entry, done) {
                     // TBD - the callback needs to send a new rendering 
                     if (err) done('Rendering file-rendered '+ entry.path +' failed with '+ err);
                     else {
-                        logger.info('rendered '+ entry.path +' as '+ renderTo);
+                        // logger.info('rendered '+ entry.path +' as '+ renderTo);
                         fs.mkdirs(path.dirname(renderTo), function(err) {
                             if (err) done('FAILED to make directory '+ path.dirname(renderTo) +' failed with '+ err); 
                             else fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
@@ -561,6 +562,30 @@ var writeRenderingToFile = function(config, renderedFileName, rendered, entry, d
 		});
 	});
 }
+
+
+module.exports.zipRenderedSite = function(config, done) {
+	
+    var archive = archiver('zip');
+    
+    var output = fs.createWriteStream(config.root_out +'.zip');
+            
+    output.on('close', function() {
+        logger.info(archive.pointer() + ' total bytes');
+        logger.info('archiver has been finalized and the output file descriptor has closed.');  
+        done();
+    });
+    
+    archive.on('error', function(err) {
+      done(err);
+    });
+    
+    archive.pipe(output);
+	
+	archive.directory(config.root_out, ".");
+	
+	archive.finalize();
+};
 
 module.exports.oEmbedData = function(url, callback) {
   oembed.fetch(url, { maxwidth: 6000 }, callback);
@@ -697,6 +722,16 @@ module.exports.runPreviewServer = function(config) {
 	});
 	
 	server.listen(6080);
+};
+
+module.exports.runEditServer = function(config) {
+	module.exports.gatherDir(config, config.root_docs, function(err, data) {
+		if (err) {
+			util.log('ERROR '+ err);
+		} else {
+			require(path.join(__dirname, 'server', 'app'))(module.exports, config);
+		}
+	});
 };
 
 ///////////////// Deployment of Sites
