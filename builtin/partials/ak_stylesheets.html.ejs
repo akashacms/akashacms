@@ -1,8 +1,10 @@
 <%
 // drag in site-defined stylesheets
-if (headerScripts && headerScripts.stylesheets)
-for (var i in headerScripts.stylesheets) {
-    var style = headerScripts.stylesheets[i];
+if (headerScripts && headerScripts.stylesheets) {
+var keys = Object.keys(headerScripts.stylesheets);
+for (var i = 0; i < keys.length; i++) {
+    var style = headerScripts.stylesheets[keys[i]];
     %><link rel="stylesheet" href="<%= style.href %>" type="text/css" <%
         if (style.media) { %> media="<%= style.media %>" <% } %> ></link>
-<% } %>
+<% }
+} %>

@@ -1,8 +1,9 @@
 <%
 // drag in site-defined DNS prefetch
 if (headerScripts && headerScripts.dnsPrefetch) {
-    for (var i in headerScripts.dnsPrefetch) {
-        var dns = headerScripts.dnsPrefetch[i];
+    var keys = Object.keys(headerScripts.dnsPrefetch);
+    for (var i = 0; i < keys.length; i++) {
+        var dns = headerScripts.dnsPrefetch[keys[i]];
         %><link rel="dns-prefetch" href="<%= dns %>"><%
     }
 }
