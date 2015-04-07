@@ -136,6 +136,14 @@ module.exports.registerPlugins = function(config, plugins) {
 	return module.exports;
 };
 
+module.exports.eachPlugin = function(config, iterator, final) {
+	async(config.plugins,
+	function(plugin, next) {
+		iterator(plugin.plugin, next);
+	},
+	final);
+};
+
 module.exports.registerMahabhuta = function(config, mahafuncs) {
 	if (! config.mahabhuta) config.mahabhuta = [];
 	
