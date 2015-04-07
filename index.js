@@ -137,7 +137,7 @@ module.exports.registerPlugins = function(config, plugins) {
 };
 
 module.exports.eachPlugin = function(config, iterator, final) {
-	async(config.plugins,
+	async.eachSeries(config.plugins,
 	function(plugin, next) {
 		iterator(plugin.plugin, next);
 	},
