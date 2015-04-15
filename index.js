@@ -79,6 +79,7 @@ module.exports.config = function(_config) {
     fileCache.config(module.exports, config);
     find.config(module.exports, config);
     renderer.config(module.exports, config);
+	md.config(module.exports, config);
     
     // Then give the configuration file a shot at extending us
 	// This will cause any plugins to load, when the config function calls requirePlugins
@@ -208,7 +209,7 @@ module.exports.findRenderChain = function(fname) {
 		if (renderChain.doLayouts) fnameData.doLayouts = renderChain.doLayouts;
 		return fnameData;
 	} else return null;
-}
+};
 
 module.exports.copyAssets = function(config, done) {
 	logger.trace('copyAssets START');
