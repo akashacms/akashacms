@@ -76,9 +76,14 @@ program
     .action(function(fileName) {
         var config = require(path.join(process.cwd(), '/config.js'));
         akasha.config(config);
-        akasha.renderFile(config, fileName, function(err) {
-            if (err) throw err;
-        });
+		akasha.gatherDir(config, config.root_docs, function(err, data) {
+			if (err) throw err;
+			else {
+				akasha.renderFile(config, fileName, function(err) {
+					if (err) throw err;
+				});
+			}
+		});
     });
 
 program

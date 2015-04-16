@@ -600,6 +600,15 @@ module.exports.oEmbedData = function(url, callback) {
   oembed.fetch(url, { maxwidth: 6000 }, callback);
 };
 
+module.exports.parseTags = function(tags) {
+    var taglist = [];
+    var re = /\s*,\s*/;
+    if (tags) tags.split(re).forEach(function(tag) {
+        taglist.push(tag.trim());
+    });
+    return taglist;
+};
+
 module.exports.findAssetAsync = find.assetFile;
 
 module.exports.findDocumentAsync = find.documentAsync;

@@ -187,11 +187,13 @@ module.exports.mahabhuta = [
             async.eachSeries(elements,
             function(element, next) {
 				if (typeof config.headerScripts !== "undefined") {
+				    // logger.info('ak-stylesheets '+ util.inspect(config.headerScripts));
 					akasha.partial("ak_stylesheets.html.ejs", {
 						headerScripts: config.headerScripts 
 					}, function(err, style) {
 						if (err) { logger.error(err); next(err); }
 						else {
+						    // logger.info('ak-stylesheets inserting '+ style);
 							$(element).replaceWith(style);
 							next();
 						}
