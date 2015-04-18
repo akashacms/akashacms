@@ -1,4 +1,4 @@
-akashacms
+akashacms  [![JS.ORG](https://img.shields.io/badge/js.org-akashacms-ffb400.svg?style=flat-square)](http://js.org)
 =========
 
 AkashaCMS is a Node.js based tool for converting ideas into websites while maintaining separation between content and layout and design.  The focus is on building, or generating, static HTML websites using the latest HTML5+CSS+JS and Semantic Web ideology, while pretending to be a powerful content management system.
