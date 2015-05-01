@@ -88,10 +88,10 @@ module.exports.config = function(_config) {
     }
     
     // Make the builtin plugin the last on the chain
-    var builtin = path.join(__dirname, 'builtin');
+    /*var builtin = path.join(__dirname, 'builtin');
     module.exports.registerPlugins(config, [
 		{ name: 'builtin', plugin: require(path.join(builtin, 'index')) }
-	]); //.config(module.exports, config);
+	]); //.config(module.exports, config); */
 	
 	// Set up the default renderer modules
 	[

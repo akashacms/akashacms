@@ -688,6 +688,7 @@ module.exports.mahabhuta = [
             async.eachSeries(links,
             function(link, next) {
             	var href   = $(link).attr('href');
+				logger.trace('href= '+ href);
             	/*var text   = $(link).text();
             	var rel    = $(link).attr('rel');
             	var lclass = $(link).attr('class');
@@ -733,9 +734,10 @@ module.exports.mahabhuta = [
 						 && $(link).find("img.ak-extlink-icon").length <= 0) {
 							$(link).append('<img class="ak-extlink-icon" src="/img/extlink.png"/>');
 						}
-					
+						logger.trace('finish external link');
+						
 						next();
-					} else {
+					} else if (href) {
 						// This is where we would handle local links
 						if (! href.match(/^\//)) {
 						    var hreforig = href;
@@ -761,10 +763,11 @@ module.exports.mahabhuta = [
             				}
             			}
             			next();
-					}
+					} else next();
 				} else next();
             },
             function(err) {
+				logger.trace('done a modifications');
 				if (err) done(err);
 				else done();
         	});
