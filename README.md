@@ -7,6 +7,8 @@ Home page: [AkashaCMS.com](http://akashacms.com)
 
 Working example: [AkashaCMS Example](https://github.com/robogeek/akashacms-example)
 
+Skeleton site: [AkashaCMS Skeleton](https://github.com/robogeek/akashacms-skeleton)
+
 Source code for akashacms.com: [AkashaCMS website](https://github.com/robogeek/akashacms-website)
 
 "Akasha" means the basis and essence of all things in the material world; the first material element created from the astral world.

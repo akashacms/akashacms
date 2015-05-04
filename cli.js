@@ -60,6 +60,25 @@ program
     });
 
 program
+    .command('skeleton <dirName>')
+    .description('Download the skeleton AkashaCMS site')
+    .action(function(dirName){
+        /*var git = exec(
+                'git clone git://github.com/robogeek/akashacms-example.git' + dirName,
+                {env: process.env, stdio: 'inherit'},
+                function (error, stdout, stderr) {
+                    console.log('stdout: ' + stdout);
+                    console.log('stderr: ' + stderr);
+                    if (error !== null) {
+                        console.log('exec error: ' + error);
+                    }
+                });*/
+        var git = spawn('git',
+              [ 'clone', 'git://github.com/akashacms/akashacms-skeleton.git', dirName],
+              {env: process.env, stdio: 'inherit'});
+    });
+
+program
     .command('build')
     .description('build an AkashaCMS site in the current directory')
     .action(function() {
