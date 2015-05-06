@@ -679,6 +679,10 @@ module.exports.isIndexHtml = fileCache.isIndexHtml;
 
 ///////////////// Preview built website
 
+module.exports.runEditServer = function(config) {
+    require('./server/app')(module.exports, config);
+};
+
 var streamit = function(res, fname, stats) {
 	var m = mime.lookup(fname);
 	res.writeHead(200, {
