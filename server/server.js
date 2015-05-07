@@ -73,7 +73,7 @@ var startServer = function(akasha, config) {
                 var urlpath = matches[1];
                 // logger.trace(util.inspect(matches));
                 // logger.trace('urlpath '+ urlpath);
-                var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
+                var docEntry = akasha.findDocumentForUrlpath(urlpath);
                 if (docEntry) {
                     fs.readFile(path.join(config.root_out, urlpath), { encoding: 'utf8' }, function(err, buf) {
                         if (err) {
@@ -156,7 +156,7 @@ var startServer = function(akasha, config) {
                 });
             } else if ((matches = requrl.pathname.match(/^\/\.\.admin\/fullbuild(\/.*)/)) !== null) {
                 var urlpath = matches[1];
-				akasha.process(config, function(err) {
+				akasha.process(function(err) {
                     if (err) showError(res, 404, "Failed to rebuild site because "+ err);
                     else {
                     	logger.trace(urlpath);
@@ -165,7 +165,7 @@ var startServer = function(akasha, config) {
 				});
             } else if ((matches = requrl.pathname.match(/^\/\.\.admin\/docData(\/.*)/)) !== null) {
                 var urlpath = matches[1];
-                var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
+                var docEntry = akasha.findDocumentForUrlpath(urlpath);
                 if (docEntry) {
 					sendJSON(res, 200, {
 						urlpath: urlpath,
@@ -211,10 +211,10 @@ var startServer = function(akasha, config) {
                 } else {
                     
                     if (requrl.pathname === "/..admin/edit") {
-                        var docEntry = akasha.findDocumentForUrlpath(config, body.urlpath);
+                        var docEntry = akasha.findDocumentForUrlpath(body.urlpath);
                         if (docEntry) {
                             // logger.trace('found docEntry for urlpath '+ body.urlpath +' '+ util.inspect(docEntry));
-                            akasha.updateDocumentData(config, docEntry,
+                            akasha.updateDocumentData(docEntry,
                             		 trimtxt(body.metadata), trimtxt(body.content),
                             		 function(err) {
                                 if (err) {
@@ -223,7 +223,7 @@ var startServer = function(akasha, config) {
                                     	docEntry.fullpath +" because "+ err);
                                 } else {
                                     // util.log('before renderFile '+ docEntry.path);
-                                    akasha.renderFile(config, docEntry.path, function(err) {
+                                    akasha.renderFile(docEntry.path, function(err) {
                                         if (err) {
                                             showError(res, 404, "Could not render "+
                                             	docEntry.fullpath +" because "+ err);
@@ -247,7 +247,7 @@ var startServer = function(akasha, config) {
                         var fname = path.join(body.dirname, body.pathname.trim());
                         if (body.fnextension) fname += body.fnextension;
                         // logger.trace('fname='+ fname);
-                        akasha.createDocument(config, config.root_docs[0],
+                        akasha.createDocument(config.root_docs[0],
                             fname,
                             trimtxt(body.metadata), trimtxt(body.content), function(err, docEntry) {
                                 if (err) {
@@ -256,7 +256,7 @@ var startServer = function(akasha, config) {
                                     logger.error('FAIL received from createDocument because '+ err);
                                 } else {
                                 	// logger.trace(util.inspect(docEntry));
-                                    akasha.renderFile(config, docEntry.path, function(err) {
+                                    akasha.renderFile(docEntry.path, function(err) {
                                         if (err) {
                                             showError(res, 404, "Could not render "+ docEntry.fullpath +" because "+ err);
                                         } else {
@@ -269,10 +269,10 @@ var startServer = function(akasha, config) {
                                 }
                         });
                     } else if (requrl.pathname === "/..admin/delete") {
-                        var docEntry = akasha.findDocumentForUrlpath(config, body.urlpath);
+                        var docEntry = akasha.findDocumentForUrlpath(body.urlpath);
                         if (docEntry) {
                             // logger.trace(util.inspect(docEntry));
-                            akasha.deleteDocumentForUrlpath(config, docEntry.path, function(err) {
+                            akasha.deleteDocumentForUrlpath(docEntry.path, function(err) {
                                 if (err) {
                                     showError(res, 404, "Could not delete "+ body.urlpath +" because "+ err);
                                 } else {
@@ -323,7 +323,7 @@ var streamFile = function(akasha, config, res, requrl, fname) {
                 showError(res, 404, "file "+ fname +" not readable "+ err);
             } else {
                 var $ = newCheerio(buf);
-                var docEntry = akasha.findDocumentForUrlpath(config, requrl.pathname);
+                var docEntry = akasha.findDocumentForUrlpath(requrl.pathname);
                 // logger.trace('streamFile '+ requrl.pathname);
                 // logger.trace(util.inspect(docEntry));
                 // $('body').wrapInner('<div id="ak-original-content"></div>');

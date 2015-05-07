@@ -44,7 +44,7 @@ module.exports = function(_akasha, _config) {
         }
     });
     
-    akasha.runPreviewServer(config);
+    akasha.runPreviewServer();
 }
 
 //*********** Catch errors using domain module
@@ -245,7 +245,7 @@ app.get(/^(\/.+)/,
 				// logger.trace('streaming '+ fname +' for '+ requrl.pathname);
 				routes.streamFile(req, res, requrl, fname);
 			} else {
-				akasha.readDocumentEntry(config, unescape(req.path), function(err, entry) {
+				akasha.readDocumentEntry(unescape(req.path), function(err, entry) {
 					if (err) {
 						logger.error('not found '+ err);
 						res.status(404).end(err.toString());

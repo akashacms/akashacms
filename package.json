@@ -26,9 +26,6 @@
     "type": "git",
     "url": "git://github.com/akashacms/akashacms.git"
   },
-  "bin": {
-    "akashacms": "cli.js"
-  },
   "version": "0.4.5",
   "engines": {
     "node": ">=0.10.1"

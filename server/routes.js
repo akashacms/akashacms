@@ -297,7 +297,7 @@ exports.apiFileViewer = function(req, res, next) {
 	var urlpath = req.query.akpath; // req.params[0];
 	logger.trace('apiFileViewer origUrl='+ req.originalUrl +' urlpath='+ urlpath);
 	// logger.trace(req.headers);
-	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
+	var docEntry = akasha.findDocumentForUrlpath(urlpath);
 	// logger.trace(util.inspect(docEntry));
 	if (docEntry && fileMatchImage(urlpath)) { // exports.apiImageViewer(req, res, next);
 		mahabhuta.process1(findTemplate('viewImage'), { },
@@ -400,7 +400,7 @@ exports.apiShowViewerModalEditorLinkPage = function(req, res) {
 				res.status(200).json({ html: html });
 			});
 	} else if (fileMatchRenderable(urlpath)) {
-		var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
+		var docEntry = akasha.findDocumentForUrlpath(urlpath);
 		if (docEntry) urlpath = '/'+ docEntry.renderedFileName;
 		mahabhuta.process1(findTemplate('linkviewRenderable'), { },
 			function($, metadata, dirty, done) {
@@ -429,7 +429,7 @@ exports.apiShowViewerModalEditorLinkPage = function(req, res) {
 exports.apiDownloadFile = function(req, res) {
 	var urlpath = req.params[0];
 	logger.trace('apiDownloadFile '+ urlpath);
-	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
+	var docEntry = akasha.findDocumentForUrlpath(urlpath);
 	if (docEntry) {
 		var fname = docEntry.fullpath;
 		fs.stat(fname, function(err, status) {
@@ -489,7 +489,7 @@ exports.apiPostAddNewFile = function(req, res) {
 	var fname = path.join(req.body.dirname, req.body.pathname.trim());
 	if (req.body.fnextension) fname += req.body.fnextension;
 	// logger.trace('fname='+ fname);
-	akasha.createDocument(config, config.root_docs[0],
+	akasha.createDocument(config.root_docs[0],
 		fname,
 		trimtxt(req.body.metadata), trimtxt(req.body.content), function(err, docEntry) {
 			if (err) {
@@ -498,7 +498,7 @@ exports.apiPostAddNewFile = function(req, res) {
 				logger.error('FAIL received from createDocument because '+ err);
 			} else {
 				// logger.trace(util.inspect(docEntry));
-				akasha.renderFile(config, docEntry.path, function(err) {
+				akasha.renderFile(docEntry.path, function(err) {
 					if (err) {
 						logger.error("Could not render "+ docEntry.fullpath +" because "+ err);
 						res.status(404).end("Could not render "+ docEntry.fullpath +" because "+ err);
@@ -515,10 +515,10 @@ exports.apiPostAddNewFile = function(req, res) {
 
 exports.apiPostAddEditedFile = function(req, res) {
 	logger.trace('in /..api/saveEditedFile' + util.inspect(req.body));
-	var docEntry = akasha.findDocumentForUrlpath(config, req.body.urlpath);
+	var docEntry = akasha.findDocumentForUrlpath(req.body.urlpath);
 	if (docEntry) {
 		// logger.trace('found docEntry for urlpath '+ body.urlpath +' '+ util.inspect(docEntry));
-		akasha.updateDocumentData(config, docEntry,
+		akasha.updateDocumentData(docEntry,
 				 trimtxt(req.body.metadata), trimtxt(req.body.content),
 				 function(err) {
 			logger.trace("Inside updateDocumentData");
@@ -528,7 +528,7 @@ exports.apiPostAddEditedFile = function(req, res) {
 				res.status(404).end("Could not update "+ docEntry.fullpath +" because "+ err);
 			} else {
 				logger.trace('before renderFile '+ docEntry.path);
-				akasha.renderFile(config, docEntry.path, function(err) {
+				akasha.renderFile(docEntry.path, function(err) {
 					if (err) {
 						logger.error("Could not render "+ docEntry.fullpath +" because "+ err);
 						res.status(404).end("Could not render "+ docEntry.fullpath +" because "+ err);
@@ -550,11 +550,11 @@ exports.apiPostAddEditedFile = function(req, res) {
 exports.apiDeleteFileConfirm = function(req, res) {
 	logger.trace('in /..api/deleteFileConfirm ' + util.inspect(req.body));
 	
-	var docEntry = akasha.findDocumentForUrlpath(config, req.body.urlpath);
+	var docEntry = akasha.findDocumentForUrlpath(req.body.urlpath);
 	if (docEntry) {
 		// logger.trace(util.inspect(docEntry));
 		logger.trace('deleting docEntry '+ docEntry.path);
-		akasha.deleteDocumentForUrlpath(config, docEntry.path, function(err) {
+		akasha.deleteDocumentForUrlpath(docEntry.path, function(err) {
 			if (err) {
 				logger.error("Could not delete "+ req.body.urlpath +" because "+ err);
 				res.status(404).end("Could not delete "+ req.body.urlpath +" because "+ err);
@@ -631,7 +631,7 @@ exports.apiUploadFiles = function(req, res) {
 							res.status(404).end(err);
 						} else {
 							logger.trace('success #2');
-							akasha.renderFile(config, path.join(dirpath, files[0].name), function(err) {
+							akasha.renderFile(path.join(dirpath, files[0].name), function(err) {
 								if (err) {
 									logger.error(err);
 									res.status(404).end(err);
@@ -652,7 +652,7 @@ exports.apiUploadFiles = function(req, res) {
 };
 
 var dirPathForDocument = function(config, urlpath, done) {
-	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
+	var docEntry = akasha.findDocumentForUrlpath(urlpath);
 	if (docEntry) {
 		done(undefined, {
 			path: '/'+ path.dirname(docEntry.path),
@@ -686,7 +686,7 @@ var dirPathForDocument = function(config, urlpath, done) {
 
 exports.apiFullBuild = function(req, res) {
 	logger.trace('in /..api/fullBuild ');
-	akasha.process(config, function(err) {
+	akasha.process(function(err) {
 		if (err) res.status(404).end("Failed to rebuild site because "+ err);
 		else {
 			logger.trace('END /..api/fullBuild ');
@@ -697,7 +697,7 @@ exports.apiFullBuild = function(req, res) {
 
 exports.apiDeploySite = function(req, res) {
 	logger.trace('in /..api/deploysite ');
-	var rsync = akasha.deployViaRsync(config);
+	var rsync = akasha.deployViaRsync();
 	rsync.stdout.on('data', function(data) {
 		logger.info(data.toString());
 	});
@@ -713,7 +713,7 @@ exports.apiDeploySite = function(req, res) {
 exports.docData = function(req, res) {
 	var urlpath = req.query.akpath; // req.params[0];
 	logger.trace('docData call '+ urlpath);
-	var docEntry = akasha.findDocumentForUrlpath(config, urlpath);
+	var docEntry = akasha.findDocumentForUrlpath(urlpath);
 	if (docEntry) {
 		// logger.trace('docData result '+ urlpath);
 		res.status(200).json({

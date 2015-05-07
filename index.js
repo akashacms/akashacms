@@ -15,7 +15,7 @@
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
- */
+ **/
 
 var async      = require('async');
 var util       = require('util');
@@ -26,20 +26,20 @@ var spawn      = require('child_process').spawn;
 var exec       = require('child_process').exec;
 var find       = require('./lib/find');
 var renderer   = require('./lib/renderer2');
-var mahabhuta  = require('mahabhuta');
+var mahabhuta  = require('../mahabhuta');
 var oembed     = require('oembed');
 var fs         = require('fs-extra');
 var globfs     = require('globfs');
 var path       = require('path');
 var archiver   = require('archiver');
 var fileCache  = require('./lib/fileCache');
-var smap       = require('sightmap');
 var RSS        = require('rss');
 var request    = require('request');
 var rendererCSSLess = require('./lib/renderer-cssless');
 var rendererEjs = require('./lib/renderer-ejs');
 var rendererHTML = require('./lib/renderer-html');
 var md         = require('./lib/md');
+var sitemaps   = require('./lib/sitemaps');
 
 var log4js     = require('log4js');
 var logger;
@@ -51,6 +51,35 @@ var config;
 module.exports.config = function(_config) {
 	config = _config;
 	
+	logger = module.exports.getLogger("akashacms");
+    
+    module.exports.registerPlugins = registerPlugins.bind(_config);
+    module.exports.eachPlugin = eachPlugin.bind(_config);
+    module.exports.plugin = plugin.bind(_config);
+    module.exports.registerRenderChain = registerRenderChain.bind(_config);
+    module.exports.findRenderChain = findRenderChain.bind(_config);
+    
+    module.exports.copyAssets = copyAssets.bind(_config);
+    module.exports.emptyRootOut = emptyRootOut.bind(_config);
+    module.exports.process = process.bind(_config);
+    module.exports.partialSync = partialSync.bind(_config);
+    module.exports.partial = partial.bind(_config);
+    module.exports.renderDocuments = renderDocuments.bind(_config);
+    module.exports.renderDocument = renderDocument.bind(_config);
+    module.exports.renderFile = renderFile.bind(_config);
+    module.exports.gatherDir = gatherDir.bind(_config);
+    
+    module.exports.zipRenderedSite = zipRenderedSite.bind(_config);
+    
+    module.exports.runEditServer = runEditServer.bind(_config);
+    module.exports.runPreviewServer = runPreviewServer.bind(_config);
+    
+    module.exports.deployViaRsync = deployViaRsync.bind(_config);
+    
+    module.exports.generateRSS = generateRSS.bind(_config);
+    
+    module.exports.pingXmlSitemap = pingXmlSitemap.bind(config);
+    
 	// Set up logging support
 	
 	if (config.log4js) {
@@ -67,7 +96,6 @@ module.exports.config = function(_config) {
 		});
 	}
 
-	logger = module.exports.getLogger("akashacms");
 	
 	// Initialize a Mahabhuta array if one wasn't set up
 	if (! config.mahabhuta) {
@@ -80,6 +108,29 @@ module.exports.config = function(_config) {
     find.config(module.exports, config);
     renderer.config(module.exports, config);
 	md.config(module.exports, config);
+	sitemaps.config(module.exports, config);
+    
+    module.exports.findAssetAsync = find.assetFile;
+    module.exports.findDocumentAsync = find.documentAsync;
+    module.exports.findDocumentForUrlpath = fileCache.documentForUrlpath;
+    module.exports.findMatchingDocuments = fileCache.findMatchingDocuments;
+    module.exports.findTemplateAsync = find.templateAsync;
+    module.exports.findPartialAsync = find.partialAsync;
+    module.exports.readDocumentEntry = fileCache.readDocument;
+    module.exports.updateDocumentData = fileCache.updateDocumentData;
+    module.exports.createInMemoryDocument = fileCache.createInMemoryDocument;
+    module.exports.createDocument = fileCache.createDocument;
+    module.exports.deleteDocumentForUrlpath = fileCache.deleteDocumentForUrlpath;
+    module.exports.eachDocument = fileCache.eachDocument;
+    module.exports.eachDocumentAsync = fileCache.eachDocumentAsync;
+    module.exports.indexChain = fileCache.indexChain;
+    module.exports.isSyncHtml = fileCache.isSyncHtml;
+    module.exports.isASyncHtml = fileCache.isASyncHtml;
+    module.exports.isHtml = fileCache.isHtml;
+    module.exports.supportedForHtml = fileCache.supportedForHtml;
+    module.exports.isIndexHtml = fileCache.isIndexHtml;
+    
+    module.exports.generateSitemap = sitemaps.generateSitemap;
     
     // Then give the configuration file a shot at extending us
 	// This will cause any plugins to load, when the config function calls requirePlugins
@@ -103,6 +154,7 @@ module.exports.config = function(_config) {
     
     // logger.trace(util.inspect(config));
     
+    
     return module.exports;
 };
 
@@ -117,35 +169,36 @@ module.exports.getLogger = function(category) {
  * registerPlugins - go through plugins array, adding each to the plugins array in
  * the config file, then calling the config function of each plugin.
  */
-module.exports.registerPlugins = function(config, plugins) {
-	if (typeof config.plugins === 'undefined' || ! config.plugins) {
-		config.plugins = [];
+function registerPlugins(plugins) {
+	if (typeof this.plugins === 'undefined' || !this.hasOwnProperty("plugins") || ! this.plugins) {
+		this.plugins = [];
 	}
+	var _config = this;
 	
 	plugins.forEach(function(pluginObj) {
 		if (typeof pluginObj.plugin === 'string') {
 			pluginObj.plugin = require(pluginObj.plugin);
 		}
-		config.plugins.push(pluginObj);
-		pluginObj.plugin.config(module.exports, config);
+		_config.plugins.push(pluginObj);
+		pluginObj.plugin.config(module.exports, _config);
 		
 		if (pluginObj.plugin.mahabhuta) {
-			module.exports.registerMahabhuta(config, pluginObj.plugin.mahabhuta);
+			registerMahabhuta(_config, pluginObj.plugin.mahabhuta);
 		}
 	});
 	
 	return module.exports;
-};
+}
 
-module.exports.eachPlugin = function(config, iterator, final) {
-	async.eachSeries(config.plugins,
+function eachPlugin(iterator, final) {
+	async.eachSeries(this.plugins,
 	function(plugin, next) {
 		iterator(plugin.plugin, next);
 	},
 	final);
-};
+}
 
-module.exports.registerMahabhuta = function(config, mahafuncs) {
+function registerMahabhuta(config, mahafuncs) {
 	if (! config.mahabhuta) config.mahabhuta = [];
 	
 	mahafuncs.forEach(function(mahafunc) {
@@ -153,53 +206,53 @@ module.exports.registerMahabhuta = function(config, mahafuncs) {
 	});
 	
 	return module.exports;
-};
+}
 
 /**
  * plugin - Look for a plugin, returning its module reference.
  */
-module.exports.plugin = function(name) {
-	if (! config.plugins) {
+function plugin(name) {
+	if (! this.plugins) {
 		throw new Error('Configuration has no plugins');
 	}
-	var plugin;
-	config.plugins.forEach(function(pluginObj) {
+	var ret;
+	this.plugins.forEach(function(pluginObj) {
 		if (pluginObj.name === name) {
-			plugin = pluginObj.plugin;
+			ret = pluginObj.plugin;
 		}
 	});
-	return plugin;
-};
+	return ret;
+}
 
 /**
  * Add a renderChain
  */
-module.exports.registerRenderChain = function(renderChain) {
-	if (! config.renderChains) config.renderChains = [];
+function registerRenderChain(renderChain) {
+	if (! this.renderChains) this.renderChains = [];
 	
 	if ((renderChain.match && typeof renderChain.match === 'function')
 	 && (
 		(renderChain.renderSync && typeof renderChain.renderSync === 'function')
 	 || (renderChain.render && typeof renderChain.render === 'function')
 		)) {
-		config.renderChains.push(renderChain);
+		this.renderChains.push(renderChain);
 	} else
 		throw new Error('bad renderChain provided '+ util.inspect(renderChain));
 	
 	return module.exports;
-};
+}
 
 /**
  * Find a renderChain based on a file name
  */
-module.exports.findRenderChain = function(fname) {
+function findRenderChain(fname) {
 	var fnameData;
 	var renderChain;
 	// logger.info('findRenderChain '+ fname);
-	for (var i = 0; config.renderChains && i < config.renderChains.length; i++) {
-		fnameData = config.renderChains[i].match(fname);
+	for (var i = 0; this.renderChains && i < this.renderChains.length; i++) {
+		fnameData = this.renderChains[i].match(fname);
 		if (fnameData !== null) {
-			renderChain = config.renderChains[i];
+			renderChain = this.renderChains[i];
 			break;
 		}
 	}
@@ -209,52 +262,89 @@ module.exports.findRenderChain = function(fname) {
 		if (renderChain.doLayouts) fnameData.doLayouts = renderChain.doLayouts;
 		return fnameData;
 	} else return null;
-};
+}
 
-module.exports.copyAssets = function(config, done) {
+function pingXmlSitemap(done) {
+	// ask.com and duckduckgo.com both say they automatically spider and discover everything
+	// and therefore don't support being pinged
+	// pinging yahoo.com as shown below fails with a 404
+	// pinging the /ping URL is per the sitemap protocol: http://www.sitemaps.org/protocol.html#submit_ping
+	// However, if you yahoogle each search engine lists a different URL for sitemap submission.
+	// It's also useful to add a line to robots.txt as it says on the above page
+	//     sitemap: http://www.example.com/sitemap.xml
+	async.eachSeries([
+		"www.google.com", "www.yahoo.com", "www.bing.com"
+	],
+	function(hostname, next) {
+		var url2ping = url.format({
+			protocol: "http",
+			hostname: hostname,
+			pathname: "/ping",
+			query: {
+				sitemap: this.root_url +"/sitemap.xml"
+			}
+		});
+		request.get(url2ping)
+		.on('error', function(err) {
+			next(err);
+		})
+		.on('response', function(result) {
+			// console.log(util.inspect(result));
+			console.log(url2ping +' '+ result.statusCode );
+			next();
+		});
+	},
+	function(err) {
+		if (err) done(err);
+		else done();
+	});
+}
+function copyAssets(done) {
 	logger.trace('copyAssets START');
 
-	globfs.copy(config.root_assets, [ "**/*", '**/.*/*', '**/.*' ], config.root_out, {},
+	globfs.copy(this.root_assets, [ "**/*", '**/.*/*', '**/.*' ], this.root_out, {},
 		function(err) {
 			if (err) { logger.error(err); done(err); }
 			else { logger.trace('copyAssets FINI '); done(); }
 		});
 
-};
+}
 
-module.exports.emptyRootOut = function(config, done) {
-	logger.info('removing ' + config.root_out);
-	fs.remove(config.root_out, function(err) {
+function emptyRootOut(done) {
+	logger.info('removing ' + this.root_out);
+	var root_out = this.root_out;
+	fs.remove(root_out, function(err) {
 		if (err) done(err);
 		else {
-			logger.info('making empty ' + config.root_out);
-			fs.mkdirs(config.root_out, function(err) {
+			logger.info('making empty ' + root_out);
+			fs.mkdirs(root_out, function(err) {
 				if (err) done(err);
 				else { logger.trace('cleanDir FINI'); done(); }
 			});
 		}
 	});
-};
+}
 
-module.exports.process = function(config, callback) {
+function process(callback) {
     
-    module.exports.emptyRootOut(config, function(err) {
+    var root_docs = this.root_docs;
+    module.exports.emptyRootOut(function(err) {
         if (err) { logger.error(err); callback(new Error(err)); }
         else {
-            module.exports.copyAssets(config, function(err) {
+            module.exports.copyAssets(function(err) {
                 if (err) { logger.error('copyAssets done '+ err); callback(err); }
                 else {
-                    module.exports.gatherDir(config, config.root_docs, function(err) {
+                    module.exports.gatherDir(root_docs, function(err) {
                         // util.log('gatherDir CALLBACK CALLED');
                         if (err) callback(err);
                         else {
 							dispatcher('before-render-files', function(err) {
-								module.exports.renderDocuments(config, function(err) {
+								module.exports.renderDocuments(function(err) {
 									if (err) callback(err);
 									else {
 										dispatcher('done-render-files', function(err) {
 											logger.info('about to generate sitemap');
-											generate_sitemap(config, function(err) {
+											sitemaps.generateSitemap(function(err) {
 												if (err) callback(err);
 												else {
 													logger.info('about to all-done');
@@ -274,19 +364,19 @@ module.exports.process = function(config, callback) {
             });
         }
     });
-};
+}
 
 /**
  * Render a partial, paying attention to synchronous operation
  */
-module.exports.partialSync = function(fname, metadata) {
+function partialSync(fname, metadata) {
 	metadata.plugin = module.exports.plugin;
-	metadata.config = config;
+	metadata.config = this;
 	metadata.partial = module.exports.partialSync;
 	metadata.akashacms = module.exports;
 	
 	var renderChain = module.exports.findRenderChain(fname);
-    var fnamePartial = find.partial(config, fname);
+    var fnamePartial = find.partial(fname);
     logger.trace('partialSync fname=' + fname + ' fnamePartial=' + fnamePartial);
     if (fnamePartial === undefined) 
         return new Error('NO FILE FOUND FOR PARTIAL ' + util.inspect(fname));
@@ -296,20 +386,20 @@ module.exports.partialSync = function(fname, metadata) {
 	} else {
 	  return new Error('UNKNOWN Synchronous Template Engine for ' + fname);
 	}
-};
+}
 
 /**
  * Render a partial in asynchronous fashion
  */
-module.exports.partial = function(name, metadata, callback) {
+function partial(name, metadata, callback) {
 	metadata.plugin = module.exports.plugin;
-	metadata.config = config;
+	metadata.config = this;
 	metadata.partial = module.exports.partialSync;
 	metadata.akashacms = module.exports;
 	
 	var renderChain = module.exports.findRenderChain(name);
 	if (renderChain) {
-	  fileCache.readPartial(config, name, function(err, partialEntry) {
+	  fileCache.readPartial(name, function(err, partialEntry) {
 		if (err) callback(err);
 		else if (renderChain.render) {
 		  renderChain.render(partialEntry.frontmatter.text, metadata, callback);
@@ -327,17 +417,17 @@ module.exports.partial = function(name, metadata, callback) {
 	} else {
 	  callback(new Error("No renderChain engine found for "+ name));
 	}
-};
+}
 
 // TODO: For a gruntified version, we don't want to use dispatcher here
 // Instead the Gruntfile would do tasks before and after renderDocuments
-module.exports.renderDocuments = function(config, done) {
+function renderDocuments(done) {
 	var entryCount = 0;
-	fileCache.eachDocumentAsync(config, 
+	fileCache.eachDocumentAsync( 
 		function(docEntry, next) {
 			entryCount++;
 			logger.info('FILE '+ entryCount +' '+ docEntry.path);
-			module.exports.renderDocument(config, docEntry, function(err) {
+			module.exports.renderDocument(docEntry, function(err) {
 				if (err) next(err);
 				else next();
 			});
@@ -349,9 +439,9 @@ module.exports.renderDocuments = function(config, done) {
 				done();
 			}
 		});
-};
+}
 
-var renderDocEntry = module.exports.renderDocument = function(config, docEntry, done) {
+function renderDocument(docEntry, done) {
 	// logger.trace('renderFile before rendering '+ fileName);
 	// util.log('renderDocument '+ docEntry.path);
 	var renderChain = module.exports.findRenderChain(docEntry.path);
@@ -362,18 +452,18 @@ var renderDocEntry = module.exports.renderDocument = function(config, docEntry, 
 		// util.log('about to process2html');
 		process2html(config, docEntry, done);
 	} else {
-		var metadata = config2renderopts(config, docEntry);
+		var metadata = config2renderopts(this, docEntry);
 		if (renderChain && renderChain.renderSync) {
 			var rendered = renderChain.renderSync(docEntry.frontmatter.text, metadata);
-			writeRenderingToFile(config, renderChain.renderedFileName, rendered, docEntry, done);
+			writeRenderingToFile(this, renderChain.renderedFileName, rendered, docEntry, done);
 		} else if (renderChain && renderChain.render) {
 			renderChain.render(docEntry.frontmatter.text, metadata, function(err, rendered) {
 				if (err) done(err);
-				else writeRenderingToFile(config, renderChain.renderedFileName, rendered, docEntry, done);
+				else writeRenderingToFile(this, renderChain.renderedFileName, rendered, docEntry, done);
 			});
 		} else {
 			// for anything not rendered, simply copy it
-			var renderTo = path.join(config.root_out, docEntry.path);
+			var renderTo = path.join(this.root_out, docEntry.path);
 			// util.log('copy_to_outdir renderTo='+ renderTo +' entry.path='+ entry.path);
 			fs.mkdirs(path.dirname(renderTo), function(err) {
 				if (err) done(err); 
@@ -390,20 +480,20 @@ var renderDocEntry = module.exports.renderDocument = function(config, docEntry, 
 	}
 };
 
-module.exports.renderFile = function(config, fileName, callback) {
+function renderFile(fileName, callback) {
     if (fileName.charAt(0) === '/') {
         fileName = fileName.substr(1);
     }
-    renderer.config(module.exports, config);
+    renderer.config(module.exports, this);
 	logger.trace('renderFile before readDocument '+ fileName);
-    fileCache.readDocument(config, fileName, function(err, docEntry) {
+    fileCache.readDocument(fileName, function(err, docEntry) {
     	if (err) callback(err);
 		else if (!docEntry) callback(new Error('File '+fileName+' not found'));
-		else renderDocEntry(config, docEntry, callback);
+		else module.exports.renderDocument(docEntry, callback);
     });
 };
 
-module.exports.gatherDir = function(config, docroot, done) {
+function gatherDir(docroot, done) {
 	var dirs = typeof docroot === 'string' ? [ docroot ] : docroot;
 	var lastbasedir;
     globfs.operate(dirs, [ '**/*', '**/.*/*', '**/.*' ],
@@ -432,7 +522,7 @@ module.exports.gatherDir = function(config, docroot, done) {
     		async.eachLimit(results, 10,
     			function(result, next) {
 	    			// logger.trace('gatherDir about to read '+ util.inspect(result));
-					fileCache.readDocument(config, result.path, function(err, docEntry) {
+					fileCache.readDocument(result.path, function(err, docEntry) {
 						if (err) logger.error('gatherDir readDocument '+ err);
 						next();
 					});
@@ -512,18 +602,20 @@ var process2html = function(config, entry, done) {
 		// util.log('process2html partial='+ util.inspect(metadata.partial));
         
         logger.trace('process2html #2 '+ entry.path); //  +' '+ util.log(util.inspect(renderopts)));
-        renderer.render(module.exports, config, entry, undefined, metadata, function(err, rendered) {
+        renderer.render(module.exports, entry, undefined, metadata, function(err, rendered) {
             logger.trace('***** DONE RENDER ' + entry.path); // util.inspect(rendered));
             if (err) {
             	logger.error('Rendering '+ entry.path +' failed with '+ err);
             	done('Rendering '+ entry.path +' failed with '+ err);
             } else {
                 var renderTo = path.join(config.root_out, rendered.fname);
+                if (!rendered.content) logger.error("Somethings wrong - no rendered.content");
                 dispatcher('file-rendered', config, entry.path, renderTo, rendered, function(err) {
                     // TBD - the callback needs to send a new rendering 
                     if (err) done('Rendering file-rendered '+ entry.path +' failed with '+ err);
                     else {
-                        // logger.info('rendered '+ entry.path +' as '+ renderTo);
+                        logger.info('rendered '+ entry.path +' as '+ renderTo);
+                        if (!rendered.content) logger.error("Somethings wrong - no rendered.content");
                         fs.mkdirs(path.dirname(renderTo), function(err) {
                             if (err) done('FAILED to make directory '+ path.dirname(renderTo) +' failed with '+ err); 
                             else fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
@@ -541,7 +633,7 @@ var process2html = function(config, entry, done) {
                                         }
                                     }
                                     fs.utimes(renderTo, atime, mtime, function(err) {
-                                        add_sitemap_entry(config.root_url +'/'+ rendered.fname, 0.5, mtime);
+                                        sitemaps.add_sitemap_entry(config.root_url +'/'+ rendered.fname, 0.5, mtime);
                                         done();
                                     });
                                 }
@@ -573,11 +665,11 @@ var writeRenderingToFile = function(config, renderedFileName, rendered, entry, d
 }
 
 
-module.exports.zipRenderedSite = function(config, done) {
+function zipRenderedSite(done) {
 	
     var archive = archiver('zip');
     
-    var output = fs.createWriteStream(config.root_out +'.zip');
+    var output = fs.createWriteStream(this.root_out +'.zip');
             
     output.on('close', function() {
         logger.info(archive.pointer() + ' total bytes');
@@ -591,7 +683,7 @@ module.exports.zipRenderedSite = function(config, done) {
     
     archive.pipe(output);
 	
-	archive.directory(config.root_out, ".");
+	archive.directory(this.root_out, ".");
 	
 	archive.finalize();
 };
@@ -609,31 +701,10 @@ module.exports.parseTags = function(tags) {
     return taglist;
 };
 
-module.exports.findAssetAsync = find.assetFile;
-
-module.exports.findDocumentAsync = find.documentAsync;
-
-module.exports.findDocumentForUrlpath = fileCache.documentForUrlpath;
-
-module.exports.findMatchingDocuments = fileCache.findMatchingDocuments;
-
-module.exports.findTemplateAsync = find.templateAsync;
-
-module.exports.findPartialAsync = find.partialAsync;
-
-module.exports.readDocumentEntry = fileCache.readDocument;
-
-module.exports.updateDocumentData = fileCache.updateDocumentData;
-
-module.exports.createInMemoryDocument = fileCache.createInMemoryDocument;
-module.exports.createDocument = fileCache.createDocument;
-
-module.exports.deleteDocumentForUrlpath = fileCache.deleteDocumentForUrlpath;
-
 /* module.exports.findSiblings = function(config, fileName, done) {
     var bnm   = path.basename(fileName);
     var dirname = path.dirname(fileName);
-    fileCache.readDocument(config, fileName, function(err, entry) {
+    fileCache.readDocument(fileName, function(err, entry) {
     	if (err) done(err);
     	else {
 			var entries = [];
@@ -644,7 +715,7 @@ module.exports.deleteDocumentForUrlpath = fileCache.deleteDocumentForUrlpath;
 				function(err, fn, cb) {
 					var fpath = path.join(filedir, fn);
 					if (fileCache.supportedForHtml(fpath)) {
-						fileCache.readDocument(config, fpath, function(err, docEntry) {
+						fileCache.readDocument(fpath, function(err, docEntry) {
 							if (err) cb(err);
 							else entries.push(docEntry);
 						});
@@ -662,26 +733,7 @@ module.exports.urlForFile = function(fileName) {
     return '/'+ fileCache.renderedFileName(fileName);
 };
 
-module.exports.eachDocument = fileCache.eachDocument;
-module.exports.eachDocumentAsync = fileCache.eachDocumentAsync;
-
-module.exports.indexChain = fileCache.indexChain;
-
-module.exports.isSyncHtml = fileCache.isSyncHtml;
-
-module.exports.isASyncHtml = fileCache.isASyncHtml;
-
-module.exports.isHtml = fileCache.isHtml;
-
-module.exports.supportedForHtml = fileCache.supportedForHtml;
-
-module.exports.isIndexHtml = fileCache.isIndexHtml;
-
 ///////////////// Preview built website
-
-module.exports.runEditServer = function(config) {
-    require('./server/app')(module.exports, config);
-};
 
 var streamit = function(res, fname, stats) {
 	var m = mime.lookup(fname);
@@ -696,11 +748,12 @@ var streamit = function(res, fname, stats) {
 	readStream.pipe(res);
 };
 
-module.exports.runPreviewServer = function(config) {
+function runPreviewServer() {
+    var root_out = this.root_out;
 	var server = http.createServer(function (req, res) {
 		var requrl = url.parse(req.url, true);
 		logger.info(req.method +' '+ req.url);
-		var fname = path.join(config.root_out, requrl.pathname);
+		var fname = path.join(root_out, requrl.pathname);
 		fs.stat(fname, function(err, stats) {
 			if (err) {
 				res.statusCode = 404;
@@ -714,14 +767,14 @@ module.exports.runPreviewServer = function(config) {
 					res.end();
 				} else if (stats.isFile()) {
 					if (requrl.pathname.match(/\.html$/i)) {
-						var docEntrie = fileCache.documentForUrlpath(config, requrl.pathname);
+						var docEntrie = fileCache.documentForUrlpath(requrl.pathname);
 						if (docEntrie) {
-							fileCache.readDocument(config, docEntrie.path, function(err, docEntry) {
+							fileCache.readDocument(docEntrie.path, function(err, docEntry) {
 								if (err) {
 									res.statusCode = 500;
 									res.end(err);
 								} else if ((stats.mtime - docEntry.stat.mtime) < 0) {
-									renderDocEntry(config, docEntry, function(err) {
+									module.exports.renderDocument(docEntry, function(err) {
 										if (err) {
 											res.statusCode = 500;
 											res.end(err);
@@ -746,37 +799,37 @@ module.exports.runPreviewServer = function(config) {
 	server.listen(6080);
 };
 
-module.exports.runEditServer = function(config) {
-	module.exports.gatherDir(config, config.root_docs, function(err, data) {
+function runEditServer() {
+	module.exports.gatherDir(this.root_docs, function(err, data) {
 		if (err) {
 			util.log('ERROR '+ err);
 		} else {
-			require(path.join(__dirname, 'server', 'app'))(module.exports, config);
+			require(path.join(__dirname, 'server', 'app'))(module.exports, this);
 		}
 	});
 };
 
 ///////////////// Deployment of Sites
 
-module.exports.deployViaRsync = function(config) {
-	var user = config.deploy_rsync.user;
-	var host = config.deploy_rsync.host;
-	var dir  = config.deploy_rsync.dir;
+function deployViaRsync() {
+	var user = this.deploy_rsync.user;
+	var host = this.deploy_rsync.host;
+	var dir  = this.deploy_rsync.dir;
 	var nargv = [];
 	nargv.push('--verbose');
 	nargv.push('--archive');
 	nargv.push('--delete');
 	nargv.push('--compress');
 	// if (options.force) 
-	if (config.deploy_rsync.exclude) {
+	if (this.deploy_rsync.exclude) {
 		nargv.push('--exclude');
-		nargv.push(config.deploy_rsync.exclude);
+		nargv.push(this.deploy_rsync.exclude);
 	}
-	if (config.deploy_rsync.excludeFile) {
+	if (this.deploy_rsync.excludeFile) {
 		nargv.push('--exclude-from');
-		nargv.push(config.deploy_rsync.excludeFile);
+		nargv.push(this.deploy_rsync.excludeFile);
 	}
-	nargv.push(config.root_out+'/');
+	nargv.push(this.root_out+'/');
 	nargv.push(user+'@'+host+':'+dir+'/');
 	logger.info('deploy Via Rsync '+ util.inspect(nargv));
 	return spawn('rsync', nargv, {env: process.env, stdio: ['pipe', 'pipe', 'pipe']});
@@ -784,7 +837,7 @@ module.exports.deployViaRsync = function(config) {
 
 ///////////////// RSS Feed Generation
 
-module.exports.generateRSS = function(config, configrss, feedData, items, renderTo, done) {
+function generateRSS(configrss, feedData, items, renderTo, done) {
 
 	// logger.trace('generateRSS '+ renderTo);
 	
@@ -808,7 +861,7 @@ module.exports.generateRSS = function(config, configrss, feedData, items, render
     items.forEach(function(item) { rssfeed.item(item); });
     
     var xml = rssfeed.xml();
-    var renderOut = path.join(config.root_out, renderTo);
+    var renderOut = path.join(this.root_out, renderTo);
     // logger.trace(renderOut +' ===> '+ xml);
     
 	fs.mkdirs(path.dirname(renderOut), function(err) {
@@ -821,7 +874,7 @@ module.exports.generateRSS = function(config, configrss, feedData, items, render
 				});
 		}
 	});
-};
+}
 
 ///////////////// Event handling
 
@@ -903,92 +956,4 @@ var dispatcher = module.exports.dispatcher = function() {
     };
     
     callNextHandler(args);
-};
-
-///////////////// XML Sitemap Generation .. works by building an array, then dumping it out in XML
-
-var rendered_files = [];
-
-var add_sitemap_entry = function(fname, priority, mtime) {
-	if (!(config && config.builtin && config.builtin.suppress && config.builtin.suppress.sitemap)) {
-		// util.log('add_sitemap_entry ' + fname);
-		var fDate = new Date(mtime);
-		var mm = fDate.getMonth() + 1;
-		if (mm < 10) {
-			mm = "0" + mm.toString();
-		} else {
-			mm = mm.toString();
-		}
-		var dd = fDate.getDate();
-		if (dd < 10) {
-			dd = "0" + dd.toString();
-		} else {
-			dd = dd.toString();
-		}
-		rendered_files.push({
-			loc: encodeURI(fname),
-			priority: priority,
-			lastmod:  fDate.getUTCFullYear() +"-"+ mm +"-"+ dd
-		});
-		/*
-		 * This lets us remove the 'index.html' portion of URL's submitted in the sitemap.
-		 * But we need to also ensure all links within the site pointing at this also do
-		 * not use 'index.html' in the URL.  Ugh.
-		 *if (fname.match(/index.html$/)) {
-			rendered_files.push({loc: fname.replace(/index.html$/, ''), priority: priority});
-		}*/
-	}
-};
-
-var generate_sitemap = module.exports.generateSitemap = function(config, done) {
-    // util.log('generate_sitemap ' + util.inspect(rendered_files));
-	// util.log(util.inspect(config.builtin));
-	if (!(config && config.builtin && config.builtin.suppress && config.builtin.suppress.sitemap)) {
-		smap(rendered_files);
-		smap(function(xml) {
-			fs.writeFile(path.join(config.root_out, "sitemap.xml"), xml, 'utf8', function (err) {
-				if (err) {
-					done(err);
-				} else {
-					done();
-				}
-			});
-		});
-	} else done();
-};
-
-module.exports.pingXmlSitemap = function(config, done) {
-	// ask.com and duckduckgo.com both say they automatically spider and discover everything
-	// and therefore don't support being pinged
-	// pinging yahoo.com as shown below fails with a 404
-	// pinging the /ping URL is per the sitemap protocol: http://www.sitemaps.org/protocol.html#submit_ping
-	// However, if you yahoogle each search engine lists a different URL for sitemap submission.
-	// It's also useful to add a line to robots.txt as it says on the above page
-	//     sitemap: http://www.example.com/sitemap.xml
-	async.eachSeries([
-		"www.google.com", "www.yahoo.com", "www.bing.com"
-	],
-	function(hostname, next) {
-		var url2ping = url.format({
-			protocol: "http",
-			hostname: hostname,
-			pathname: "/ping",
-			query: {
-				sitemap: config.root_url +"/sitemap.xml"
-			}
-		});
-		request.get(url2ping)
-		.on('error', function(err) {
-			next(err);
-		})
-		.on('response', function(result) {
-			// console.log(util.inspect(result));
-			console.log(url2ping +' '+ result.statusCode )
-			next();
-		});
-	},
-	function(err) {
-		if (err) done(err);
-		else done();
-	})
 };
