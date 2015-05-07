@@ -2,7 +2,7 @@
 
 var find       = require('../lib/find');
 var renderer   = require('../lib/renderer2');
-var mahabhuta  = require('../lib/mahabhuta');
+var mahabhuta  = require('mahabhuta');
 var fileCache  = require('../lib/fileCache');
 
 var config;

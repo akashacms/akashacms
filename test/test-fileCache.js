@@ -10,7 +10,7 @@ akasha.config(config);
 vows.describe("fileCache").addBatch({
   "fc index.html": {
       topic: function() {
-      	fc.readDocument(config, "index.html.md", this.callback);
+      	fc.readDocument("index.html.md", this.callback);
       },
       "type document": function(topic) {
           assert.equal(topic.type, "document");

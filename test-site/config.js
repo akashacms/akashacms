@@ -44,11 +44,12 @@ module.exports = {
     },
     
     config: function(akasha) {
-		akasha.registerPlugins(module.exports, [
+		akasha.registerPlugins([
 			// { name: 'akashacms-theme-bootstrap', plugin: require('akashacms-theme-bootstrap') },
 			// { name: 'akashacms-breadcrumbs', plugin: require('akashacms-breadcrumbs') },
 			// { name: 'akashacms-booknav', plugin: require('akashacms-booknav') },
-			{ name: 'akashacms-embeddables', plugin: require('akashacms-embeddables') },
+			{ name: 'akashacms-embeddables', plugin: require('../../akashacms-embeddables') },
+			{ name: 'akashacms-base', plugin: require('../../akashacms-base') },
 			// { name: 'akashacms-blog-podcast', plugin: require('akashacms-blog-podcast') },
 			// { name: 'akashacms-social-buttons', plugin: require('akashacms-social-buttons') },
 			// { name: 'akashacms-tagged-content', plugin: require('akashacms-tagged-content') }

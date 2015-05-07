@@ -20,9 +20,9 @@ vows.describe("renderer").addBatch({
       topic: function() {
       	var that = this;
       	var emitter = new(events.EventEmitter);
-      	fc.readDocument(config, "index.html.md", function(err, docEntry) {
+      	fc.readDocument("index.html.md", function(err, docEntry) {
       		if (err) emitter.emit('error', err);
-        	else render.render(akasha, config, docEntry, undefined, 
+        	else render.render(akasha, docEntry, undefined, 
 				docEntry.frontmatter.yaml,
 				function(err2, rendered) {
 					if (err2) emitter.emit('error', err2);
@@ -62,9 +62,9 @@ vows.describe("renderer").addBatch({
       topic: function() {
       	var that = this;
       	var emitter = new(events.EventEmitter);
-      	fc.readDocument(config, "list.html.ejs.md", function(err, docEntry) {
+      	fc.readDocument("list.html.ejs.md", function(err, docEntry) {
       		if (err) emitter.emit('error', err);
-        	else render.render(akasha, config, docEntry, undefined,
+        	else render.render(akasha, docEntry, undefined,
 				docEntry.frontmatter.yaml,
 				function(err2, rendered) {
 					if (err2) emitter.emit('error', err2);
@@ -83,10 +83,10 @@ vows.describe("renderer").addBatch({
           util.log(util.inspect(topic));
       },*/
       "fname": function(topic) {
-          assert.equal(topic.fname, "list.html.ejs");
+          assert.equal(topic.fname, "list.html");
       },
       "ext": function(topic) {
-          assert.equal(topic.ext, "md");
+          assert.equal(topic.ext, "ejs.md");
       },
       "content rendered": function(topic) {
           var locItem1 = topic.content.indexOf("Item 1");
@@ -108,10 +108,10 @@ vows.describe("renderer").addBatch({
       topic: function() {
       	var that = this;
       	var emitter = new(events.EventEmitter);
-      	fc.readDocument(config, "youtube.html.md", function(err, docEntry) {
+      	fc.readDocument("youtube.html.md", function(err, docEntry) {
       		if (err) emitter.emit('error', err);
         	else {
-        		render.render(akasha, config, docEntry, undefined,
+        		render.render(akasha, docEntry, undefined,
         			docEntry.frontmatter.yaml,
         			function(err2, rendered) {
         				if (err2) emitter.emit('error', err2);

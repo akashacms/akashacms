@@ -6,7 +6,7 @@ var config = require('../test-site/config.js');
 
 vows.describe("find").addBatch({
     "find index": {
-        topic: find.document(config, "index.html.md"),
+        topic: find.document("index.html.md"),
         /*"show": function(topic) {
           util.log(util.inspect(topic));
         }, */
