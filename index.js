@@ -38,6 +38,7 @@ var request    = require('request');
 var rendererCSSLess = require('./lib/renderer-cssless');
 var rendererEjs = require('./lib/renderer-ejs');
 var rendererHTML = require('./lib/renderer-html');
+var rendererJSON = require('./lib/renderer-json');
 var md         = require('./lib/md');
 var sitemaps   = require('./lib/sitemaps');
 
@@ -109,6 +110,7 @@ module.exports.config = function(_config) {
     renderer.config(module.exports, config);
 	md.config(module.exports, config);
 	sitemaps.config(module.exports, config);
+	rendererJSON.config(module.exports, config);
     
     module.exports.findAssetAsync = find.assetFile;
     module.exports.findDocumentAsync = find.documentAsync;
@@ -147,10 +149,14 @@ module.exports.config = function(_config) {
 	// Set up the default renderer modules
 	[
 	  rendererEjs.rendererEJS, rendererEjs.rendererEJSMD, md, rendererHTML,
-	  rendererCSSLess
+	  rendererCSSLess, rendererJSON
 	].forEach(function(renderer) {
 		module.exports.registerRenderChain(renderer);
 	});
+    
+	if (typeof config.headerScripts === "undefined") config.headerScripts = {};
+	if (typeof config.headerScripts.javaScriptTop == "undefined") config.headerScripts.javaScriptTop = [];
+	if (typeof config.headerScripts.javaScriptBottom == "undefined") config.headerScripts.javaScriptBottom = [];
     
     // logger.trace(util.inspect(config));
     
@@ -182,9 +188,9 @@ function registerPlugins(plugins) {
 		_config.plugins.push(pluginObj);
 		pluginObj.plugin.config(module.exports, _config);
 		
-		if (pluginObj.plugin.mahabhuta) {
-			registerMahabhuta(_config, pluginObj.plugin.mahabhuta);
-		}
+		/* if (pluginObj.plugin.mahabhuta) {
+		 *	registerMahabhuta(_config, pluginObj.plugin.mahabhuta);
+		} */
 	});
 	
 	return module.exports;
@@ -198,15 +204,15 @@ function eachPlugin(iterator, final) {
 	final);
 }
 
-function registerMahabhuta(config, mahafuncs) {
-	if (! config.mahabhuta) config.mahabhuta = [];
-	
-	mahafuncs.forEach(function(mahafunc) {
-		config.mahabhuta.push(mahafunc);
-	});
-	
-	return module.exports;
-}
+/* function registerMahabhuta(config, mahafuncs) {
+ *	if (! config.mahabhuta) config.mahabhuta = [];
+ *	
+ *	mahafuncs.forEach(function(mahafunc) {
+ *		config.mahabhuta.push(mahafunc);
+ *	});
+ *	
+ *	return module.exports;
+ * } */
 
 /**
  * plugin - Look for a plugin, returning its module reference.
@@ -445,8 +451,8 @@ function renderDocument(docEntry, done) {
 	// logger.trace('renderFile before rendering '+ fileName);
 	// util.log('renderDocument '+ docEntry.path);
 	var renderChain = module.exports.findRenderChain(docEntry.path);
-	// console.log(util.inspect(docEntry.frontmatter));
 	// console.log(util.inspect(renderChain));
+	// console.log(util.inspect(docEntry.frontmatter));
 	if (fileCache.doLayoutProcessing(docEntry.path)
 	|| (docEntry.frontmatter.yaml && docEntry.frontmatter.yaml.layout && renderChain.doLayouts)) {
 		// util.log('about to process2html');
