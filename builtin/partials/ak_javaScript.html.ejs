@@ -1,0 +1,14 @@
+<% // drag in site-defined javascript
+if (javaScripts) {
+var keys = Object.keys(javaScripts);
+for (var i = 0; i < keys.length; i++) {
+    var script = javaScripts[keys[i]];
+    %><script <%
+        if (script.lang) { %>type="<%= script.lang %>" <% }
+        if (script.href) { %>src="<%= script.href %>" <% }
+        %> > <%
+        if (script.script) { %>
+<%- script.script %>
+<% } %></script>
+<% }
+} %>

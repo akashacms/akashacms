@@ -135,16 +135,16 @@ module.exports.config = function(_config) {
     module.exports.generateSitemap = sitemaps.generateSitemap;
     
     // Then give the configuration file a shot at extending us
-	// This will cause any plugins to load, when the config function calls requirePlugins
+	// This will cause any plugins to load, when the config function calls registerPlugins
     if (config.config) {
         config.config(module.exports);
     }
     
     // Make the builtin plugin the last on the chain
-    /*var builtin = path.join(__dirname, 'builtin');
-    module.exports.registerPlugins(config, [
+    var builtin = path.join(__dirname, 'builtin');
+    module.exports.registerPlugins([
 		{ name: 'builtin', plugin: require(path.join(builtin, 'index')) }
-	]); //.config(module.exports, config); */
+	]);
 	
 	// Set up the default renderer modules
 	[
