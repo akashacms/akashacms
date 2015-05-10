@@ -33,6 +33,8 @@ module.exports.config = function(_akasha, _config) {
 	if (!config.builtin) config.builtin = {};
 	if (!config.builtin.suppress) config.builtin.suppress = {};
 	
+	config.root_partials.push(path.join(__dirname, 'partials'));
+	
 	return module.exports;
 };
 
