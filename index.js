@@ -355,6 +355,7 @@ function _process(config, callback) {
  * Render a partial, paying attention to synchronous operation
  */
 function _partialSync(config, fname, metadata) {
+    if (!metadata) metadata = {};
 	metadata.plugin = module.exports.plugin;
 	metadata.config = config;
 	metadata.partial = module.exports.partialSync;
