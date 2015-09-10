@@ -312,43 +312,28 @@ function _emptyRootOut(config, done) {
 }
 
 function _process(config, callback) {
-    
-    module.exports.emptyRootOut(function(err) {
-        if (err) { logger.error(err); callback(new Error(err)); }
-        else {
-            module.exports.copyAssets(function(err) {
-                if (err) { logger.error('copyAssets done '+ err); callback(err); }
-                else {
-                    module.exports.gatherDir(config.root_docs, function(err) {
-                        // util.log('gatherDir CALLBACK CALLED');
-                        if (err) callback(err);
-                        else {
-							dispatcher('before-render-files', function(err) {
-								module.exports.renderDocuments(function(err) {
-									if (err) callback(err);
-									else {
-										dispatcher('done-render-files', function(err) {
-											logger.info('about to generate sitemap');
-											sitemaps.generateSitemap(function(err) {
-												if (err) callback(err);
-												else {
-													logger.info('about to all-done');
-													dispatcher('all-done', function(err) {
-														if (err) callback(err);
-														else callback();
-													});
-												}
-											});
-										});
-									}
-								});
-							});
-                        }
-                    });
-                }
-            });
-        }
-    });
+	
+	async.series(
+		[
+			module.exports.emptyRootOut,
+			module.exports.copyAssets,
+			function(cb) {
+				module.exports.gatherDir(config.root_docs, cb);
+			},
+			function(cb) {
+				dispatcher('before-render-files', cb);
+			},
+			module.exports.renderDocuments,
+			function(cb) {
+				dispatcher('done-render-files', cb);
+			},
+			sitemaps.generateSitemap,
+			function(cb) {
+				dispatcher('all-done', cb);
+			}
+		],
+		callback
+	);
 }
 
 /**
