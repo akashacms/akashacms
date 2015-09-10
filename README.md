@@ -5,10 +5,10 @@ AkashaCMS is a Node.js based tool for converting ideas into websites while maint
 
 Home page: [AkashaCMS.com](http://akashacms.com)
 
-Working example: [AkashaCMS Example](https://github.com/robogeek/akashacms-example)
+Working example: [AkashaCMS Example](https://github.com/akashacms/akashacms-example)
 
-Skeleton site: [AkashaCMS Skeleton](https://github.com/robogeek/akashacms-skeleton)
+Skeleton site: [AkashaCMS Skeleton](https://github.com/akashacms/akashacms-skeleton)
 
-Source code for akashacms.com: [AkashaCMS website](https://github.com/robogeek/akashacms-website)
+Source code for akashacms.com: [AkashaCMS website](https://github.com/akashacms/akashacms-website)
 
 "Akasha" means the basis and essence of all things in the material world; the first material element created from the astral world.
