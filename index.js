@@ -1,7 +1,7 @@
 /**
  *
  * Copyright 2012-2015 David Herron
- * 
+ *
  * This file is part of AkashaCMS (http://akashacms.com/).
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -349,7 +349,7 @@ function _partialSync(config, fname, metadata) {
 	var renderChain = module.exports.findRenderChain(fname);
     var fnamePartial = find.partial(fname);
     logger.trace('partialSync fname=' + fname + ' fnamePartial=' + fnamePartial);
-    if (fnamePartial === undefined) 
+    if (fnamePartial === undefined)
         return new Error('NO FILE FOUND FOR PARTIAL ' + util.inspect(fname));
     var text = fs.readFileSync(fnamePartial, 'utf8');
 	if (renderChain && renderChain.renderSync) {
@@ -394,7 +394,7 @@ function _partial(config, name, metadata, callback) {
 // Instead the Gruntfile would do tasks before and after renderDocuments
 function _renderDocuments(config, done) {
 	var entryCount = 0;
-	fileCache.eachDocumentAsync( 
+	fileCache.eachDocumentAsync(
 		function(docEntry, next) {
 			entryCount++;
 			logger.info('FILE '+ entryCount +' '+ docEntry.path);
@@ -402,7 +402,7 @@ function _renderDocuments(config, done) {
 				if (err) next(err);
 				else next();
 			});
-		}, 
+		},
 		function(err) {
 			if (err) done(err);
 			else {
@@ -437,7 +437,7 @@ function _renderDocument(config, docEntry, done) {
 			var renderTo = path.join(config.root_out, docEntry.path);
 			// util.log('copy_to_outdir renderTo='+ renderTo +' entry.path='+ entry.path);
 			fs.mkdirs(path.dirname(renderTo), function(err) {
-				if (err) done(err); 
+				if (err) done(err);
 				else fs.copy(docEntry.fullpath, renderTo, function(msg) {
 					fs.utimes(renderTo,
 						docEntry.stat ? docEntry.stat.atime : new Date(), docEntry.stat ? docEntry.stat.mtime : new Date(),
@@ -524,7 +524,7 @@ var config2renderopts = function(config, entry) {
 		metadata[yprop] = entry.frontmatter.yaml[yprop];
 	}
 	metadata.content = "";
-	metadata.documentPath = entry.path; 
+	metadata.documentPath = entry.path;
 	// Copy in any data or functions passed to us
 	if ('data' in config) {
 		for (var prop in config.data) {
@@ -596,13 +596,13 @@ var process2html = function(config, entry, done) {
 			var renderTo = path.join(config.root_out, rendered.fname);
 			if (!rendered.content) logger.error("Somethings wrong - no rendered.content");
 			dispatcher('file-rendered', config, entry.path, renderTo, rendered, function(err) {
-				// TBD - the callback needs to send a new rendering 
+				// TBD - the callback needs to send a new rendering
 				if (err) done('Rendering file-rendered '+ entry.path +' failed with '+ err);
 				else {
 					logger.info('rendered '+ entry.path +' as '+ renderTo);
 					if (!rendered.content) logger.error("Somethings wrong - no rendered.content");
 					fs.mkdirs(path.dirname(renderTo), function(err) {
-						if (err) done('FAILED to make directory '+ path.dirname(renderTo) +' failed with '+ err); 
+						if (err) done('FAILED to make directory '+ path.dirname(renderTo) +' failed with '+ err);
 						else fs.writeFile(renderTo, rendered.content, 'utf8', function (err) {
 							if (err) done(err);
 							else {
@@ -657,7 +657,7 @@ function _zipRenderedSite(config, done) {
             
     output.on('close', function() {
         logger.info(archive.pointer() + ' total bytes');
-        logger.info('archiver has been finalized and the output file descriptor has closed.');  
+        logger.info('archiver has been finalized and the output file descriptor has closed.');
         done();
     });
     
@@ -759,7 +759,19 @@ function _runEditServer(config) {
 		if (err) {
 			util.log('ERROR '+ err);
 		} else {
-			require(path.join(__dirname, 'server', 'app'))(module.exports, config);
+            var resolve = require('resolve').sync;
+            try {
+                fnakasha = resolve('akashacms-editor', { basedir: process.cwd() });
+            } catch (ex) {
+                console.error("Could not find AkashaCMS-Editor because: "+ ex);
+                console.error("");
+                console.error("If you're seeing this message, akashacms-editor hasn't been");
+                console.error("installed locally.  You may need to type 'npm install'. ");
+                console.error("");
+                console.error("See http://akashacms.com for more help");
+                process.exit();
+            }
+            require(fnakasha)(module.exports, config);
 		}
 	});
 };
@@ -775,7 +787,7 @@ function _deployViaRsync(config) {
 	nargv.push('--archive');
 	nargv.push('--delete');
 	nargv.push('--compress');
-	// if (options.force) 
+	// if (options.force)
 	if (config.deploy_rsync.exclude) {
 		nargv.push('--exclude');
 		nargv.push(config.deploy_rsync.exclude);
@@ -838,7 +850,7 @@ var events = require('events');
 var emitter = module.exports.emitter = new events.EventEmitter();
 
 // The problem with using emitter.emit is that it doesn't call back
-// to our code.  What we want is for the called handler to  
+// to our code.  What we want is for the called handler to
 // notify us when it's done with the event handling.  This way AkashaCMS
 // can act on things knowing that a plugin has done what it wants to do.
 //
@@ -854,7 +866,7 @@ var dispatcher = module.exports.dispatcher = function() {
     var eventName = args.shift();
     // logger.trace(eventName +' '+ util.inspect(args));
     if (typeof eventName !== 'string') { throw new Error('eventName must be a string'); }
-    var handlers = emitter.listeners(eventName); // list of handler functions 
+    var handlers = emitter.listeners(eventName); // list of handler functions
     // logger.trace(util.inspect(handlers));
     
     // Last argument: Optional callback function
