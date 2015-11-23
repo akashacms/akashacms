@@ -45,11 +45,19 @@ var sitemaps   = require('./lib/sitemaps');
 var log4js     = require('log4js');
 var logger;
 
+var configObject;
+
 module.exports.mahabhuta = mahabhuta;
 
 module.exports.config = function(config) {
+    
+    configObject = config;
 	
 	logger = module.exports.getLogger("akashacms");
+    
+    module.exports.getConfig = function(_config) {
+        return _config;
+    }.bind(null, config);
     
     module.exports.registerPlugins = _registerPlugins.bind(null, config);
     module.exports.eachPlugin = _eachPlugin.bind(null, config);
@@ -158,6 +166,104 @@ module.exports.config = function(config) {
     
     return module.exports;
 };
+
+/**
+ * prepareConfig - Do some base preparation of a Config object,
+ *      simplifying life of website/eBook authors.  This way the
+ *      config.js can leave off a lot of boilerplate, and these defaults
+ *      will do the right thing.
+ */
+module.exports.prepareConfig = function(config) {
+    if (!config) {
+        config = {};
+    }
+    
+    var stat;
+    if (!config.root_assets) {
+        config.root_assets = [];
+        if (fs.existsSync('assets') && (stat = fs.statSync('assets'))) {
+            if (stat.isDirectory()) {
+                config.root_assets = [ 'assets' ];
+            }
+        }
+    }
+    if (!config.root_layouts) {
+        config.root_layouts = [];
+        if (fs.existsSync('layouts') && (stat = fs.statSync('layouts'))) {
+            if (stat.isDirectory()) {
+                config.root_layouts = [ 'layouts' ];
+            }
+        }
+    }
+    if (!config.root_partials) {
+        config.root_partials = [];
+        if (fs.existsSync('partials') && (stat = fs.statSync('partials'))) {
+            if (stat.isDirectory()) {
+                config.root_partials = [ 'partials' ];
+            }
+        }
+    }
+    if (!config.root_out) {
+        config.root_out = 'out';
+    }
+    if (!config.root_docs) {
+        config.root_docs = [];
+        if (fs.existsSync('documents') && (stat = fs.statSync('documents'))) {
+            if (stat.isDirectory()) {
+                config.root_docs = [ 'documents' ];
+            }
+        }
+    }
+    
+    if (!config.root_out) {
+        throw new Error('No output directory - must specify config.root_out');
+    }
+    
+    if (!config.google) {
+        config.google = {
+            siteVerification: undefined,
+            analyticsAccount: undefined,
+            analyticsDomain: undefined
+        };
+    }
+    
+    config.cheerio = {
+        recognizeSelfClosing: true,
+        recognizeCDATA: true,
+        xmlMode: true
+    };
+    
+    if (!config.headerScripts) {
+        config.headerScripts = {
+            stylesheets: [ ],
+            javaScriptTop: [ ],
+            javaScriptBottom: [ ]
+        };
+    }
+    
+    if (!config.log4js) {
+        config.log4js = {
+            appenders: [
+                { type: "console" }
+            ],
+            replaceConsole: true,
+            levels: {
+                "find": "INFO",
+                "fileCache": "INFO",
+                "renderer": "INFO",
+                "builtin": "INFO",
+                "akashacms": "INFO",
+                "embeddables": "INFO",
+                "epub": "INFO",
+                "[all]": "INFO"/*,
+                "renderer": "TRACE"*/
+            }
+        };
+    }
+    
+    return config;
+};
+
 
 /**
  * getLogger - initialize a logger object, so that each plugin can have its own logger.
