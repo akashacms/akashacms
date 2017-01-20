@@ -27,7 +27,7 @@ var exec       = require('child_process').exec;
 var find       = require('./lib/find');
 var renderer   = require('./lib/renderer2');
 var mahabhuta  = require('mahabhuta');
-var oembed     = require('oembed');
+var oembetter  = require('oembetter')();
 var fs         = require('fs-extra');
 var globfs     = require('globfs');
 var path       = require('path');
@@ -50,21 +50,21 @@ var configObject;
 module.exports.mahabhuta = mahabhuta;
 
 module.exports.config = function(config) {
-    
+
     configObject = config;
-	
+
 	logger = module.exports.getLogger("akashacms");
-    
+
     module.exports.getConfig = function(_config) {
         return _config;
     }.bind(null, config);
-    
+
     module.exports.registerPlugins = _registerPlugins.bind(null, config);
     module.exports.eachPlugin = _eachPlugin.bind(null, config);
     module.exports.plugin = _plugin.bind(null, config);
     module.exports.registerRenderChain = _registerRenderChain.bind(null, config);
     module.exports.findRenderChain = _findRenderChain.bind(null, config);
-    
+
     module.exports.copyAssets = _copyAssets.bind(null, config);
     module.exports.emptyRootOut = _emptyRootOut.bind(null, config);
     module.exports.process = _process.bind(null, config);
@@ -74,20 +74,20 @@ module.exports.config = function(config) {
     module.exports.renderDocument = _renderDocument.bind(null, config);
     module.exports.renderFile = _renderFile.bind(null, config);
     module.exports.gatherDir = _gatherDir.bind(null, config);
-    
+
     module.exports.zipRenderedSite = _zipRenderedSite.bind(null, config);
-    
+
     module.exports.runEditServer = _runEditServer.bind(null, config);
     module.exports.runPreviewServer = _runPreviewServer.bind(null, config);
-    
+
     module.exports.deployViaRsync = _deployViaRsync.bind(null, config);
-    
+
     module.exports.generateRSS = _generateRSS.bind(null, config);
-    
+
     module.exports.pingXmlSitemap = _pingXmlSitemap.bind(null, config);
-    
+
 	// Set up logging support
-	
+
 	if (config.log4js) {
 		log4js.configure(config.log4js);
 	} else {
@@ -108,14 +108,14 @@ module.exports.config = function(config) {
 	}
 
 	// Configure all the modules - primarily so they can get logger support
-	
+
     fileCache.config(module.exports, config);
     find.config(module.exports, config);
     renderer.config(module.exports, config);
 	md.config(module.exports, config);
 	sitemaps.config(module.exports, config);
 	rendererJSON.config(module.exports, config);
-    
+
     module.exports.findAssetAsync = find.assetFile;
     module.exports.findDocumentAsync = find.documentAsync;
     module.exports.findDocumentForUrlpath = fileCache.documentForUrlpath;
@@ -135,21 +135,21 @@ module.exports.config = function(config) {
     module.exports.isHtml = fileCache.isHtml;
     module.exports.supportedForHtml = fileCache.supportedForHtml;
     module.exports.isIndexHtml = fileCache.isIndexHtml;
-    
+
     module.exports.generateSitemap = sitemaps.generateSitemap;
-    
+
     // Then give the configuration file a shot at extending us
 	// This will cause any plugins to load, when the config function calls registerPlugins
     if (config.config) {
         config.config(module.exports);
     }
-    
+
     // Make the builtin plugin the last on the chain
     var builtin = path.join(__dirname, 'builtin');
     module.exports.registerPlugins([
 		{ name: 'builtin', plugin: require(path.join(builtin, 'index')) }
 	]);
-	
+
 	// Set up the default renderer modules
 	[
 	  rendererEjs.rendererEJS, rendererEjs.rendererEJSMD, md, rendererHTML,
@@ -157,13 +157,13 @@ module.exports.config = function(config) {
 	].forEach(function(renderer) {
 		module.exports.registerRenderChain(renderer);
 	});
-    
+
 	if (typeof config.headerScripts === "undefined") config.headerScripts = {};
 	if (typeof config.headerScripts.javaScriptTop == "undefined") config.headerScripts.javaScriptTop = [];
 	if (typeof config.headerScripts.javaScriptBottom == "undefined") config.headerScripts.javaScriptBottom = [];
-    
+
     // logger.trace(util.inspect(config));
-    
+
     return module.exports;
 };
 
@@ -177,7 +177,7 @@ module.exports.prepareConfig = function(config) {
     if (!config) {
         config = {};
     }
-    
+
     var stat;
     if (!config.root_assets) {
         config.root_assets = [];
@@ -187,6 +187,7 @@ module.exports.prepareConfig = function(config) {
             }
         }
     }
+
     if (!config.root_layouts) {
         config.root_layouts = [];
         if (fs.existsSync('layouts') && (stat = fs.statSync('layouts'))) {
@@ -195,6 +196,7 @@ module.exports.prepareConfig = function(config) {
             }
         }
     }
+
     if (!config.root_partials) {
         config.root_partials = [];
         if (fs.existsSync('partials') && (stat = fs.statSync('partials'))) {
@@ -203,22 +205,32 @@ module.exports.prepareConfig = function(config) {
             }
         }
     }
-    if (!config.root_out) {
-        config.root_out = 'out';
-    }
+
     if (!config.root_docs) {
         config.root_docs = [];
         if (fs.existsSync('documents') && (stat = fs.statSync('documents'))) {
             if (stat.isDirectory()) {
                 config.root_docs = [ 'documents' ];
+            } else {
+                throw new Error("'documents' is not a directory");
             }
+        } else {
+            throw new Error("No 'documents' setting, and no 'documents' directory");
         }
     }
-    
+
     if (!config.root_out) {
-        throw new Error('No output directory - must specify config.root_out');
+        if (fs.existsSync('out') && (stat = fs.statSync('out'))) {
+            if (stat.isDirectory()) {
+                config.root_out = 'out';
+            } else {
+                throw new Error("'out' is not a directory");
+            }
+        } else {
+            throw new Error('No output directory - must specify config.root_out');
+        }
     }
-    
+
     if (!config.google) {
         config.google = {
             siteVerification: undefined,
@@ -226,21 +238,26 @@ module.exports.prepareConfig = function(config) {
             analyticsDomain: undefined
         };
     }
-    
+
     config.cheerio = {
         recognizeSelfClosing: true,
         recognizeCDATA: true,
         xmlMode: true
     };
-    
+
     if (!config.headerScripts) {
         config.headerScripts = {
             stylesheets: [ ],
             javaScriptTop: [ ],
             javaScriptBottom: [ ]
         };
+        if (fs.existsSync(path.join(config.root_assets[0], 'style.css'))) {
+            config.headerScripts.stylesheets.push('/style.css');
+        } else if (fs.existsSync(path.join(config.root_assets[0], 'css', 'style.css'))) {
+            config.headerScripts.stylesheets.push('/css/style.css');
+        }
     }
-    
+
     if (!config.log4js) {
         config.log4js = {
             appenders: [
@@ -260,7 +277,7 @@ module.exports.prepareConfig = function(config) {
             }
         };
     }
-    
+
     return config;
 };
 
@@ -280,19 +297,19 @@ function _registerPlugins(config, plugins) {
 	if (typeof config.plugins === 'undefined' || !config.hasOwnProperty("plugins") || ! config.plugins) {
 		config.plugins = [];
 	}
-	
+
 	plugins.forEach(function(pluginObj) {
 		if (typeof pluginObj.plugin === 'string') {
 			pluginObj.plugin = require(pluginObj.plugin);
 		}
 		config.plugins.push(pluginObj);
 		pluginObj.plugin.config(module.exports, config);
-		
+
 		/* if (pluginObj.plugin.mahabhuta) {
 		 *	registerMahabhuta(_config, pluginObj.plugin.mahabhuta);
 		} */
 	});
-	
+
 	return module.exports;
 }
 
@@ -325,7 +342,7 @@ function _plugin(config, name) {
  */
 function _registerRenderChain(config, renderChain) {
 	if (! config.renderChains) config.renderChains = [];
-	
+
 	if ((renderChain.match && typeof renderChain.match === 'function')
 	 && (
 		(renderChain.renderSync && typeof renderChain.renderSync === 'function')
@@ -334,7 +351,7 @@ function _registerRenderChain(config, renderChain) {
 		config.renderChains.push(renderChain);
 	} else
 		throw new Error('bad renderChain provided '+ util.inspect(renderChain));
-	
+
 	return module.exports;
 }
 
@@ -418,7 +435,7 @@ function _emptyRootOut(config, done) {
 }
 
 function _process(config, callback) {
-	
+
 	async.series(
 		[
 			module.exports.emptyRootOut,
@@ -451,7 +468,7 @@ function _partialSync(config, fname, metadata) {
 	metadata.config = config;
 	metadata.partial = module.exports.partialSync;
 	metadata.akashacms = module.exports;
-	
+
 	var renderChain = module.exports.findRenderChain(fname);
     var fnamePartial = find.partial(fname);
     logger.trace('partialSync fname=' + fname + ' fnamePartial=' + fnamePartial);
@@ -473,7 +490,7 @@ function _partial(config, name, metadata, callback) {
 	metadata.config = config;
 	metadata.partial = module.exports.partialSync;
 	metadata.akashacms = module.exports;
-	
+
 	var renderChain = module.exports.findRenderChain(name);
 	if (renderChain) {
 	  fileCache.readPartial(name, function(err, partialEntry) {
@@ -622,7 +639,7 @@ function _gatherDir(config, docroot, done) {
 };
 
 var config2renderopts = function(config, entry) {
-	
+
 	// Start with a base object that will be passed into the template
 	var metadata = { };
 	// Copy data from frontmatter
@@ -646,7 +663,7 @@ var config2renderopts = function(config, entry) {
 	if (! metadata.rendered_date) {
 		metadata.rendered_date = entry.stat ? entry.stat.mtime : new Date();
 	}
-	
+
 	if (!metadata.publicationDate) {
 		var dateSet = false;
 		if (entry.frontmatter.yaml && entry.frontmatter.yaml.publDate) {
@@ -663,7 +680,7 @@ var config2renderopts = function(config, entry) {
 			metadata.publicationDate = new Date();
 		}
 	}
-	
+
 	if (config.root_url) {
     	var pRootUrl = url.parse(config.root_url);
     	pRootUrl.pathname = entry.renderedFileName;
@@ -671,15 +688,15 @@ var config2renderopts = function(config, entry) {
 	} else {
 	    metadata.rendered_url = entry.renderedFileName;
 	}
-	
+
 	metadata.plugin = module.exports.plugin;
 	metadata.config = config;
 	metadata.partial = module.exports.partialSync;
-	
+
 	metadata.akashacms = module.exports;
-	
+
 	// console.log(util.inspect(metadata));
-	
+
 	return metadata;
 };
 
@@ -688,10 +705,10 @@ var config2renderopts = function(config, entry) {
  **/
 var process2html = function(config, entry, done) {
     logger.trace('process2html #1 '+ entry.path); // util.inspect(entry));
-	
+
 	var metadata = config2renderopts(config, entry);
 	// util.log('process2html partial='+ util.inspect(metadata.partial));
-	
+
 	logger.trace('process2html #2 '+ entry.path); //  +' '+ util.log(util.inspect(renderopts)));
 	renderer.render(entry, undefined, metadata, function(err, rendered) {
 		logger.trace('***** DONE RENDER ' + entry.path); // util.inspect(rendered));
@@ -756,30 +773,30 @@ var writeRenderingToFile = function(config, renderedFileName, rendered, entry, d
 
 
 function _zipRenderedSite(config, done) {
-	
+
     var archive = archiver('zip');
-    
+
     var output = fs.createWriteStream(config.root_out +'.zip');
-            
+
     output.on('close', function() {
         logger.info(archive.pointer() + ' total bytes');
         logger.info('archiver has been finalized and the output file descriptor has closed.');
         done();
     });
-    
+
     archive.on('error', function(err) {
       done(err);
     });
-    
+
     archive.pipe(output);
-	
+
 	archive.directory(config.root_out, ".");
-	
+
 	archive.finalize();
 };
 
 module.exports.oEmbedData = function(url, callback) {
-  oembed.fetch(url, { maxwidth: 6000 }, callback);
+  oembetter.fetch(url, /* { maxwidth: 6000 }, */ callback);
 };
 
 module.exports.parseTags = function(tags) {
@@ -856,7 +873,7 @@ function _runPreviewServer(config) {
 			}
 		});
 	});
-	
+
 	server.listen(6080);
 };
 
@@ -913,7 +930,7 @@ function _deployViaRsync(config) {
 function _generateRSS(config, configrss, feedData, items, renderTo, done) {
 
 	// logger.trace('generateRSS '+ renderTo);
-	
+
 	// Construct initial rss object
 	var rss = {};
     for (var key in configrss) {
@@ -921,22 +938,22 @@ function _generateRSS(config, configrss, feedData, items, renderTo, done) {
             rss[key] = configrss[key];
         }
     }
-    
+
     // Then fill in from feedData
     for (var key in feedData) {
         if (feedData.hasOwnProperty(key)) {
             rss[key] = feedData[key];
         }
     }
-    
+
     var rssfeed = new RSS(rss);
-    
+
     items.forEach(function(item) { rssfeed.item(item); });
-    
+
     var xml = rssfeed.xml();
     var renderOut = path.join(config.root_out, renderTo);
     // logger.trace(renderOut +' ===> '+ xml);
-    
+
 	fs.mkdirs(path.dirname(renderOut), function(err) {
 		if (err) logger.error(err);
 		else {
@@ -974,7 +991,7 @@ var dispatcher = module.exports.dispatcher = function() {
     if (typeof eventName !== 'string') { throw new Error('eventName must be a string'); }
     var handlers = emitter.listeners(eventName); // list of handler functions
     // logger.trace(util.inspect(handlers));
-    
+
     // Last argument: Optional callback function
     // If no callback is supplied, we provide one that if there's an error throws it
     var finalCB = undefined;
@@ -989,7 +1006,7 @@ var dispatcher = module.exports.dispatcher = function() {
     if (handlers.length <= 0) {
         return finalCB();
     }
-    
+
     var dispatchToHandler = function(handler, argz, callback) {
         logger.trace('dispatchToHandler '+ eventName +' '+ util.inspect(handler));
         if (!handler) {
@@ -1005,12 +1022,12 @@ var dispatcher = module.exports.dispatcher = function() {
         });
         return handler.apply(null, argv);
     };
-        
+
     // Step through the array of handlers calling each in turn.
-    
+
     var hi = 0;
     var handler = handlers[hi];
-    
+
     var callNextHandler = function(argz) {
         dispatchToHandler(handler, argz, function(err) {
             logger.trace('DONE dispatchToHandler '+ err);
@@ -1027,6 +1044,6 @@ var dispatcher = module.exports.dispatcher = function() {
             }
         });
     };
-    
+
     callNextHandler(args);
 };
