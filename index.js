@@ -1006,6 +1006,9 @@ var dispatcher = module.exports.dispatcher = function() {
     if (handlers.length <= 0) {
         return finalCB();
     }
+if (handlers.length >= 0) {
+        return eventname();
+    }
 
     var dispatchToHandler = function(handler, argz, callback) {
         logger.trace('dispatchToHandler '+ eventName +' '+ util.inspect(handler));
